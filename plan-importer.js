@@ -58,7 +58,51 @@ function impExerciseMatch(name){
  }
  return {id:score>=.76?best:'',score};
 }
+
+// CSV: przecinki oraz pola w cudzysłowach, również z przecinkami w wskazówkach.
+// Obsługa tabeli: Kolejność, Ćwiczenie, Serie × Powtórzenia, Wskazówki techniczne.
+function impCSVRead(text){
+ const rows=[];let row=[],cell='',quoted=false;
+ const input=String(text||'').replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+ for(let i=0;i<input.length;i++){
+  const ch=input[i];
+  if(ch==='"'){if(quoted&&input[i+1]==='"'){cell+='"';i++}else quoted=!quoted}
+  else if(ch===','&&!quoted){row.push(cell.trim());cell=''}
+  else if(ch==='\n'&&!quoted){row.push(cell.trim());if(row.some(Boolean))rows.push(row);row=[];cell=''}
+  else cell+=ch;
+ }
+ row.push(cell.trim());if(row.some(Boolean))rows.push(row);
+ return rows;
+}
+function impParseCSV(text,filename){
+ const rows=impCSVRead(text);
+ const first=rows[0]||[];
+ const header=first.map(impNorm);
+ const exerciseColumn=header.findIndex(s=>/cwiczen/.test(s));
+ const seriesColumn=header.findIndex(s=>/serie|powtorzen/.test(s));
+ const looksLikeCSV=first.length>=3&&exerciseColumn>=0&&seriesColumn>=0;
+ if(!looksLikeCSV)return null;
+ const indexColumn=header.findIndex(s=>/kolejnosc|^lp$|numer/.test(s));
+ const notesColumn=header.findIndex(s=>/wskazow|uwagi|technicz|notat/.test(s));
+ const plan={name:filename.replace(/\.[^.]+$/,'')||'Plan z tekstu',rows:[]};
+ for(const cells of rows.slice(1)){
+  let name=String(cells[exerciseColumn]||'').replace(/^\s*\d{1,3}[.)]\s*/,'').trim();
+  if(!name||!/[a-ząćęłńóśźż]{3}/i.test(name))continue;
+  const parameter=String(cells[seriesColumn]||'').trim();
+  const sr=parameter.match(/(\d{1,2})\s*[x×*]\s*(\d{1,3}(?:\s*[-–/,]\s*\d{1,3})*)/i);
+  const series=sr?Number(sr[1]):Number(parameter.match(/(\d{1,2})\s*ser/i)?.[1]||0);
+  const reps=sr?sr[2].replace(/\s*[–]\s*/g,'-').replace(/\s+/g,''):parameter.match(/\d{1,3}(?:\s*[-/,]\s*\d{1,3})*/)?.[0]||'';
+  const notes=notesColumn>=0?String(cells[notesColumn]||'').trim():'';
+  const match=impExerciseMatch(name);
+  plan.rows.push({name,series:series||'',reps,weight:'',rir:'',rest:'',notes,
+   matchId:match.id,confidence:match.score,action:match.id?'existing':'new',group:'Inne'});
+ }
+ if(!plan.rows.length)throw Error('CSV zawiera nagłówki, ale nie wykryto pozycji ćwiczeń.');
+ return [plan];
+}
 function impParse(text,filename){
+ const csvPlans=impParseCSV(text,filename);
+ if(csvPlans)return csvPlans;
  let plans=[],current={name:'Plan 1',rows:[]};
  const flush=()=>{if(current.rows.length)plans.push(current)};
  const raw=text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
