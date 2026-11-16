@@ -64,7 +64,7 @@ function impParse(text,filename){
  const raw=text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
  let pending=null;
  for(let line of raw){
-  let heading=line.match(/^(?:(?:dzie[nń]|day|trening|training|plan|fbw)\s*(?:nr\.?|no\.?|#)?\s*([1-9]\d*|[ABC])(?:\s*[-–—:]\s*.*)?|(?:push|pull|legs|upper|lower)(?:\s+day)?)$/i);
+  let heading=line.match(/^(?:TRENING BRZUCHA|(?:(?:dzie[nń]|day|trening|training|plan|fbw)\s*(?:nr\.?|no\.?|#)?\s*([1-9]\d*|[ABC])(?:\s*[-–—:]\s*.*)?|(?:push|pull|legs|upper|lower)(?:\s+day)?))$/i);
   if(heading){flush();current={name:line.trim(),rows:[]};pending=null;continue}
   if(/^(?:ćwiczeni[ea]|serie|powt[oó]rzenia|ci[eę][zż]ar|przerwa|tempo|uwagi|rpe|rir|lp\.?|nr)\b/i.test(line)&&line.length<100)continue;
   let clean=line.replace(/^\s*(?:\d{1,2}[.)]\s*|[-•]\s*)/,'').trim();
