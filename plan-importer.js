@@ -44,39 +44,41 @@ function impExerciseMatch(name){
 }
 function impParse(text,filename){
  let plans=[],current={name:'Plan 1',rows:[]};
- function push(){if(current.rows.length)plans.push(current)}
- let raw=text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
+ const flush=()=>{if(current.rows.length)plans.push(current)};
+ const raw=text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
+ let pending=null;
  for(let line of raw){
-  let heading=line.match(/^(?:dzie[nń]\s*\d+|trening\s*[a-z0-9]+|dzie[nń]\s*[a-z]+|plan\s*[a-z0-9]+|push|pull|legs|fbw\s*(?:[a-z0-9]+)?|g[oó]ra\s*cia[lł]a|d[oó][lł]\s*cia[lł]a)\s*[:—–-]?\s*$/i);
-  if(heading){push();current={name:line.replace(/[:—–-]$/,'').trim(),rows:[]};continue}
-  if(/^(?:ćwiczeni[ea]|serie|powt[oó]rzenia|ci[eę][zż]ar|przerwa|tempo|uwagi|rpe|rir|lp\.?|nr)\b/i.test(line)&&line.length<95)continue;
+  let heading=line.match(/^(?:(?:dzie[nń]|day|trening|training|plan|fbw)\s*(?:nr\.?|no\.?|#)?\s*([1-9]\d*|[ABC])(?:\s*[-–—:]\s*.*)?|(?:push|pull|legs|upper|lower)(?:\s+day)?)$/i);
+  if(heading){flush();current={name:line.trim(),rows:[]};pending=null;continue}
+  if(/^(?:ćwiczeni[ea]|serie|powt[oó]rzenia|ci[eę][zż]ar|przerwa|tempo|uwagi|rpe|rir|lp\.?|nr)\b/i.test(line)&&line.length<100)continue;
   let clean=line.replace(/^\s*(?:\d{1,2}[.)]\s*|[-•]\s*)/,'').trim();
-  if(clean.length<5||clean.length>180||/^(?:https?:|www\.|strona\s+\d|autor:|copyright)/i.test(clean))continue;
+  if(clean.length<4||clean.length>190||/^(?:https?:|www\.|strona\s+\d|autor:|copyright)/i.test(clean))continue;
   let cells=clean.split(/\s*\|\s*|\t+|\s{2,}/).map(x=>x.trim()).filter(Boolean);
   let name=cells[0],params=cells.slice(1).join(' ');
-  // Układy "3 x 12", "3x12", "12/10/8", "4 serie", "60 kg".
   if(cells.length===1){
-   const m=clean.match(/^(.*?)(?:\s+[-–—:]?\s+)(\d{1,2}\s*[x×]\s*\d{1,3}(?:\s*[-/]\s*\d{1,3})*|\d{1,3}\s*\/\s*\d{1,3}(?:\s*\/\s*\d{1,3})*|\d{1,2}\s*ser(?:ie|ii))\b(.*)$/i);
+   let m=clean.match(/^(.*?)(?:\s+[-–—:]?\s+)(\d{1,2}\s*[x×]\s*\d{1,3}(?:\s*[-/]\s*\d{1,3})*|\d{1,3}\s*\/\s*\d{1,3}(?:\s*\/\s*\d{1,3})*|\d{1,2}\s*ser(?:ie|ii))\b(.*)$/i);
    if(m){name=m[1].trim();params=m[2]+' '+m[3]}
   }
   name=name.replace(/^\d+[.)]\s*/,'').trim();
   if(!/[a-ząćęłńóśźż]{3}/i.test(name)||name.length>95)continue;
   let match=impExerciseMatch(name),hasNumbers=/\d/.test(params);
-  // Odrzucenie akapitów opisowych bez parametrów i bez podobieństwa do katalogu.
   if(!hasNumbers&&match.score<.4)continue;
   let sr=params.match(/(\d{1,2})\s*[x×]\s*(\d{1,3}(?:\s*[/,-]\s*\d{1,3})*)/i);
   let series=sr?Number(sr[1]):Number(params.match(/(\d{1,2})\s*ser(?:ie|ii)/i)?.[1]||0);
   let reps=sr?sr[2]:params.match(/\b\d{1,3}(?:\s*\/\s*\d{1,3}){1,6}\b/)?.[0]||'';
+  let numeric=cells.slice(1).filter(x=>/^\d{1,3}$/.test(x));
+  if(!series&&numeric.length>=2){series=Number(numeric[0]);reps=numeric.slice(1).join('/')}
   if(!series&&reps.includes('/'))series=reps.split('/').length;
-  if(!series){let c=cells.find(x=>/^[2-6]$/.test(x));if(c)series=Number(c)}
-  if(!reps){let nums=cells.filter(x=>/^\d{1,3}$/.test(x));if(nums.length>1)reps=nums.slice(1).join('/')}
+  if(!series&&numeric.length===1&&Number(numeric[0])<=8)series=Number(numeric[0]);
+  if(!reps&&series&&numeric.length>1)reps=numeric.slice(1).join('/');
+  if(!reps&&series&&numeric.length===1&&Number(numeric[0])>8)reps=numeric[0];
   let weight=params.match(/(\d+(?:[,.]\d+)?)\s*kg/i)?.[1]||'';
   let rir=params.match(/\bRIR\s*[:=]?\s*(\d+)/i)?.[1]||'';
   let rest=params.match(/(\d{2,3})\s*(?:s|sek)\b/i)?.[1]||'';
   current.rows.push({name,series:series||'',reps,weight,rir,rest,notes:params,matchId:match.id,confidence:match.score,action:match.id?'existing':'new',group:'Inne'});
  }
- push();
- if(!plans.length)throw Error('Nie wykryto ćwiczeń. Spróbuj pliku z tekstem lub wklej treść planu do pola poniżej.');
+ flush();
+ if(!plans.length)throw Error('Nie wykryto ćwiczeń. Wklej tekst lub użyj PDF z warstwą tekstową.');
  if(plans.length===1&&plans[0].name==='Plan 1')plans[0].name=filename.replace(/\.[^.]+$/,'');
  return plans;
 }
