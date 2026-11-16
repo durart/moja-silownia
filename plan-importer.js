@@ -10,12 +10,28 @@ async function impRead(file){
   pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   let doc=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise,lines=[];
   for(let p=1;p<=doc.numPages;p++){
-   const page=await doc.getPage(p),items=(await page.getTextContent()).items.filter(x=>x.str&&x.str.trim());
-   let rows=[];
-   for(const x of items){let y=Math.round(x.transform[5]/4)*4,row=rows.find(r=>Math.abs(r.y-y)<=3);if(!row){row={y,items:[]};rows.push(row)}row.items.push({x:x.transform[4],str:x.str})}
-   rows.sort((a,b)=>b.y-a.y);
-   for(const row of rows)lines.push(row.items.sort((a,b)=>a.x-b.x).map(x=>x.str).join('  '));
-   lines.push('');
+   const page=await doc.getPage(p),viewport=page.getViewport({scale:1});
+   const items=(await page.getTextContent()).items.filter(x=>x.str&&x.str.trim()).map(x=>({str:x.str.trim(),x:x.transform[4],y:viewport.height-x.transform[5]}));
+   const headings=items.filter(x=>/^(?:TRENING\\s*(?:NR\\.?\\s*)?[1-9]\\d*|TRENING BRZUCHA|DAY\\s*[1-9]\\d*|PLAN\\s*[ABC])$/i.test(x.str)).sort((a,b)=>a.y-b.y);
+   const headers=items.filter(x=>/^(?:SERIE|SERIES|SETS)$/i.test(x.str)).sort((a,b)=>a.y-b.y);
+   for(let hi=0;hi<headings.length;hi++){
+    const h=headings[hi],end=headings[hi+1]?.y??viewport.height;
+    const head=headers.find(x=>x.y>h.y&&x.y<Math.min(end,h.y+125));
+    if(!head)continue;
+    const repHeader=items.find(x=>/^(?:POWT[ÓO]RZENIA|REPS)$/i.test(x.str)&&Math.abs(x.y-head.y)<18);
+    const seriesX=head.x,repX=repHeader?.x??seriesX+65;
+    lines.push(h.str);
+    const anchors=items.filter(x=>x.y>head.y+14&&x.y<end&&x.x<viewport.width*.15&&/^\\d{1,2}$/.test(x.str)).sort((a,b)=>a.y-b.y);
+    for(let ai=0;ai<anchors.length;ai++){
+     const anchor=anchors[ai],next=anchors[ai+1]?.y??Math.min(end,anchor.y+55);
+     const maxY=Math.min(next-9,anchor.y+22),minY=anchor.y-16;
+     const row=items.filter(x=>x.y>=minY&&x.y<=maxY&&x!==anchor);
+     const name=row.filter(x=>x.x>viewport.width*.11&&x.x<seriesX-12).sort((a,b)=>a.y-b.y||a.x-b.x).map(x=>x.str).join(' ').trim();
+     const sn=row.filter(x=>Math.abs(x.x-seriesX)<25&&/^\\d{1,2}$/.test(x.str)).sort((a,b)=>Math.abs(a.y-anchor.y)-Math.abs(b.y-anchor.y))[0];
+     const rp=row.filter(x=>x.x>=repX-20&&/\\d/.test(x.str)).sort((a,b)=>Math.abs(a.y-anchor.y)-Math.abs(b.y-anchor.y))[0];
+     if(name&&sn&&rp)lines.push(name+' | '+sn.str+' | '+rp.str);
+    }
+   }
   }
   return lines.join('\n');
  }
@@ -65,10 +81,10 @@ function impParse(text,filename){
   if(!hasNumbers&&match.score<.4)continue;
   let sr=params.match(/(\d{1,2})\s*[x×]\s*(\d{1,3}(?:\s*[/,-]\s*\d{1,3})*)/i);
   let series=sr?Number(sr[1]):Number(params.match(/(\d{1,2})\s*ser(?:ie|ii)/i)?.[1]||0);
-  let reps=sr?sr[2]:params.match(/\b\d{1,3}(?:\s*\/\s*\d{1,3}){1,6}\b/)?.[0]||'';
+  let reps=sr?sr[2]:params.match(/\b\d{1,3}(?:\s*[/,;-]\s*\d{1,3}){1,6}\b/)?.[0]||'';
   let numeric=cells.slice(1).filter(x=>/^\d{1,3}$/.test(x));
-  if(!series&&numeric.length>=2){series=Number(numeric[0]);reps=numeric.slice(1).join('/')}
-  if(!series&&reps.includes('/'))series=reps.split('/').length;
+  if(!series&&numeric.length>=2){series=Number(numeric[0]);reps=numeric.slice(1).join('/')}\n  if(!series&&cells.length>=3&&/^\\d{1,2}$/.test(cells[1])){series=Number(cells[1]);reps=cells[2]}
+  if(!series&&/[\\/,]/.test(reps))series=reps.split(/[\\/,]/).length;
   if(!series&&numeric.length===1&&Number(numeric[0])<=8)series=Number(numeric[0]);
   if(!reps&&series&&numeric.length>1)reps=numeric.slice(1).join('/');
   if(!reps&&series&&numeric.length===1&&Number(numeric[0])>8)reps=numeric[0];
