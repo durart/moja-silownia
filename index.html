@@ -1,4 +1,4 @@
-<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101827"><link rel="icon" type="image/svg+xml" href="./icon.svg"><link rel="manifest" href="./manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Moja Siłownia"><title>Moja Siłownia v1.5.2 — Atlas Techniki</title>
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101827"><link rel="icon" type="image/svg+xml" href="./icon.svg"><link rel="manifest" href="./manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Moja Siłownia"><title>Moja Siłownia v1.5.3 — wybór ćwiczeń</title>
 <style>
 :root{font-family:system-ui,-apple-system,sans-serif;color:#eaf1fb;background:#0b1220}*{box-sizing:border-box}body{margin:0}main{max-width:760px;margin:auto;padding:18px 16px 100px}h1{font-size:1.5rem;margin:8px 0}h2{font-size:1.1rem}p,small{color:#b5c4d8}.card{background:#172338;border:1px solid #30425a;border-radius:16px;padding:16px;margin:14px 0}button,input,select{font:inherit;border-radius:10px;padding:12px}input,select{width:100%;background:#0c1729;border:1px solid #41546e;color:white;margin:6px 0 12px}button{background:#2c84ef;color:white;border:0;cursor:pointer;font-weight:650}button.secondary{background:#32435d}button.danger{background:#9e3645}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}nav{display:flex;gap:8px;margin:18px 0}nav button{flex:1}.hidden{display:none}.item{padding:12px 0;border-bottom:1px solid #35465c}.muted{color:#9db0c7}.badge{font-size:.75rem;background:#324a66;padding:4px 8px;border-radius:12px}label{display:block;font-size:.9rem}#notice{color:#8de0b6}a{color:#a9caff}
 .exercise-card{background:#172338;border:1px solid #344c68;border-radius:16px;padding:14px;margin:14px 0}.set-grid{display:grid;grid-template-columns:24px minmax(48px,1fr) 58px 58px 48px 38px 32px;gap:6px;align-items:center;margin:8px 0}.set-grid input{margin:0;padding:10px 5px;min-width:0;text-align:center}.set-grid .previous{font-size:.8rem;color:#aabbd1}.set-grid button{padding:10px 4px}.set-head{font-size:.72rem;color:#b9c8db}.done{background:#20694c!important}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.toolbar button{flex:1}@media(max-width:390px){.set-grid{grid-template-columns:20px minmax(39px,1fr) 49px 49px 42px 32px 28px;gap:4px}.exercise-card{padding:10px}}  .readiness-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.readiness-grid label{min-width:0}.summary-metric{display:inline-block;background:#233750;padding:12px;border-radius:12px;margin:5px}.muscle-bar{height:9px;background:#33445b;border-radius:9px;overflow:hidden}.muscle-bar>span{display:block;height:100%;background:#6ad4a3}.hint{font-size:.8rem;color:#9db0c7}.set-grid input{font-size:.85rem}.fatigue-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.78rem;color:#aebed2}.fatigue-low{background:#65cba0!important}.fatigue-mid{background:#e5b15e!important}.fatigue-high{background:#e47765!important} 
@@ -87,16 +87,136 @@
 
 /* Import planów */
 #plans #importFile{width:100%;padding:13px;background:#0c182a;color:#eaf1fb;border:1px solid #425775;border-radius:12px}#plans #importText{width:100%;background:#0c182a;color:#eaf1fb;border:1px solid #425775;border-radius:12px;padding:12px;margin:10px 0}#plans .imp-plan{padding:14px;margin:14px 0;border:1px solid #425775;border-radius:14px}#plans .imp-row{padding:12px;margin:10px 0;background:#111e32;border:1px solid #314762;border-radius:12px}#plans .imp-row label{display:block;margin:7px 0}#plans .imp-row input,#plans .imp-row select{width:100%;min-width:0}#plans .imp-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}#plans .imp-fields input{padding:9px 5px}#plans #importPreview>button{margin:8px 6px 8px 0}@media(max-width:460px){#plans .imp-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Wybór ćwiczeń: nawigacja po partiach mięśniowych — projekt referencyjny */
+#exercisePicker[hidden],#pickTiles[hidden],#pickResults[hidden]{display:none!important}
+#exercisePicker{position:fixed;inset:0;z-index:240;overflow-y:auto;overscroll-behavior:contain;background:#312b43;color:#f7f5fb;padding:env(safe-area-inset-top) max(14px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(14px,env(safe-area-inset-left))}
+.pick-wrap{max-width:760px;margin:0 auto;padding:12px 0 35px}
+.pick-head{display:grid;grid-template-columns:46px minmax(0,1fr) 46px;align-items:center;margin:10px 0 24px}
+.pick-head h2{font-size:1.38rem;font-weight:500;text-align:center;margin:0;color:#fff}
+.pick-head button{background:transparent;font-size:1.7rem;padding:5px 3px;color:#fff}
+.pick-search{display:flex;align-items:center;gap:7px;border-bottom:1px solid #817a90;padding:0 3px;margin:0 2px 13px}
+.pick-search .search-icon{font-size:1.25rem}
+.pick-search input{min-width:0;flex:1;margin:0;background:transparent;border:0;color:#fff;outline-offset:3px;font-size:1rem;padding:12px 4px}
+.pick-search input::placeholder{color:#aaa3b8}
+.pick-search button{background:transparent;color:#e3dfeb;padding:10px 4px;min-width:38px;font-size:1.3rem}
+.pick-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 6px;margin:18px 0}
+.pick-tile{background:transparent!important;color:#f5f3fa;border:0;border-radius:0;padding:5px 2px 10px;min-width:0;display:flex;align-items:center;flex-direction:column;gap:5px;border-bottom:1px solid #ada5ba;min-height:150px}
+.pick-tile svg{width:100%;height:112px;max-width:100px}
+.pick-tile strong{font-size:.85rem;line-height:1.2;text-align:center;font-weight:600}
+.pick-tile small{font-size:.69rem;color:#c7bfd1}
+.pick-tile:focus-visible,.pick-exercise:focus-visible{outline:3px solid #91befc;outline-offset:2px}
+.pick-symbol{display:grid;place-items:center;font-size:2.9rem;height:112px}
+.pick-results{background:#e8e8eb;border-radius:18px;color:#34363d;overflow:hidden;padding:4px 13px}
+.pick-count{margin:6px 5px 9px;font-size:.8rem;color:#636371}
+.pick-row{display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:stretch;gap:2px;border-bottom:1px solid #b7b7be;min-height:86px}
+.pick-row:last-child{border-bottom:0}
+.pick-exercise{display:flex;align-items:center;text-align:left;gap:11px;min-width:0;width:100%;border:0;background:transparent;color:#36363b;padding:7px 3px;font-weight:500}
+.pick-thumb{display:flex;align-items:center;justify-content:center;flex:0 0 55px;height:68px;overflow:hidden}
+.pick-thumb svg{height:66px;width:30px;flex:none}
+.pick-exercise-name{min-width:0;line-height:1.28;font-size:.95rem;overflow-wrap:anywhere}
+.pick-exercise-name small{display:block;font-size:.72rem;color:#757581;line-height:1.4;margin-top:3px;font-weight:400}
+.pick-more{background:transparent;color:#35363a;font-size:1.5rem;padding:6px 3px}
+.pick-empty{padding:32px 8px;text-align:center;color:#656673}
+#manualWorkout .pick-launch{width:100%;padding:17px 12px;margin:7px 0;background:#2c84ef;font-size:1.02rem}
+#manualWorkout .pick-help{margin:3px 0 8px}
+#techOverlay{z-index:320!important}
+@media(max-width:360px){.pick-tile svg,.pick-symbol{height:95px}.pick-tile{min-height:135px}.pick-thumb{flex-basis:42px}.pick-exercise{gap:5px}.pick-exercise-name{font-size:.88rem}.pick-results{padding:4px 8px}}
 </style></head><body><main>
-<h1>🏋️ Moja Siłownia <span class="badge">v1.5.2</span></h1><p>Mobilny dziennik treningowy • zapis lokalny na urządzeniu</p>
+<h1>🏋️ Moja Siłownia <span class="badge">v1.5.3</span></h1><p>Mobilny dziennik treningowy • zapis lokalny na urządzeniu</p>
 <nav><button onclick="tab('dashboard')">Start</button><button onclick="tab('workout')">Trening</button><button class="secondary" onclick="tab('plans')">Plany</button><button class="secondary" onclick="tab('catalog')">Ćwiczenia</button><button class="secondary" onclick="tab('history')">Historia</button></nav>
 <div id="notice" role="status"></div><div id="timers" class="card hidden"><div class="row"><div><small>Czas treningu</small><h2 id="elapsed">00:00:00</h2></div><div><small>Przerwa</small><h2 id="remaining">—</h2></div></div><button class="secondary" id="skipRestBtn" onclick="skipRest()">Pomiń przerwę</button><button class="secondary" id="cancelEmptyWorkoutBtn" onclick="cancelEmptyWorkout()" style="display:none;margin-left:8px">Anuluj pusty trening</button></div>
-<section id="dashboard" class="hidden"><div class="card dashboard-hero"><div><span class="dash-eyebrow">TWÓJ PANEL TRENINGOWY</span><h2>Gotowy na trening?</h2><p class="hint">Wybierz plan lub rozpocznij trening dowolny.</p></div><button class="dash-start" onclick="tab('workout')">＋ Rozpocznij trening</button></div><div class="card dash-stat-card"><h2>Twoje wyniki</h2><div id="dashboardStats" class="dashboard-stats"></div><h3>Aktywność treningowa</h3><div class="row"><label>Okres<select id="dashboardPeriod" onchange="renderDashboard()"><option value="6">Ostatnie 6 tygodni</option><option value="12">Ostatnie 12 tygodni</option><option value="26">Ostatnie 26 tygodni</option></select></label></div><div class="metric-tabs"><button class="secondary" onclick="setDashboardMetric('time')">Czas</button><button class="secondary" onclick="setDashboardMetric('volume')">Objętość</button><button class="secondary" onclick="setDashboardMetric('reps')">Powtórzenia</button></div><div id="dashboardChart"></div></div><div class="card dash-recovery"><div class="dash-section-head"><div><h2>💪 Obciążenie mięśni</h2><p class="hint">Szacunek na podstawie treningów, nie pomiar regeneracji.</p></div><button class="secondary dash-details" id="fatigueToggle" onclick="toggleDashboardFatigue()">Pokaż wszystkie</button></div><div id="dashboardFatigue"></div></div><div class="card"><h2>Ostatni trening</h2><div id="dashboardLatest"></div><button class="secondary" onclick="tab('history')">Zobacz historię</button></div><div class="dashboard-links"><button onclick="tab('plans')">📋 Plany</button><button onclick="tab('catalog')">🏋️ Atlas ćwiczeń</button><button onclick="tab('history')">📅 Historia</button></div></section><section id="workout"><div id="preWorkout" class="card hidden"><h2>Przed treningiem</h2><p>Możesz wpisać dane z Garmina. Wszystkie pola są opcjonalne.</p><div class="readiness-grid"><label>Body Battery (0–100)<input id="preBattery" type="number" min="0" max="100" placeholder="np. 65" inputmode="numeric"></label><label>Sen (godziny)<input id="preSleep" type="number" min="0" max="24" step="0.1" placeholder="np. 7.5" inputmode="decimal"></label><label>Ocena snu (0–100)<input id="preSleepScore" type="number" min="0" max="100" placeholder="np. 78" inputmode="numeric"></label><label>Samopoczucie<select id="preFeeling"><option value="">Nie podaję</option><option value="great">Świetnie</option><option value="good">Dobrze</option><option value="tired">Zmęczony</option><option value="bad">Słabo</option></select></label></div><label>Masa ciała (kg) — do szacowania kalorii<input id="preWeight" type="number" min="20" max="350" step="0.1" inputmode="decimal" placeholder="100.6"></label><p class="hint">Dane są pomocnicze. Nie mierzą bezpośrednio regeneracji mięśni.</p><div id="preFatigue" class="item"></div><button onclick="confirmWorkoutStart()">Rozpocznij trening</button><button class="secondary" onclick="cancelWorkoutStart()">Anuluj</button></div><div id="planWorkout" class="hidden"></div><div id="manualStart" class="card"><h2>Trening dowolny</h2><p>Rozpocznij trening, aby wybrać ćwiczenia i zapisywać serie. Nie musisz tworzyć planu.</p><button onclick="startManualWorkout()">Zacznij trening</button></div><div id="manualToday" class="card"><h2>Dzisiejszy trening</h2><div id="today"></div><div id="manualWorkout" class="manual-add-inline hidden"><h2>Dodaj ćwiczenie</h2><label>Ćwiczenie<select id="exercise" ></select></label><div class="manual-picker-actions"><button class="secondary" onclick="openSwap('manual')">⇄ Podobne</button><button class="primary-add" onclick="addManualExercise()">+ Dodaj ćwiczenie</button></div></div><button class="secondary finish-workout" onclick="finishWorkout()">Zakończ trening</button></div></section>
+<section id="dashboard" class="hidden"><div class="card dashboard-hero"><div><span class="dash-eyebrow">TWÓJ PANEL TRENINGOWY</span><h2>Gotowy na trening?</h2><p class="hint">Wybierz plan lub rozpocznij trening dowolny.</p></div><button class="dash-start" onclick="tab('workout')">＋ Rozpocznij trening</button></div><div class="card dash-stat-card"><h2>Twoje wyniki</h2><div id="dashboardStats" class="dashboard-stats"></div><h3>Aktywność treningowa</h3><div class="row"><label>Okres<select id="dashboardPeriod" onchange="renderDashboard()"><option value="6">Ostatnie 6 tygodni</option><option value="12">Ostatnie 12 tygodni</option><option value="26">Ostatnie 26 tygodni</option></select></label></div><div class="metric-tabs"><button class="secondary" onclick="setDashboardMetric('time')">Czas</button><button class="secondary" onclick="setDashboardMetric('volume')">Objętość</button><button class="secondary" onclick="setDashboardMetric('reps')">Powtórzenia</button></div><div id="dashboardChart"></div></div><div class="card dash-recovery"><div class="dash-section-head"><div><h2>💪 Obciążenie mięśni</h2><p class="hint">Szacunek na podstawie treningów, nie pomiar regeneracji.</p></div><button class="secondary dash-details" id="fatigueToggle" onclick="toggleDashboardFatigue()">Pokaż wszystkie</button></div><div id="dashboardFatigue"></div></div><div class="card"><h2>Ostatni trening</h2><div id="dashboardLatest"></div><button class="secondary" onclick="tab('history')">Zobacz historię</button></div><div class="dashboard-links"><button onclick="tab('plans')">📋 Plany</button><button onclick="tab('catalog')">🏋️ Atlas ćwiczeń</button><button onclick="tab('history')">📅 Historia</button></div></section><section id="workout"><div id="preWorkout" class="card hidden"><h2>Przed treningiem</h2><p>Możesz wpisać dane z Garmina. Wszystkie pola są opcjonalne.</p><div class="readiness-grid"><label>Body Battery (0–100)<input id="preBattery" type="number" min="0" max="100" placeholder="np. 65" inputmode="numeric"></label><label>Sen (godziny)<input id="preSleep" type="number" min="0" max="24" step="0.1" placeholder="np. 7.5" inputmode="decimal"></label><label>Ocena snu (0–100)<input id="preSleepScore" type="number" min="0" max="100" placeholder="np. 78" inputmode="numeric"></label><label>Samopoczucie<select id="preFeeling"><option value="">Nie podaję</option><option value="great">Świetnie</option><option value="good">Dobrze</option><option value="tired">Zmęczony</option><option value="bad">Słabo</option></select></label></div><label>Masa ciała (kg) — do szacowania kalorii<input id="preWeight" type="number" min="20" max="350" step="0.1" inputmode="decimal" placeholder="100.6"></label><p class="hint">Dane są pomocnicze. Nie mierzą bezpośrednio regeneracji mięśni.</p><div id="preFatigue" class="item"></div><button onclick="confirmWorkoutStart()">Rozpocznij trening</button><button class="secondary" onclick="cancelWorkoutStart()">Anuluj</button></div><div id="planWorkout" class="hidden"></div><div id="manualStart" class="card"><h2>Trening dowolny</h2><p>Rozpocznij trening, aby wybrać ćwiczenia i zapisywać serie. Nie musisz tworzyć planu.</p><button onclick="startManualWorkout()">Zacznij trening</button></div><div id="manualToday" class="card"><h2>Dzisiejszy trening</h2><div id="today"></div><div id="manualWorkout" class="manual-add-inline hidden"><h2>Dodaj ćwiczenie</h2><select id="exercise" hidden aria-label="Wybrane ćwiczenie"></select><button class="pick-launch" onclick="pickerOpen()">＋ Wybierz ćwiczenie</button><p class="hint pick-help">Wybierz partię ciała, wyszukaj ćwiczenie i dotknij jego nazwy.</p></div><button class="secondary finish-workout" onclick="finishWorkout()">Zakończ trening</button></div></section>
 <section id="plans" class="hidden"><div class="card"><h2>Moje plany treningowe</h2><p>Wybierz ćwiczenia z katalogu i zapisz plan, np. Trening A.</p><label>Nazwa planu<input id="planName" placeholder="np. Trening A"></label><label>Filtruj ćwiczenia według mięśni<select id="planMuscleFilter" onchange="renderPlanExerciseSelect()"><option value="">Wszystkie mięśnie</option></select></label><label>Dodaj ćwiczenie<select id="planExercise"></select></label><div class="plan-actions"><button class="secondary" onclick="addPlanExercise()">＋ Dodaj ćwiczenie</button><button class="plan-save" onclick="savePlan()">Zapisz plan</button></div><div id="planDraft"></div></div><div class="card"><h2>Importuj plan z dokumentu</h2><p class="muted">PDF, DOCX lub TXT. Dokument odczytywany jest w Twojej przeglądarce. Biblioteki PDF/DOCX wymagają internetu przy pierwszym użyciu. Skany bez warstwy tekstowej nie są obsługiwane.</p><label>Wybierz dokument<input id="importFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onchange="impLoad()"></label><details><summary>Lub wklej tekst planu</summary><textarea id="importText" rows="6" placeholder="Trening A&#10;Wyciskanie sztangi 3 x 12&#10;Wiosłowanie 3 x 10"></textarea><button class="secondary" onclick="impFromText()">Analizuj wklejony tekst</button></details><p id="importStatus" class="muted" aria-live="polite"></p><div id="importPreview"></div></div><div class="card"><h2>Zapisane plany</h2><div id="plansList"></div></div></section>
 <section id="catalog" class="hidden"><div class="card"><h2>Katalog ćwiczeń</h2><p>Wybierz grupę mięśniową, aby przeglądać ćwiczenia. Wybrane ćwiczenia dodasz do nowego planu w zakładce Plany.</p><div id="muscleTiles" class="muscle-tiles"></div><select id="muscleFilter" hidden aria-hidden="true" tabindex="-1"><option value="">Wszystkie mięśnie</option></select><input id="search" placeholder="Szukaj po nazwie, mięśniu lub sprzęcie" oninput="renderCatalog()"><div id="catalogList"></div></div><div class="card"><h2>Dodaj własne ćwiczenie</h2><label>Nazwa<input id="newName" placeholder="np. Wyciskanie na maszynie"></label><label>Grupa mięśniowa<select id="newGroup"><option>Klatka piersiowa</option><option>Plecy</option><option>Barki</option><option>Biceps</option><option>Triceps</option><option>Nogi</option><option>Brzuch</option><option>Łydki</option><option>Przedramiona</option><option>Inne</option></select></label><button onclick="addExercise()">Dodaj ćwiczenie</button></div></section>
 <section id="history" class="hidden"><div class="card"><h2>Zakończone treningi</h2><div id="historyList"></div></div><div class="card"><h2>Kopia danych</h2><p>Eksportuj plik JSON, aby przenieść dane na drugie urządzenie. Synchronizacja automatyczna będzie w późniejszej wersji.</p><button onclick="exportData()">Eksport JSON</button><label>Import kopii JSON<input type="file" accept=".json,application/json" onchange="importData(event)"></label></div></section>
-<p class="muted">Dane pozostają w pamięci tej przeglądarki. Nie czyść danych witryny bez wykonania kopii.</p><div id="techOverlay" class="tech-overlay hidden" role="dialog" aria-modal="true" aria-label="Atlas techniki"><div class="tech-sheet"><div class="tech-header"><h2 id="techTitle">Technika ćwiczenia</h2><button class="secondary" onclick="closeTechnique()">Zamknij ✕</button></div><div id="techContent"></div></div></div><div id="swapOverlay" class="swap-overlay hidden" role="dialog" aria-modal="true" aria-label="Zamiana ćwiczenia"><div class="swap-sheet"><div class="swap-header"><h2>⇄ Zamień ćwiczenie</h2><button class="secondary" onclick="closeSwap()">Zamknij ✕</button></div><div id="swapContents"></div></div></div></main>
+<p class="muted">Dane pozostają w pamięci tej przeglądarki. Nie czyść danych witryny bez wykonania kopii.</p><div id="techOverlay" class="tech-overlay hidden" role="dialog" aria-modal="true" aria-label="Atlas techniki"><div class="tech-sheet"><div class="tech-header"><h2 id="techTitle">Technika ćwiczenia</h2><button class="secondary" onclick="closeTechnique()">Zamknij ✕</button></div><div id="techContent"></div></div></div><div id="swapOverlay" class="swap-overlay hidden" role="dialog" aria-modal="true" aria-label="Zamiana ćwiczenia"><div class="swap-sheet"><div class="swap-header"><h2>⇄ Zamień ćwiczenie</h2><button class="secondary" onclick="closeSwap()">Zamknij ✕</button></div><div id="swapContents"></div></div></div><div id="exercisePicker" hidden role="dialog" aria-modal="true" aria-label="Wybierz partię ciała lub ćwiczenie"><div class="pick-wrap"><div class="pick-head"><button type="button" onclick="pickerBack()" aria-label="Wstecz">←</button><h2 id="pickTitle">Wybierz partię ciała</h2><span></span></div><div class="pick-search"><span class="search-icon" aria-hidden="true">⌕</span><input id="pickSearch" type="search" autocomplete="off" placeholder="Wyszukaj ćwiczenie..." oninput="pickerRender()" aria-label="Wyszukaj ćwiczenie"><button id="pickSort" type="button" onclick="pickerSortToggle()" aria-label="Zmień sortowanie">☰</button></div><div id="pickTiles" class="pick-tiles"></div><div id="pickResults" class="pick-results" hidden></div></div></div></main>
 <script>
+let pickerGroup=null;
+let pickerOrder='recent';
+function pickerOpen(){
+ if(!state.manualStarted||state.activePlan){note("Najpierw rozpocznij trening dowolny");return}
+ pickerGroup=null;pickerOrder="recent";
+ document.getElementById("pickSearch").value="";
+ document.getElementById("exercisePicker").hidden=false;
+ document.body.style.overflow="hidden";
+ pickerRender();
+}
+function pickerClose(){
+ document.getElementById("exercisePicker").hidden=true;
+ document.body.style.overflow="";
+}
+function pickerBack(){
+ if(pickerGroup!==null){pickerGroup=null;document.getElementById("pickSearch").value="";pickerRender()}
+ else pickerClose();
+}
+function pickerChoose(group){
+ pickerGroup=group;document.getElementById("pickSearch").value="";
+ pickerRender();document.getElementById("exercisePicker").scrollTo(0,0);
+}
+function pickerSortToggle(){
+ pickerOrder=pickerOrder==="recent"?"alpha":"recent";
+ pickerRender();
+}
+function pickerCategory(e,group){
+ if(group==="__all__")return true;
+ if(group==="__cardio__")return e.group==="Kardio";
+ if(group==="__own__")return e.group==="Inne"||e.equipment==="Własne";
+ return e.group===group;
+}
+function pickerRender(){
+ const config=[
+ ["Klatka piersiowa","Klatka","chest"],
+ ["Plecy","Plecy","back"],
+ ["Barki","Barki","shoulders"],
+ ["Triceps","Triceps","triceps"],
+ ["Biceps","Biceps","biceps"],
+ ["Przedramiona","Przedramię","forearms"],
+ ["Nogi","Uda i pośladki","legs"],
+ ["Brzuch","Brzuch","abs"],
+ ["Łydki","Łydka","calves"],
+ ["__own__","Własne","💪"],
+ ["__all__","Całe ciało","🏋️"],
+ ["__cardio__","Kardio","❤️"]
+ ];
+ const query=document.getElementById("pickSearch").value.trim().toLocaleLowerCase("pl");
+ const showList=pickerGroup!==null||query.length>0;
+ document.getElementById("pickTitle").textContent=pickerGroup===null?"Wybierz partię ciała":(config.find(c=>c[0]===pickerGroup)?.[1]||"Ćwiczenia");
+ document.getElementById("pickSort").textContent=pickerOrder==="recent"?"☰":"A-Z";
+ document.getElementById("pickSort").title=pickerOrder==="recent"?"Najpierw ostatnio używane — zmień na alfabetycznie":"Alfabetycznie — zmień na ostatnio używane";
+ const tiles=document.getElementById("pickTiles"),results=document.getElementById("pickResults");
+ tiles.hidden=showList;results.hidden=!showList;
+ if(!showList){
+  tiles.innerHTML=config.map(([group,label,part])=>{
+   const count=state.exercises.filter(e=>pickerCategory(e,group)).length;
+   const art=["__own__","__all__","__cardio__"].includes(group)?'<span class="pick-symbol" aria-hidden="true">'+part+"</span>":muscleArt(part);
+   return '<button type="button" class="pick-tile" data-pick-group="'+safe(group)+'" onclick="pickerChoose(this.dataset.pickGroup)">'+art+"<strong>"+safe(label)+"</strong><small>"+count+" ćw.</small></button>";
+  }).join("");
+  return;
+ }
+ let filtered=state.exercises.filter(e=>(pickerGroup===null||pickerCategory(e,pickerGroup))&&
+  (e.name+" "+e.group+" "+e.equipment).toLocaleLowerCase("pl").includes(query));
+ filtered=pickerOrder==="alpha"?filtered.sort((a,b)=>a.name.localeCompare(b.name,"pl")):sortExercisesByUse(filtered);
+ const groupArts={"Klatka piersiowa":"chest","Plecy":"back","Barki":"shoulders","Triceps":"triceps","Biceps":"biceps","Przedramiona":"forearms","Nogi":"legs","Brzuch":"abs","Łydki":"calves"};
+ results.innerHTML='<p class="pick-count">'+filtered.length+" ćwiczeń · "+(pickerOrder==="recent"?"ostatnio używane najpierw":"kolejność alfabetyczna")+"</p>"+
+ (filtered.length?filtered.map(e=>
+  '<div class="pick-row"><button type="button" class="pick-exercise" data-pick-id="'+safe(e.id)+'" onclick="pickerAdd(this.dataset.pickId)"><span class="pick-thumb" aria-hidden="true">'+
+  (groupArts[e.group]?muscleArt(groupArts[e.group]):"🏋️")+'</span><span class="pick-exercise-name">'+safe(e.name)+"<small>"+safe(e.equipment||e.group)+"</small></span></button>"+
+  '<button type="button" class="pick-more" data-pick-id="'+safe(e.id)+'" onclick="pickerTechnique(this.dataset.pickId)" title="Zobacz technikę" aria-label="Zobacz technikę: '+safe(e.name)+'">⋮</button></div>'
+ ).join(""):'<p class="pick-empty">Brak ćwiczeń w tej grupie. Możesz wrócić i wybrać inną partię.</p>');
+}
+function pickerAdd(id){
+ const select=document.getElementById("exercise");
+ if(!state.exercises.some(e=>e.id===id))return;
+ if(![...select.options].some(o=>o.value===id))select.add(new Option(state.exercises.find(e=>e.id===id).name,id));
+ select.value=id;
+ pickerClose();
+ addManualExercise();
+}
+function pickerTechnique(id){
+ if(!state.exercises.some(e=>e.id===id))return;
+ openTechnique(id);
+}
 const key='moja-silownia-v01';
 const seeds=[
 ['Wyciskanie sztangi na ławce płaskiej','Klatka piersiowa','Sztanga'],
