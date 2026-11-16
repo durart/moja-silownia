@@ -81,3 +81,6 @@ button.secondary,.swap-option{background:#574a69!important;color:#fff!important}
  #exercisePicker .ui-thumb-sprite,#exercisePicker .ui-thumb-fallback{width:76px;height:73px}
  #exercisePicker .pick-thumb:has(.ui-thumb-sprite),#exercisePicker .pick-thumb:has(.ui-thumb-fallback){flex:0 0 78px;height:76px}
 }
+/* v1.6.1 — tylko Start w górnym menu; dostęp do funkcji w dolnych skrótach oraz na ekranie głównym */
+.top-start-nav{display:flex;justify-content:flex-start;margin:12px 0 18px;gap:0}
+.top-start-nav button{flex:0 0 auto;min-width:118px;max-width:180px;padding:12px 22px}
