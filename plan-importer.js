@@ -83,8 +83,8 @@ function impParse(text,filename){
   let series=sr?Number(sr[1]):Number(params.match(/(\d{1,2})\s*ser(?:ie|ii)/i)?.[1]||0);
   let reps=sr?sr[2]:params.match(/\b\d{1,3}(?:\s*[/,;-]\s*\d{1,3}){1,6}\b/)?.[0]||'';
   let numeric=cells.slice(1).filter(x=>/^\d{1,3}$/.test(x));
-  if(!series&&numeric.length>=2){series=Number(numeric[0]);reps=numeric.slice(1).join('/')}\n  if(!series&&cells.length>=3&&/^\\d{1,2}$/.test(cells[1])){series=Number(cells[1]);reps=cells[2]}
-  if(!series&&/[\\/,]/.test(reps))series=reps.split(/[\\/,]/).length;
+  if(!series&&numeric.length>=2){series=Number(numeric[0]);reps=numeric.slice(1).join('/')}\n  if(!series&&cells.length>=3&&/^\d{1,2}$/.test(cells[1])){series=Number(cells[1]);reps=cells[2]}
+  if(!series&&/[/,]/.test(reps))series=reps.split(/[/,]/).length;
   if(!series&&numeric.length===1&&Number(numeric[0])<=8)series=Number(numeric[0]);
   if(!reps&&series&&numeric.length>1)reps=numeric.slice(1).join('/');
   if(!reps&&series&&numeric.length===1&&Number(numeric[0])>8)reps=numeric[0];
