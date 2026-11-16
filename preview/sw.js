@@ -1,5 +1,5 @@
 /* Service Worker tylko dla /preview/ — nie steruje główną aplikacją */
-const CACHE_NAME='moja-silownia-preview-v163-20261116';
+const CACHE_NAME='moja-silownia-preview-v164-20261116';
 const CACHE_PREFIX='moja-silownia-preview-v';
 const APP_SHELL=[
  './',
