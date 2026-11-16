@@ -1,4 +1,4 @@
-<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#332d45"><link rel="icon" type="image/svg+xml" href="../icon.svg"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Moja Siłownia"><title>Moja Siłownia v1.6.4 — offline i klasyczne serie</title>
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#332d45"><link rel="icon" type="image/svg+xml" href="../icon.svg"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Moja Siłownia"><title>Moja Siłownia v1.6.5 — wizualne tworzenie planów</title>
 <style>
 :root{font-family:system-ui,-apple-system,sans-serif;color:#eaf1fb;background:#0b1220}*{box-sizing:border-box}body{margin:0}main{max-width:760px;margin:auto;padding:18px 16px 100px}h1{font-size:1.5rem;margin:8px 0}h2{font-size:1.1rem}p,small{color:#b5c4d8}.card{background:#172338;border:1px solid #30425a;border-radius:16px;padding:16px;margin:14px 0}button,input,select{font:inherit;border-radius:10px;padding:12px}input,select{width:100%;background:#0c1729;border:1px solid #41546e;color:white;margin:6px 0 12px}button{background:#2c84ef;color:white;border:0;cursor:pointer;font-weight:650}button.secondary{background:#32435d}button.danger{background:#9e3645}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}nav{display:flex;gap:8px;margin:18px 0}nav button{flex:1}.hidden{display:none}.item{padding:12px 0;border-bottom:1px solid #35465c}.muted{color:#9db0c7}.badge{font-size:.75rem;background:#324a66;padding:4px 8px;border-radius:12px}label{display:block;font-size:.9rem}#notice{color:#8de0b6}a{color:#a9caff}
 .exercise-card{background:#172338;border:1px solid #344c68;border-radius:16px;padding:14px;margin:14px 0}.set-grid{display:grid;grid-template-columns:24px minmax(48px,1fr) 58px 58px 48px 38px 32px;gap:6px;align-items:center;margin:8px 0}.set-grid input{margin:0;padding:10px 5px;min-width:0;text-align:center}.set-grid .previous{font-size:.8rem;color:#aabbd1}.set-grid button{padding:10px 4px}.set-head{font-size:.72rem;color:#b9c8db}.done{background:#20694c!important}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.toolbar button{flex:1}@media(max-width:390px){.set-grid{grid-template-columns:20px minmax(39px,1fr) 49px 49px 42px 32px 28px;gap:4px}.exercise-card{padding:10px}}  .readiness-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.readiness-grid label{min-width:0}.summary-metric{display:inline-block;background:#233750;padding:12px;border-radius:12px;margin:5px}.muscle-bar{height:9px;background:#33445b;border-radius:9px;overflow:hidden}.muscle-bar>span{display:block;height:100%;background:#6ad4a3}.hint{font-size:.8rem;color:#9db0c7}.set-grid input{font-size:.85rem}.fatigue-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.78rem;color:#aebed2}.fatigue-low{background:#65cba0!important}.fatigue-mid{background:#e5b15e!important}.fatigue-high{background:#e47765!important} 
@@ -225,15 +225,12 @@ p,small,.muted,.hint{color:#d3cadd}
 #dashboard .dashboard-hero.workout-resume .dash-eyebrow{color:#a6edce}
 #dashboard .dashboard-hero.workout-resume .dash-start{background:#2684ed;box-shadow:0 3px 18px #2684ed55}
 #dashboard #dashWorkoutElapsed{font-weight:700;color:#eee9ff;margin:10px 0 0;font-variant-numeric:tabular-nums}
-
-/* Podgląd v1.6.4: wyłącznie informacja o stanie offline; bez dodatkowych przycisków serii */
-.preview-offline-status{font-size:.76rem;padding:8px 10px;margin:8px 0 4px;border-radius:9px;background:#514763;color:#ede7f6}
 </style><link rel="stylesheet" href="../ui-enhancements.css?v=160"></head><body><main>
-<div style="background:#314c72;border:1px solid #5786b8;border-radius:12px;padding:12px 14px;color:#fff;margin:0 0 14px"><strong>WERSJA TESTOWA v1.6.4</strong> · Dane tego podglądu są oddzielone od głównej aplikacji. <a href="../" style="color:#e4f4ff;text-decoration:underline">Wróć do wersji głównej</a></div><div id="offlineStatus" role="status" aria-live="polite" class="preview-offline-status">Przygotowanie działania offline…</div><h1>🏋️ Moja Siłownia <span class="badge">v1.6.4 TEST</span></h1><p>Mobilny dziennik treningowy • zapis lokalny na urządzeniu</p>
+<div style="background:#314c72;border:1px solid #5786b8;border-radius:12px;padding:12px 14px;color:#fff;margin:0 0 14px"><strong>WERSJA TESTOWA v1.6.5</strong> · Dane tego podglądu są oddzielone od głównej aplikacji. <a href="../" style="color:#e4f4ff;text-decoration:underline">Wróć do wersji głównej</a></div><h1>🏋️ Moja Siłownia <span class="badge">v1.6.5 TEST</span></h1><p>Mobilny dziennik treningowy • zapis lokalny na urządzeniu</p>
 <nav class="top-start-nav" aria-label="Powrót do ekranu głównego"><button onclick="tab('dashboard')">Start</button></nav>
 <div id="notice" role="status"></div><div id="timers" class="card hidden"><div class="row"><div><small>Czas treningu</small><h2 id="elapsed">00:00:00</h2></div><div><small>Przerwa</small><h2 id="remaining">—</h2></div></div><button class="secondary" id="skipRestBtn" onclick="skipRest()">Pomiń przerwę</button><button class="secondary" id="cancelEmptyWorkoutBtn" onclick="cancelEmptyWorkout()" style="display:none;margin-left:8px">Anuluj pusty trening</button></div>
 <section id="dashboard" class="hidden"><div class="card dashboard-hero" id="dashboardHero"><div><span class="dash-eyebrow" id="dashWorkoutEyebrow">TWÓJ PANEL TRENINGOWY</span><h2 id="dashWorkoutTitle">Gotowy na trening?</h2><p class="hint" id="dashWorkoutHint">Wybierz plan lub rozpocznij trening dowolny.</p><p class="hint" id="dashWorkoutElapsed" hidden></p></div><button class="dash-start" id="dashWorkoutAction" onclick="tab('workout')">＋ Rozpocznij trening</button></div><div class="card dash-stat-card"><h2>Twoje wyniki</h2><div id="dashboardStats" class="dashboard-stats"></div><h3>Aktywność treningowa</h3><div class="row"><label>Okres<select id="dashboardPeriod" onchange="renderDashboard()"><option value="6">Ostatnie 6 tygodni</option><option value="12">Ostatnie 12 tygodni</option><option value="26">Ostatnie 26 tygodni</option></select></label></div><div class="metric-tabs"><button class="secondary" onclick="setDashboardMetric('time')">Czas</button><button class="secondary" onclick="setDashboardMetric('volume')">Objętość</button><button class="secondary" onclick="setDashboardMetric('reps')">Powtórzenia</button></div><div id="dashboardChart"></div></div><div class="card dash-recovery"><div class="dash-section-head"><div><h2>💪 Obciążenie mięśni</h2><p class="hint">Szacunek na podstawie treningów, nie pomiar regeneracji.</p></div><button class="secondary dash-details" id="fatigueToggle" onclick="toggleDashboardFatigue()">Pokaż wszystkie</button></div><div id="dashboardFatigue"></div></div><div class="card"><h2>Ostatni trening</h2><div id="dashboardLatest"></div><button class="secondary" onclick="tab('history')">Zobacz historię</button></div><div class="dashboard-links"><button onclick="tab('plans')">📋 Plany</button><button onclick="tab('catalog')">🏋️ Atlas ćwiczeń</button><button onclick="tab('history')">📅 Historia</button></div></section><section id="workout"><div id="preWorkout" class="card hidden"><h2>Przed treningiem</h2><p>Możesz wpisać dane z Garmina. Wszystkie pola są opcjonalne.</p><div class="readiness-grid"><label>Body Battery (0–100)<input id="preBattery" type="number" min="0" max="100" placeholder="np. 65" inputmode="numeric"></label><label>Sen (godziny)<input id="preSleep" type="number" min="0" max="24" step="0.1" placeholder="np. 7.5" inputmode="decimal"></label><label>Ocena snu (0–100)<input id="preSleepScore" type="number" min="0" max="100" placeholder="np. 78" inputmode="numeric"></label><label>Samopoczucie<select id="preFeeling"><option value="">Nie podaję</option><option value="great">Świetnie</option><option value="good">Dobrze</option><option value="tired">Zmęczony</option><option value="bad">Słabo</option></select></label></div><label>Masa ciała (kg) — do szacowania kalorii<input id="preWeight" type="number" min="20" max="350" step="0.1" inputmode="decimal" placeholder="100.6"></label><p class="hint">Dane są pomocnicze. Nie mierzą bezpośrednio regeneracji mięśni.</p><div id="preFatigue" class="item"></div><button onclick="confirmWorkoutStart()">Rozpocznij trening</button><button class="secondary" onclick="cancelWorkoutStart()">Anuluj</button></div><div id="planWorkout" class="hidden"></div><div id="manualStart" class="card"><h2>Trening dowolny</h2><p>Rozpocznij trening, aby wybrać ćwiczenia i zapisywać serie. Nie musisz tworzyć planu.</p><button onclick="startManualWorkout()">Zacznij trening</button></div><div id="manualToday" class="card"><h2>Dzisiejszy trening</h2><div id="today"></div><div id="manualWorkout" class="manual-add-inline hidden"><h2>Dodaj ćwiczenie</h2><select id="exercise" hidden aria-label="Wybrane ćwiczenie"></select><button class="pick-launch" onclick="pickerOpen()">＋ Wybierz ćwiczenie</button><p class="hint pick-help">Wybierz partię ciała, wyszukaj ćwiczenie i dotknij jego nazwy.</p></div><button class="secondary finish-workout" onclick="finishWorkout()">Zakończ trening</button></div></section>
-<section id="plans" class="hidden"><div class="card"><h2>Moje plany treningowe</h2><p>Wybierz ćwiczenia z katalogu i zapisz plan, np. Trening A.</p><label>Nazwa planu<input id="planName" placeholder="np. Trening A"></label><label>Filtruj ćwiczenia według mięśni<select id="planMuscleFilter" onchange="renderPlanExerciseSelect()"><option value="">Wszystkie mięśnie</option></select></label><label>Dodaj ćwiczenie<select id="planExercise"></select></label><div class="plan-actions"><button class="secondary" onclick="addPlanExercise()">＋ Dodaj ćwiczenie</button><button class="plan-save" onclick="savePlan()">Zapisz plan</button></div><div id="planDraft"></div></div><div class="card"><h2>Importuj plan z dokumentu</h2><p class="muted">PDF, DOCX lub TXT. Dokument odczytywany jest w Twojej przeglądarce. Biblioteki PDF/DOCX wymagają internetu przy pierwszym użyciu. Skany bez warstwy tekstowej nie są obsługiwane.</p><label>Wybierz dokument<input id="importFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onchange="impLoad()"></label><details><summary>Lub wklej tekst planu</summary><textarea id="importText" rows="6" placeholder="Trening A&#10;Wyciskanie sztangi 3 x 12&#10;Wiosłowanie 3 x 10"></textarea><button class="secondary" onclick="impFromText()">Analizuj wklejony tekst</button></details><p id="importStatus" class="muted" aria-live="polite"></p><div id="importPreview"></div></div><div class="card"><h2>Zapisane plany</h2><div id="plansList"></div></div></section>
+<section id="plans" class="hidden"><div class="card"><h2>Moje plany treningowe</h2><p>Wybierz ćwiczenia z katalogu i zapisz plan, np. Trening A.</p><label>Nazwa planu<input id="planName" placeholder="np. Trening A"></label><p class="hint">Wybierz partię mięśniową, a następnie ćwiczenie z miniaturą. Możesz dodać kilka ćwiczeń przed zapisaniem planu.</p><select id="planMuscleFilter" hidden aria-hidden="true" tabindex="-1"><option value="">Wszystkie mięśnie</option></select><select id="planExercise" hidden aria-hidden="true" tabindex="-1"></select><div class="plan-actions"><button type="button" class="secondary plan-pick-open" onclick="pickerOpen('plan')">＋ Wybierz ćwiczenie</button><button class="plan-save" onclick="savePlan()">Zapisz plan</button></div><div id="planDraft"></div></div><div class="card"><h2>Importuj plan z dokumentu</h2><p class="muted">PDF, DOCX lub TXT. Dokument odczytywany jest w Twojej przeglądarce. Biblioteki PDF/DOCX wymagają internetu przy pierwszym użyciu. Skany bez warstwy tekstowej nie są obsługiwane.</p><label>Wybierz dokument<input id="importFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onchange="impLoad()"></label><details><summary>Lub wklej tekst planu</summary><textarea id="importText" rows="6" placeholder="Trening A&#10;Wyciskanie sztangi 3 x 12&#10;Wiosłowanie 3 x 10"></textarea><button class="secondary" onclick="impFromText()">Analizuj wklejony tekst</button></details><p id="importStatus" class="muted" aria-live="polite"></p><div id="importPreview"></div></div><div class="card"><h2>Zapisane plany</h2><div id="plansList"></div></div></section>
 <section id="catalog" class="hidden">
   <div class="catalog-explorer">
     <div class="catalog-header">
@@ -266,8 +263,11 @@ p,small,.muted,.hint{color:#d3cadd}
 <script>
 let pickerGroup=null;
 let pickerOrder='recent';
-function pickerOpen(){
- if(!state.manualStarted||state.activePlan){note("Najpierw rozpocznij trening dowolny");return}
+let pickerContext='workout';
+function pickerOpen(context='workout'){
+ if(context==='workout'&&(!state.manualStarted||state.activePlan)){note("Najpierw rozpocznij trening dowolny");return}
+ if(context!=='workout'&&context!=='plan')return;
+ pickerContext=context;
  pickerGroup=null;pickerOrder="recent";
  document.getElementById("pickSearch").value="";
  document.getElementById("exercisePicker").hidden=false;
@@ -277,6 +277,7 @@ function pickerOpen(){
 function pickerClose(){
  document.getElementById("exercisePicker").hidden=true;
  document.body.style.overflow="";
+ pickerContext='workout';
 }
 function pickerBack(){
  if(pickerGroup!==null){pickerGroup=null;document.getElementById("pickSearch").value="";pickerRender()}
@@ -348,9 +349,17 @@ function pickerRender(){
  ).join(""):'<p class="pick-empty">Brak ćwiczeń w tej grupie. Możesz wrócić i wybrać inną partię.</p>');
 }
 function pickerAdd(id){
+ const exercise=state.exercises.find(e=>e.id===id);
+ if(!exercise)return;
+ if(pickerContext==='plan'){
+  if(!draft.includes(id))draft.push(id);
+  pickerClose();
+  renderPlans();
+  note('Dodano do planu: '+exercise.name);
+  return;
+ }
  const select=document.getElementById("exercise");
- if(!state.exercises.some(e=>e.id===id))return;
- if(![...select.options].some(o=>o.value===id))select.add(new Option(state.exercises.find(e=>e.id===id).name,id));
+ if(![...select.options].some(o=>o.value===id))select.add(new Option(exercise.name,id));
  select.value=id;
  pickerClose();
  addManualExercise();
@@ -813,24 +822,16 @@ async function exportWorkoutPNG(id){
 function exportData(){let b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='moja-silownia-kopia-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 async function importData(event){let f=event.target.files?.[0];if(!f)return;try{let v=JSON.parse(await f.text());if(!Array.isArray(v.exercises)||!Array.isArray(v.active)||!Array.isArray(v.sessions)||v.exercises.some(e=>typeof e.id!=='string'||typeof e.name!=='string'))throw Error('Nieprawidłowy format');if(!confirm('Import zastąpi wszystkie dane zapisane na tym urządzeniu. Kontynuować?'))return;state=v;if(!Array.isArray(state.plans))state.plans=[];if(!('activePlan' in state))state.activePlan=null;state.restSettings??={};state.startedAt??=null;state.restUntil??=null;state.manualStarted??=(!state.activePlan&&(state.active.length>0||!!state.startedAt));state.bodyWeight??=100.6;state.preWorkout??=null;state.pendingWorkout=null;state.workoutSwaps??={};const known=new Set(state.exercises.map(e=>e.id));for(const e of seeds)if(!known.has(e.id))state.exercises.push(e);save();render();note('Dane zaimportowane')}catch(e){note('Błąd importu: '+e.message)}event.target.value=''}
 save();tab(workoutIsRunning()?'workout':'dashboard');
-function updateOfflineStatus(){
- const el=document.getElementById('offlineStatus');if(!el)return;
- const supported='serviceWorker' in navigator;
- if(!supported){el.textContent='Tryb offline nie jest obsługiwany przez tę przeglądarkę.';return}
- const ready=!!navigator.serviceWorker.controller;
- if(!navigator.onLine)el.textContent=ready?'● Offline — możesz zapisywać trening lokalnie':'Brak sieci — otwórz tę stronę raz z internetem, aby pobrać zasoby.';
- else el.textContent=ready?'✓ Gotowe do działania offline (na tym urządzeniu)':'Przygotowanie trybu offline…';
-}
+
+/* Wycofanie testowego trybu offline: usuń rejestrację SW tylko z /preview/. */
 if('serviceWorker' in navigator){
- navigator.serviceWorker.addEventListener('controllerchange',updateOfflineStatus);
- window.addEventListener('load',()=>{
-  navigator.serviceWorker.register('./sw.js',{scope:'./'})
-   .then(()=>updateOfflineStatus())
-   .catch(e=>{const el=document.getElementById('offlineStatus');if(el)el.textContent='Tryb offline nie został aktywowany: '+e.message});
- });
+ navigator.serviceWorker.getRegistrations().then(registrations=>{
+  const expectedPath=new URL('./',location.href).pathname;
+  registrations.filter(r=>new URL(r.scope).pathname===expectedPath).forEach(r=>r.unregister());
+ }).catch(()=>{});
 }
-window.addEventListener('online',updateOfflineStatus);
-window.addEventListener('offline',updateOfflineStatus);
-updateOfflineStatus();
+if('caches' in window){
+ caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('moja-silownia-preview-v')).map(k=>caches.delete(k)))).catch(()=>{});
+}
 
 </script><script src="../plan-importer.js?v=160" defer></script><script src="../ui-enhancements.js?v=160" defer></script></body></html>
