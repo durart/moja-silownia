@@ -153,6 +153,28 @@
  .pick-tile small{font-size:.68rem}
  .pick-tile .pick-source-image {max-width:140px}
 }
+
+/* Klatka: zdjęcia miniatur z przesłanych zrzutów. Pozostałe grupy bez zmian. */
+.pick-row:has(.pick-chest-img),.pick-row:has(.pick-chest-fallback){min-height:104px}
+.pick-thumb:has(.pick-chest-img),.pick-thumb:has(.pick-chest-fallback){flex:0 0 105px;height:98px}
+.pick-chest-img,.pick-chest-fallback{display:block;flex:none;width:103px;height:94px;background-color:#e6e6e8;background-repeat:no-repeat}
+.pick-chest-img{background-image:url('../assets/chest-thumbnails.webp?v=1');background-size:500% 300%}
+.pick-chest-fallback{background-image:url('../assets/muscle-tiles.avif?v=2');background-size:300% 400%;background-position:0% 0%}
+.pick-chest-0{background-position:0% 0%}
+.pick-chest-1{background-position:25% 0%}
+.pick-chest-2{background-position:50% 0%}
+.pick-chest-3{background-position:75% 0%}
+.pick-chest-4{background-position:100% 0%}
+.pick-chest-5{background-position:0% 50%}
+.pick-chest-6{background-position:25% 50%}
+.pick-chest-8{background-position:75% 50%}
+.pick-chest-9{background-position:100% 50%}
+.pick-chest-10{background-position:0% 100%}
+.pick-chest-11{background-position:25% 100%}
+.pick-chest-12{background-position:50% 100%}
+.pick-chest-13{background-position:75% 100%}
+.pick-chest-14{background-position:100% 100%}
+@media(max-width:390px){.pick-thumb:has(.pick-chest-img),.pick-thumb:has(.pick-chest-fallback){flex-basis:78px;height:78px}.pick-chest-img,.pick-chest-fallback{width:78px;height:74px}}
 </style></head><body><main>
 <div style="background:#314c72;border:1px solid #5786b8;border-radius:12px;padding:12px 14px;color:#fff;margin:0 0 14px"><strong>WERSJA TESTOWA v1.5.3</strong> · Dane tego podglądu są oddzielone od głównej aplikacji. <a href="../" style="color:#e4f4ff;text-decoration:underline">Wróć do wersji głównej</a></div><h1>🏋️ Moja Siłownia <span class="badge">v1.5.3 TEST</span></h1><p>Mobilny dziennik treningowy • zapis lokalny na urządzeniu</p>
 <nav><button onclick="tab('dashboard')">Start</button><button onclick="tab('workout')">Trening</button><button class="secondary" onclick="tab('plans')">Plany</button><button class="secondary" onclick="tab('catalog')">Ćwiczenia</button><button class="secondary" onclick="tab('history')">Historia</button></nav>
@@ -195,6 +217,15 @@ function pickerCategory(e,group){
  if(group==="__own__")return e.group==="Inne"||e.equipment==="Własne";
  return e.group===group;
 }
+
+const chestThumbnailNames=["Wyciskanie sztangi na ławce płaskiej","Rozpiętki na maszynie","Wyciskanie na maszynie","Pompki","Wyciskanie hantli na ławce płaskiej","Wyciskanie sztangi na ławce skośnej dodatniej","Wyciskanie hantli na ławce skośnej dodatniej","Wyciskanie na maszynie skośnej","Rozpiętki z hantlami","Rozpiętki na bramie stojąc","Rozpiętki na bramie z dołu","Rozpiętki na bramie z góry","Wyciskanie na suwnicy Smitha","Pompki na poręczach z pochyleniem","Pompki z nogami na podwyższeniu"];
+function chestThumbnail(name){
+  const index=chestThumbnailNames.indexOf(name);
+  // Jedyny wariant bez pewnej ilustracji: wyciskanie na maszynie skośnej.
+  // Nie przypisujemy grafiki innego wariantu maszyny.
+  if(index<0||index===7)return '<span class="pick-chest-fallback" aria-hidden="true"></span>';
+  return '<span class="pick-chest-img pick-chest-'+index+'" aria-hidden="true"></span>';
+}
 function pickerRender(){
  const config=[
  ["Klatka piersiowa","Klatka","chest"],
@@ -233,7 +264,7 @@ function pickerRender(){
  results.innerHTML='<p class="pick-count">'+filtered.length+" ćwiczeń · "+(pickerOrder==="recent"?"ostatnio używane najpierw":"kolejność alfabetyczna")+"</p>"+
  (filtered.length?filtered.map(e=>
   '<div class="pick-row"><button type="button" class="pick-exercise" data-pick-id="'+safe(e.id)+'" onclick="pickerAdd(this.dataset.pickId)"><span class="pick-thumb" aria-hidden="true">'+
-  (groupArts[e.group]?muscleArt(groupArts[e.group]):"🏋️")+'</span><span class="pick-exercise-name">'+safe(e.name)+"<small>"+safe(e.equipment||e.group)+"</small></span></button>"+
+  (e.group==="Klatka piersiowa"?chestThumbnail(e.name):(groupArts[e.group]?muscleArt(groupArts[e.group]):"🏋️"))+'</span><span class="pick-exercise-name">'+safe(e.name)+"<small>"+safe(e.equipment||e.group)+"</small></span></button>"+
   '<button type="button" class="pick-more" data-pick-id="'+safe(e.id)+'" onclick="pickerTechnique(this.dataset.pickId)" title="Zobacz technikę" aria-label="Zobacz technikę: '+safe(e.name)+'">⋮</button></div>'
  ).join(""):'<p class="pick-empty">Brak ćwiczeń w tej grupie. Możesz wrócić i wybrać inną partię.</p>');
 }
