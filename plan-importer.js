@@ -12,7 +12,7 @@ async function impRead(file){
   for(let p=1;p<=doc.numPages;p++){
    const page=await doc.getPage(p),viewport=page.getViewport({scale:1});
    const items=(await page.getTextContent()).items.filter(x=>x.str&&x.str.trim()).map(x=>({str:x.str.trim(),x:x.transform[4],y:viewport.height-x.transform[5]}));
-   const headings=items.filter(x=>/^(?:TRENING\\s*(?:NR\\.?\\s*)?[1-9]\\d*|TRENING BRZUCHA|DAY\\s*[1-9]\\d*|PLAN\\s*[ABC])$/i.test(x.str)).sort((a,b)=>a.y-b.y);
+   const headings=items.filter(x=>/^(?:TRENING\s*(?:NR\.?\s*)?[1-9]\d*|TRENING BRZUCHA|DAY\s*[1-9]\d*|PLAN\s*[ABC])$/i.test(x.str)).sort((a,b)=>a.y-b.y);
    const headers=items.filter(x=>/^(?:SERIE|SERIES|SETS)$/i.test(x.str)).sort((a,b)=>a.y-b.y);
    for(let hi=0;hi<headings.length;hi++){
     const h=headings[hi],end=headings[hi+1]?.y??viewport.height;
@@ -21,14 +21,14 @@ async function impRead(file){
     const repHeader=items.find(x=>/^(?:POWT[ÓO]RZENIA|REPS)$/i.test(x.str)&&Math.abs(x.y-head.y)<18);
     const seriesX=head.x,repX=repHeader?.x??seriesX+65;
     lines.push(h.str);
-    const anchors=items.filter(x=>x.y>head.y+14&&x.y<end&&x.x<viewport.width*.15&&/^\\d{1,2}$/.test(x.str)).sort((a,b)=>a.y-b.y);
+    const anchors=items.filter(x=>x.y>head.y+14&&x.y<end&&x.x<viewport.width*.15&&/^\d{1,2}$/.test(x.str)).sort((a,b)=>a.y-b.y);
     for(let ai=0;ai<anchors.length;ai++){
      const anchor=anchors[ai],next=anchors[ai+1]?.y??Math.min(end,anchor.y+55);
      const maxY=Math.min(next-9,anchor.y+22),minY=anchor.y-16;
      const row=items.filter(x=>x.y>=minY&&x.y<=maxY&&x!==anchor);
      const name=row.filter(x=>x.x>viewport.width*.11&&x.x<seriesX-12).sort((a,b)=>a.y-b.y||a.x-b.x).map(x=>x.str).join(' ').trim();
-     const sn=row.filter(x=>Math.abs(x.x-seriesX)<25&&/^\\d{1,2}$/.test(x.str)).sort((a,b)=>Math.abs(a.y-anchor.y)-Math.abs(b.y-anchor.y))[0];
-     const rp=row.filter(x=>x.x>=repX-20&&/\\d/.test(x.str)).sort((a,b)=>Math.abs(a.y-anchor.y)-Math.abs(b.y-anchor.y))[0];
+     const sn=row.filter(x=>Math.abs(x.x-seriesX)<25&&/^\d{1,2}$/.test(x.str)).sort((a,b)=>Math.abs(a.y-anchor.y)-Math.abs(b.y-anchor.y))[0];
+     const rp=row.filter(x=>x.x>=repX-20&&/\d/.test(x.str)).sort((a,b)=>Math.abs(a.y-anchor.y)-Math.abs(b.y-anchor.y))[0];
      if(name&&sn&&rp)lines.push(name+' | '+sn.str+' | '+rp.str);
     }
    }
