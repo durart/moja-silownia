@@ -84,3 +84,16 @@ button.secondary,.swap-option{background:#574a69!important;color:#fff!important}
 /* v1.6.1 — tylko Start w górnym menu; dostęp do funkcji w dolnych skrótach oraz na ekranie głównym */
 .top-start-nav{display:flex;justify-content:flex-start;margin:12px 0 18px;gap:0}
 .top-start-nav button{flex:0 0 auto;min-width:118px;max-width:180px;padding:12px 22px}
+
+/* Wiersze z osobnymi celami dla każdej serii po imporcie */
+.imp-set-details{margin:12px 0 16px;padding:12px;border:1px solid #8a779e;border-radius:12px;background:#322a41}
+.imp-set-summary{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.imp-set-summary label{flex:0 0 96px}
+.imp-set-summary span{font-size:.87rem;color:#d9cbe8}
+.imp-set-line{display:grid;grid-template-columns:58px minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:end;padding:9px 0;border-top:1px solid #6d617f}
+.imp-set-line b{font-size:.82rem;align-self:center}
+.imp-set-line input{width:100%;min-width:0}
+.plan-targets-preview{margin:5px 0 12px 12px;padding:8px 10px;border-left:3px solid #9481b1;font-size:.85rem;color:#ded6e9}
+.plan-targets-preview>div{margin:3px 0}
+.plan-set-caption{font-size:.77rem;margin:1px 0 13px;color:#dfd3f1}
+@media(max-width:380px){.imp-set-line{grid-template-columns:48px minmax(0,1fr) minmax(0,1fr);gap:5px}.imp-set-line input{padding:8px 6px}}
