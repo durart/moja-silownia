@@ -48,6 +48,8 @@ async function impRead(file){
 }
 function impExerciseMatch(name){
  let n=impNorm(name),best=null,score=0;
+ const aliases={"wyciskanie nogami maszyna":"Wyciskanie nogami","wyciskanie na klatke maszyna":"Wyciskanie na maszynie","prostowanie nog maszyna":"Prostowanie nóg siedząc","wyciskanie nad glowe siedzac maszyna":"Wyciskanie barków na maszynie","prostowanie ramion na wyciagu gornym z lina":"Prostowanie ramion na wyciągu z liną"};
+ const alias=aliases[n];if(alias){const e=state.exercises.find(x=>impNorm(x.name)===impNorm(alias));if(e)return {id:e.id,score:1}}
  for(const e of state.exercises){
   let en=impNorm(e.name);
   if(n===en)return {id:e.id,score:1};
@@ -100,9 +102,45 @@ function impParseCSV(text,filename){
  if(!plan.rows.length)throw Error('CSV zawiera nagłówki, ale nie wykryto pozycji ćwiczeń.');
  return [plan];
 }
+
+function impParseSetBlocks(text,filename){
+ const lines=String(text||'').replace(/\r\n?/g,'\n').split('\n').map(x=>x.trim()).filter(Boolean);
+ const head=/^(?:trening(?:\s+siłowy)?|plan)\s+(?:nr\.?\s*)?(?:[a-z]|\d{1,2})(?:\s*[-–:].*)?$/i;
+ const qty=/^(\d{1,2})\s*ser(?:ie|ii|ia|ię)?$/i;
+ const set=/^(\d+(?:[,.]\d+)?)\s*kg\s*[x×*]\s*(\d{1,3}(?:\s*[-–—]\s*\d{1,3})?)\s*(?:powt\.?)?$/i;
+ let plan={name:(filename||'Plan z tekstu').replace(/\.[^.]+$/,''),rows:[]},plans=[],pending=null,found=0;
+ function finish(){
+  if(!plan.rows.length)return;
+  for(const row of plan.rows){
+   const n=Math.max(Number(row.series)||0,row.setDetails.length);
+   row.series=n;
+   while(row.setDetails.length<n)row.setDetails.push({weight:'',reps:''});
+   row.weight=row.setDetails[0]?.weight||'';
+   row.reps=row.setDetails.map(v=>v.reps).join('/');
+  }
+  plans.push(plan);
+ }
+ for(let i=0;i<lines.length;i++){
+  const line=lines[i];
+  if(head.test(line)){finish();plan={name:line,rows:[]};pending=null;continue}
+  const n=line.match(qty);
+  if(n&&pending){pending.series=Number(n[1]);continue}
+  const v=line.match(set);
+  if(v&&pending){pending.setDetails.push({weight:v[1].replace(',','.'),reps:v[2].replace(/\s*[-–—]\s*/g,'-')});found++;continue}
+  if(qty.test(lines[i+1]||'')&&line.length>=4&&line.length<=100&&/[a-ząćęłńóśźż]{3}/i.test(line)){
+   const m=impExerciseMatch(line);
+   pending={name:line,series:0,reps:'',weight:'',rir:'',rest:'',notes:'',setDetails:[],matchId:m.id,confidence:m.score,action:m.id?'existing':'new',group:'Inne'};
+   plan.rows.push(pending);
+  }else pending=null;
+ }
+ finish();
+ return found&&plans.length?plans:null;
+}
+
 function impParse(text,filename){
  const csvPlans=impParseCSV(text,filename);
  if(csvPlans)return csvPlans;
+ const detailed=impParseSetBlocks(text,filename);if(detailed)return detailed;
  let plans=[],current={name:'Plan 1',rows:[]};
  const flush=()=>{if(current.rows.length)plans.push(current)};
  const raw=text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -174,7 +212,7 @@ function impSave(){
     else {id='import-'+Date.now()+'-'+Math.random().toString(36).slice(2,9);state.exercises.push({id,name:r.name,group:r.group||'Inne',equipment:'Inne'});newCount++}
    }
    if(!id)continue;
-   ids.push(id);targets.push({exerciseId:id,sets:Number(r.series)||null,reps:String(r.reps||''),weight:String(r.weight||''),rir:String(r.rir||''),rest:String(r.rest||''),notes:String(r.notes||'')});
+   ids.push(id);targets.push({exerciseId:id,sets:Number(r.series)||null,reps:String(r.reps||''),weight:String(r.weight||''),setDetails:Array.isArray(r.setDetails)?r.setDetails.map(v=>({weight:String(v.weight||''),reps:String(v.reps||'')})):[],rir:String(r.rir||''),rest:String(r.rest||''),notes:String(r.notes||'')});
   }
   if(ids.length){state.plans.push({id:Date.now()+count+1,name:p.name||'Importowany plan',exerciseIds:ids,targets,importedAt:new Date().toISOString()});count++}
  }
