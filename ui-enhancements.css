@@ -97,3 +97,10 @@ button.secondary,.swap-option{background:#574a69!important;color:#fff!important}
 .plan-targets-preview>div{margin:3px 0}
 .plan-set-caption{font-size:.77rem;margin:1px 0 13px;color:#dfd3f1}
 @media(max-width:380px){.imp-set-line{grid-template-columns:48px minmax(0,1fr) minmax(0,1fr);gap:5px}.imp-set-line input{padding:8px 6px}}
+
+/* v1.6.3 — jedna nawigacja na górze, bez dublowania skrótów na dole Start */
+.top-start-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:14px 0 20px;overflow:visible}
+.top-start-nav button{width:100%;min-width:0;max-width:none;min-height:48px;flex:initial;margin:0;padding:10px 6px;border-radius:11px;font-size:clamp(.73rem,2.8vw,.9rem);line-height:1.17;white-space:normal;overflow-wrap:normal}
+.top-start-nav button:not(:first-child){background:#554968;color:#fff}
+.top-start-nav button:first-child{background:#2c84ef;color:#fff}
+@media(max-width:370px){.top-start-nav{gap:5px}.top-start-nav button{padding:9px 3px;font-size:.73rem}}
