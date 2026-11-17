@@ -188,7 +188,42 @@ function impRender(){
  const opts='<option value="new" '+(r.action==='new'?'selected':'')+'>＋ Dodaj jako nowe ćwiczenie</option><option value="skip">Pomiń</option>'+sortExercisesByUse(state.exercises).map(e=>'<option value="'+safe(e.id)+'" '+(r.action==='existing'&&r.matchId===e.id?'selected':'')+'>'+safe(e.name)+'</option>').join('');
  return '<div class="imp-row"><label>Ćwiczenie z dokumentu<input value="'+safe(r.name)+'" oninput="importedDraft['+pi+'].rows['+ri+'].name=this.value"></label><label>Dopasowanie <select onchange="impSetMatch('+pi+','+ri+',this.value)">'+opts+'</select></label><div class="imp-fields"><label>Serie<input type="number" min="1" max="20" value="'+safe(r.series)+'" oninput="importedDraft['+pi+'].rows['+ri+'].series=this.value"></label><label>Powt.<input value="'+safe(r.reps)+'" oninput="importedDraft['+pi+'].rows['+ri+'].reps=this.value"></label><label>Kg<input value="'+safe(r.weight)+'" oninput="importedDraft['+pi+'].rows['+ri+'].weight=this.value"></label><label>RIR<input value="'+safe(r.rir)+'" oninput="importedDraft['+pi+'].rows['+ri+'].rir=this.value"></label></div><label>Uwagi / przerwa<input value="'+safe(r.notes)+'" oninput="importedDraft['+pi+'].rows['+ri+'].notes=this.value"></label></div>'
  }).join('')+'</div>').join('')+'<button onclick="impSave()">✓ Zatwierdź i zapisz plany</button><button class="secondary" onclick="importedDraft=[];impRender()">Anuluj import</button>';
+ impRenderSetFields();
 }
+
+/* Szczegóły serii importowanych z wielowierszowego planu */
+function impUpdateSet(pi,ri,si,field,value){
+ const row=importedDraft[pi]?.rows[ri];
+ if(!row?.setDetails?.[si]||!['weight','reps'].includes(field))return;
+ row.setDetails[si][field]=String(value);
+ row.weight=row.setDetails[0]?.weight||'';
+ row.reps=row.setDetails.map(x=>x.reps).join('/');
+}
+function impChangeSetCount(pi,ri,value){
+ const row=importedDraft[pi]?.rows[ri];if(!row)return;
+ const count=Math.max(1,Math.min(20,Math.floor(Number(value)||1)));
+ row.series=count;
+ while(row.setDetails.length<count)row.setDetails.push({weight:'',reps:''});
+ row.setDetails.length=count;
+ row.weight=row.setDetails[0]?.weight||'';
+ row.reps=row.setDetails.map(x=>x.reps).join('/');
+ impRender();
+}
+function impRenderSetFields(){
+ const plans=[...document.querySelectorAll('#importPreview .imp-plan')];
+ importedDraft.forEach((plan,pi)=>{
+  const rows=[...(plans[pi]?.querySelectorAll('.imp-row')||[])];
+  plan.rows.forEach((r,ri)=>{
+   if(!r.setDetails?.length)return;
+   const original=rows[ri]?.querySelector('.imp-fields');
+   if(!original)return;
+   const newFields='<div class="imp-set-details"><div class="imp-set-summary"><label>Serie<input type="number" min="1" max="20" value="'+safe(r.series)+'" onchange="impChangeSetCount('+pi+','+ri+',this.value)"></label><span>Ciężar i powtórzenia każdej serii</span></div>'+
+    r.setDetails.map((x,si)=>'<div class="imp-set-line"><b>Seria '+(si+1)+'</b><label>Kg<input inputmode="decimal" value="'+safe(x.weight)+'" oninput="impUpdateSet('+pi+','+ri+','+si+',&#39;weight&#39;,this.value)"></label><label>Powt. (np. 8-10)<input value="'+safe(x.reps)+'" oninput="impUpdateSet('+pi+','+ri+','+si+',&#39;reps&#39;,this.value)"></label></div>').join('')+'</div>';
+   original.outerHTML=newFields;
+  });
+ });
+}
+
 function impSetMatch(pi,ri,v){let r=importedDraft[pi].rows[ri];r.action=v==='skip'?'skip':v==='new'?'new':'existing';r.matchId=v==='skip'||v==='new'?'':v}
 async function impLoad(){
  const file=document.getElementById('importFile').files[0];if(!file)return;
