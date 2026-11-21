@@ -5,7 +5,8 @@ let restAudioBuffer=null;
 let restAudioLoading=null;
 let restAudioSource=null;
 let restAudioScheduledUntil=null;
-const restAudioGain=0.70; // głośniej niż dawne pojedyncze piknięcie (gain=0.08)
+const restAudioGain=0.70;
+const finalAudioGain=1.0; // wyraźniej słyszalny końcowy sygnał
 function restAudioGetContext(){
  if(restAudioContext)return restAudioContext;
  const Context=window.AudioContext||window.webkitAudioContext;
@@ -38,6 +39,11 @@ function restAudioPlay(offset,delay,marker){
  const source=ctx.createBufferSource(),gain=ctx.createGain();
  source.buffer=restAudioBuffer;
  gain.gain.value=restAudioGain;
+ // MP3: ostatnie trzy krótkie piknięcia w t=2,3,4; końcowy sygnał w t=5.
+ // Zwiększamy głośność tylko przy końcowym sygnale.
+ const finalAt=ctx.currentTime+Math.max(0,delay)+Math.max(0,5-offset);
+ gain.gain.setValueAtTime(restAudioGain,ctx.currentTime);
+ gain.gain.setValueAtTime(finalAudioGain,finalAt);
  source.connect(gain);gain.connect(ctx.destination);
  try{source.start(ctx.currentTime+Math.max(0,delay),Math.max(0,offset))}
  catch(e){console.warn('Dźwięk przerwy A:',e);return false}
@@ -52,10 +58,10 @@ function restAudioSchedule(deadline){
  if(!Number.isFinite(end)||restAudioScheduledUntil===end)return false;
  const left=end-Date.now();
  if(left<=-300)return false;
- // MP3 zawiera piknięcia od t=0,1,2,3,4 i dłuższy sygnał od t=5.
- // Punkt t=5 próbki ustawiamy dokładnie na koniec rzeczywistej przerwy.
- const delay=Math.max(0,(left-5000)/1000);
- const offset=Math.max(0,(5000-left)/1000);
+ // Pomijamy pierwsze dwa piknięcia nagrania: zostają trzy od t=2,3,4.
+ // Dłuższy, głośniejszy sygnał t=5 wypada na koniec przerwy.
+ const delay=Math.max(0,(left-3000)/1000);
+ const offset=Math.max(2,(5000-left)/1000);
  return restAudioPlay(offset,delay,end);
 }
 function restAudioUnlock(){
@@ -76,7 +82,7 @@ async function restAudioDemo(){
  try{if(ctx.state!=='running')await ctx.resume()}catch(e){}
  const buffer=await restAudioLoad();
  if(!buffer||ctx.state!=='running'){note('Nie udało się włączyć dźwięku. Sprawdź głośność telefonu i internet.');return}
- restAudioPlay(0,0,'preview');
+ restAudioPlay(2,0,'preview');
 }
 // Safari wymaga wcześniejszej aktywacji audio po dotknięciu ekranu.
 
