@@ -1,4 +1,4 @@
-<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#332d45"><link rel="icon" type="image/svg+xml" href="./icon.svg"><link rel="manifest" href="./manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Moja Siłownia"><title>Moja Siłownia v1.6.6 — wizualne tworzenie planów</title>
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#332d45"><link rel="icon" type="image/svg+xml" href="./icon.svg"><link rel="manifest" href="./manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Moja Siłownia"><title>Moja Siłownia v1.6.7 — sygnał przerwy A</title>
 <style>
 :root{font-family:system-ui,-apple-system,sans-serif;color:#eaf1fb;background:#0b1220}*{box-sizing:border-box}body{margin:0}main{max-width:760px;margin:auto;padding:18px 16px 100px}h1{font-size:1.5rem;margin:8px 0}h2{font-size:1.1rem}p,small{color:#b5c4d8}.card{background:#172338;border:1px solid #30425a;border-radius:16px;padding:16px;margin:14px 0}button,input,select{font:inherit;border-radius:10px;padding:12px}input,select{width:100%;background:#0c1729;border:1px solid #41546e;color:white;margin:6px 0 12px}button{background:#2c84ef;color:white;border:0;cursor:pointer;font-weight:650}button.secondary{background:#32435d}button.danger{background:#9e3645}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}nav{display:flex;gap:8px;margin:18px 0}nav button{flex:1}.hidden{display:none}.item{padding:12px 0;border-bottom:1px solid #35465c}.muted{color:#9db0c7}.badge{font-size:.75rem;background:#324a66;padding:4px 8px;border-radius:12px}label{display:block;font-size:.9rem}#notice{color:#8de0b6}a{color:#a9caff}
 .exercise-card{background:#172338;border:1px solid #344c68;border-radius:16px;padding:14px;margin:14px 0}.set-grid{display:grid;grid-template-columns:24px minmax(48px,1fr) 58px 58px 48px 38px 32px;gap:6px;align-items:center;margin:8px 0}.set-grid input{margin:0;padding:10px 5px;min-width:0;text-align:center}.set-grid .previous{font-size:.8rem;color:#aabbd1}.set-grid button{padding:10px 4px}.set-head{font-size:.72rem;color:#b9c8db}.done{background:#20694c!important}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.toolbar button{flex:1}@media(max-width:390px){.set-grid{grid-template-columns:20px minmax(39px,1fr) 49px 49px 42px 32px 28px;gap:4px}.exercise-card{padding:10px}}  .readiness-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.readiness-grid label{min-width:0}.summary-metric{display:inline-block;background:#233750;padding:12px;border-radius:12px;margin:5px}.muscle-bar{height:9px;background:#33445b;border-radius:9px;overflow:hidden}.muscle-bar>span{display:block;height:100%;background:#6ad4a3}.hint{font-size:.8rem;color:#9db0c7}.set-grid input{font-size:.85rem}.fatigue-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.78rem;color:#aebed2}.fatigue-low{background:#65cba0!important}.fatigue-mid{background:#e5b15e!important}.fatigue-high{background:#e47765!important} 
@@ -225,7 +225,7 @@ p,small,.muted,.hint{color:#d3cadd}
 #dashboard .dashboard-hero.workout-resume .dash-eyebrow{color:#a6edce}
 #dashboard .dashboard-hero.workout-resume .dash-start{background:#2684ed;box-shadow:0 3px 18px #2684ed55}
 #dashboard #dashWorkoutElapsed{font-weight:700;color:#eee9ff;margin:10px 0 0;font-variant-numeric:tabular-nums}
-</style><link rel="stylesheet" href="./ui-enhancements.css?v=163"></head><body><main><h1>🏋️ Moja Siłownia <span class="badge">v1.6.6</span></h1><p>Mobilny dziennik treningowy • zapis lokalny na urządzeniu</p>
+</style><link rel="stylesheet" href="./ui-enhancements.css?v=163"></head><body><main><h1>🏋️ Moja Siłownia <span class="badge">v1.6.7</span></h1><p>Mobilny dziennik treningowy • zapis lokalny na urządzeniu</p>
 <nav class="top-start-nav" aria-label="Nawigacja aplikacji"><button onclick="tab('dashboard')">Start</button><button class="secondary" onclick="tab('plans')">Plany</button><button class="secondary" onclick="tab('catalog')">Atlas ćwiczeń</button><button class="secondary" onclick="tab('history')">Historia</button></nav>
 <div id="notice" role="status"></div><div id="timers" class="card hidden"><div class="row"><div><small>Czas treningu</small><h2 id="elapsed">00:00:00</h2></div><div><small>Przerwa</small><h2 id="remaining">—</h2></div></div><button class="secondary" id="skipRestBtn" onclick="skipRest()">Pomiń przerwę</button><button class="secondary" id="cancelEmptyWorkoutBtn" onclick="cancelEmptyWorkout()" style="display:none;margin-left:8px">Anuluj pusty trening</button></div>
 <section id="dashboard" class="hidden"><div class="card dashboard-hero" id="dashboardHero"><div><span class="dash-eyebrow" id="dashWorkoutEyebrow">TWÓJ PANEL TRENINGOWY</span><h2 id="dashWorkoutTitle">Gotowy na trening?</h2><p class="hint" id="dashWorkoutHint">Wybierz plan lub rozpocznij trening dowolny.</p><p class="hint" id="dashWorkoutElapsed" hidden></p></div><button class="dash-start" id="dashWorkoutAction" onclick="tab('workout')">＋ Rozpocznij trening</button></div><div class="card dash-stat-card"><h2>Twoje wyniki</h2><div id="dashboardStats" class="dashboard-stats"></div><h3>Aktywność treningowa</h3><div class="row"><label>Okres<select id="dashboardPeriod" onchange="renderDashboard()"><option value="6">Ostatnie 6 tygodni</option><option value="12">Ostatnie 12 tygodni</option><option value="26">Ostatnie 26 tygodni</option></select></label></div><div class="metric-tabs"><button class="secondary" onclick="setDashboardMetric('time')">Czas</button><button class="secondary" onclick="setDashboardMetric('volume')">Objętość</button><button class="secondary" onclick="setDashboardMetric('reps')">Powtórzenia</button></div><div id="dashboardChart"></div></div><div class="card dash-recovery"><div class="dash-section-head"><div><h2>💪 Obciążenie mięśni</h2><p class="hint">Szacunek na podstawie treningów, nie pomiar regeneracji.</p></div><button class="secondary dash-details" id="fatigueToggle" onclick="toggleDashboardFatigue()">Pokaż wszystkie</button></div><div id="dashboardFatigue"></div></div><div class="card"><h2>Ostatni trening</h2><div id="dashboardLatest"></div><button class="secondary" onclick="tab('history')">Zobacz historię</button></div></section><section id="workout"><div id="preWorkout" class="card hidden"><h2>Przed treningiem</h2><p>Możesz wpisać dane z Garmina. Wszystkie pola są opcjonalne.</p><div class="readiness-grid"><label>Body Battery (0–100)<input id="preBattery" type="number" min="0" max="100" placeholder="np. 65" inputmode="numeric"></label><label>Sen (godziny)<input id="preSleep" type="number" min="0" max="24" step="0.1" placeholder="np. 7.5" inputmode="decimal"></label><label>Ocena snu (0–100)<input id="preSleepScore" type="number" min="0" max="100" placeholder="np. 78" inputmode="numeric"></label><label>Samopoczucie<select id="preFeeling"><option value="">Nie podaję</option><option value="great">Świetnie</option><option value="good">Dobrze</option><option value="tired">Zmęczony</option><option value="bad">Słabo</option></select></label></div><label>Masa ciała (kg) — do szacowania kalorii<input id="preWeight" type="number" min="20" max="350" step="0.1" inputmode="decimal" placeholder="100.6"></label><p class="hint">Dane są pomocnicze. Nie mierzą bezpośrednio regeneracji mięśni.</p><div id="preFatigue" class="item"></div><button onclick="confirmWorkoutStart()">Rozpocznij trening</button><button class="secondary" onclick="cancelWorkoutStart()">Anuluj</button></div><div id="planWorkout" class="hidden"></div><div id="manualStart" class="card"><h2>Trening dowolny</h2><p>Rozpocznij trening, aby wybrać ćwiczenia i zapisywać serie. Nie musisz tworzyć planu.</p><button onclick="startManualWorkout()">Zacznij trening</button></div><div id="manualToday" class="card"><h2>Dzisiejszy trening</h2><div id="today"></div><div id="manualWorkout" class="manual-add-inline hidden"><h2>Dodaj ćwiczenie</h2><select id="exercise" hidden aria-label="Wybrane ćwiczenie"></select><button class="pick-launch" onclick="pickerOpen()">＋ Wybierz ćwiczenie</button><p class="hint pick-help">Wybierz partię ciała, wyszukaj ćwiczenie i dotknij jego nazwy.</p></div><button class="secondary finish-workout" onclick="finishWorkout()">Zakończ trening</button></div></section>
@@ -565,12 +565,105 @@ function leavePlan(){state.activePlan=null;state.planRowCounts={};state.workoutS
 const restOptions=[30,60,90,120,180];
 function restSeconds(id){return restOptions.includes(Number(state.restSettings[id]))?Number(state.restSettings[id]):90}
 function changeRest(id,v){state.restSettings[id]=Number(v);save();note('Przerwa: '+v+' s')}
-function startRest(id){state.restUntil=Date.now()+restSeconds(id)*1000;save();tick()}
-function skipRest(){state.restUntil=null;save();tick()}
+function startRest(id){restAudioStop();state.restUntil=Date.now()+restSeconds(id)*1000;save();restAudioUnlock();restAudioSchedule(state.restUntil);tick()}
+function skipRest(){restAudioStop();state.restUntil=null;save();tick()}
 function formatTime(n){n=Math.max(0,Math.floor(n));return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(x=>String(x).padStart(2,'0')).join(':')}
-function beep(){try{let C=window.AudioContext||window.webkitAudioContext;if(!C)return;let c=new C(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.08;o.start();o.stop(c.currentTime+.2);o.onended=()=>c.close()}catch(e){}}
-function cancelEmptyWorkout(){if(state.active.length||state.activePlan)return;if(!confirm('Anulować pusty trening i zatrzymać licznik?'))return;state.startedAt=null;state.restUntil=null;state.manualStarted=false;state.manualExerciseIds=[];state.pendingWorkout=null;save();render();note('Pusty trening anulowany')}
-function tick(){updateDashboardWorkoutClock();let el=document.getElementById('timers');if(!el)return;const running=!!state.startedAt&&(!!state.activePlan||!!state.manualStarted);el.classList.toggle('hidden',!running||currentTab!=='workout');const cancel=document.getElementById('cancelEmptyWorkoutBtn');if(cancel)cancel.style.display=running&&!state.active.length&&!state.activePlan?'inline-block':'none';const skip=document.getElementById('skipRestBtn');if(skip)skip.style.display=state.restUntil&&state.restUntil>Date.now()?'inline-block':'none';if(!running)return;document.getElementById('elapsed').textContent=formatTime((Date.now()-Date.parse(state.startedAt))/1000);let left=state.restUntil?Math.ceil((state.restUntil-Date.now())/1000):0;document.getElementById('remaining').textContent=left>0?Math.floor(left/60)+':'+String(left%60).padStart(2,'0'):'—';if(state.restUntil&&left<=0){state.restUntil=null;save();beep();note('Przerwa zakończona!')}}
+let restAudioContext=null;
+let restAudioBuffer=null;
+let restAudioLoading=null;
+let restAudioSource=null;
+let restAudioScheduledUntil=null;
+const restAudioGain=0.70; // głośniej niż dawne pojedyncze piknięcie (gain=0.08)
+function restAudioGetContext(){
+ if(restAudioContext)return restAudioContext;
+ const Context=window.AudioContext||window.webkitAudioContext;
+ if(!Context)return null;
+ try{restAudioContext=new Context()}catch(e){return null}
+ return restAudioContext;
+}
+function restAudioStop(){
+ if(restAudioSource){try{restAudioSource.stop()}catch(e){}}
+ restAudioSource=null;
+ restAudioScheduledUntil=null;
+}
+function restAudioLoad(){
+ if(restAudioBuffer)return Promise.resolve(restAudioBuffer);
+ if(restAudioLoading)return restAudioLoading;
+ const ctx=restAudioGetContext();
+ if(!ctx)return Promise.resolve(null);
+ restAudioLoading=fetch('./assets/rest-sound-a.mp3')
+  .then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.arrayBuffer()})
+  .then(bytes=>ctx.decodeAudioData(bytes))
+  .then(buffer=>{restAudioBuffer=buffer;restAudioSchedule(state.restUntil);return buffer})
+  .catch(error=>{console.warn('Dźwięk przerwy A:',error);restAudioLoading=null;return null});
+ return restAudioLoading;
+}
+function restAudioPlay(offset,delay,marker){
+ const ctx=restAudioGetContext();
+ if(!ctx||ctx.state!=='running'||!restAudioBuffer)return false;
+ if(offset>=restAudioBuffer.duration-0.06)return false;
+ restAudioStop();
+ const source=ctx.createBufferSource(),gain=ctx.createGain();
+ source.buffer=restAudioBuffer;
+ gain.gain.value=restAudioGain;
+ source.connect(gain);gain.connect(ctx.destination);
+ try{source.start(ctx.currentTime+Math.max(0,delay),Math.max(0,offset))}
+ catch(e){console.warn('Dźwięk przerwy A:',e);return false}
+ restAudioSource=source;
+ restAudioScheduledUntil=marker;
+ source.onended=()=>{if(restAudioSource===source)restAudioSource=null};
+ return true;
+}
+function restAudioSchedule(deadline){
+ if(!deadline)return false;
+ const end=Number(deadline);
+ if(!Number.isFinite(end)||restAudioScheduledUntil===end)return false;
+ const left=end-Date.now();
+ if(left<=-300)return false;
+ // MP3 zawiera piknięcia od t=0,1,2,3,4 i dłuższy sygnał od t=5.
+ // Punkt t=5 próbki ustawiamy dokładnie na koniec rzeczywistej przerwy.
+ const delay=Math.max(0,(left-5000)/1000);
+ const offset=Math.max(0,(5000-left)/1000);
+ return restAudioPlay(offset,delay,end);
+}
+function restAudioUnlock(){
+ const ctx=restAudioGetContext();
+ if(!ctx)return;
+ if(ctx.state!=='running'){
+  ctx.resume().then(()=>restAudioSchedule(state.restUntil)).catch(()=>{});
+ }else restAudioSchedule(state.restUntil);
+ void restAudioLoad();
+}
+async function restAudioDemo(){
+ if(state.restUntil&&Number(state.restUntil)>Date.now()){
+  note('Poczekaj na koniec bieżącej przerwy, aby odtworzyć test.');
+  return;
+ }
+ const ctx=restAudioGetContext();
+ if(!ctx){note('Ta przeglądarka nie obsługuje odtwarzania sygnału.');return}
+ try{if(ctx.state!=='running')await ctx.resume()}catch(e){}
+ const buffer=await restAudioLoad();
+ if(!buffer||ctx.state!=='running'){note('Nie udało się włączyć dźwięku. Sprawdź głośność telefonu i internet.');return}
+ restAudioPlay(0,0,'preview');
+}
+// Safari wymaga wcześniejszej aktywacji audio po dotknięciu ekranu.
+document.addEventListener('pointerdown',restAudioUnlock,{passive:true});
+document.addEventListener('touchstart',restAudioUnlock,{passive:true});
+document.addEventListener('keydown',restAudioUnlock);
+function beep(){ // dłuższy awaryjny ton końcowy, gdy MP3 nie zdążyło się wczytać
+ const ctx=restAudioGetContext();
+ if(!ctx||ctx.state!=='running')return;
+ try{
+  const start=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();
+  o.type='sine';o.frequency.value=1040;
+  g.gain.setValueAtTime(0.20,start);
+  g.gain.exponentialRampToValueAtTime(0.001,start+0.66);
+  o.connect(g);g.connect(ctx.destination);o.start(start);o.stop(start+0.68);
+ }catch(e){}
+}
+
+function cancelEmptyWorkout(){if(state.active.length||state.activePlan)return;if(!confirm('Anulować pusty trening i zatrzymać licznik?'))return;state.startedAt=null;state.restUntil=null;state.manualStarted=false;state.manualExerciseIds=[];state.pendingWorkout=null;restAudioStop();save();render();note('Pusty trening anulowany')}
+function tick(){updateDashboardWorkoutClock();let el=document.getElementById('timers');if(!el)return;const running=!!state.startedAt&&(!!state.activePlan||!!state.manualStarted);el.classList.toggle('hidden',!running||currentTab!=='workout');const cancel=document.getElementById('cancelEmptyWorkoutBtn');if(cancel)cancel.style.display=running&&!state.active.length&&!state.activePlan?'inline-block':'none';const skip=document.getElementById('skipRestBtn');if(skip)skip.style.display=state.restUntil&&state.restUntil>Date.now()?'inline-block':'none';if(!running)return;document.getElementById('elapsed').textContent=formatTime((Date.now()-Date.parse(state.startedAt))/1000);let left=state.restUntil?Math.ceil((state.restUntil-Date.now())/1000):0;document.getElementById('remaining').textContent=left>0?Math.floor(left/60)+':'+String(left%60).padStart(2,'0'):'—';if(state.restUntil&&left>0)restAudioSchedule(state.restUntil);if(state.restUntil&&left<=0){const deadline=Number(state.restUntil);if(restAudioScheduledUntil!==deadline)beep();state.restUntil=null;save();note('Przerwa zakończona!')}}
 setInterval(tick,500);
 function lastSets(exerciseId){for(const session of state.sessions){let a=session.sets.filter(x=>x.exerciseId===exerciseId);if(a.length)return a}return []}
 function planSets(exerciseId){return state.active.filter(x=>x.exerciseId===exerciseId)}
@@ -690,7 +783,7 @@ function addSet(){if(!state.manualStarted||state.activePlan){note('Najpierw klik
 function detectPR(id,w,r,exclude=null){let prior=[...state.sessions.flatMap(s=>s.sets||[]),...state.active].filter(s=>s.exerciseId===id&&s!==exclude);if(!prior.length)return [];let flags=[];let maxWeight=Math.max(...prior.map(s=>Number(s.weight)||0));if(w>maxWeight)flags.push('Ciężar');let maxAtWeight=Math.max(0,...prior.filter(s=>Number(s.weight)===w).map(s=>Number(s.reps)||0));if(r>maxAtWeight&&prior.some(s=>Number(s.weight)===w))flags.push('Powtórzenia');let maxVolume=Math.max(...prior.map(s=>(Number(s.weight)||0)*(Number(s.reps)||0)));if(w*r>maxVolume)flags.push('Objętość');return flags}
 function prefillManual(){return}
 function removeSet(i){state.active.splice(i,1);save();renderToday()}
-function finishWorkout(){if(!state.active.length){if(confirm('Nie zapisano żadnej serii. Zakończyć pusty trening bez dodawania do historii?')){state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;state.restUntil=null;save();render();note('Trening zakończony bez zapisu')}return}if(!confirm('Zakończyć trening? Zapisane serie trafią do historii, nawet jeśli nie wykonano wszystkich ćwiczeń.'))return;let plan=state.plans.find(p=>p.id===state.activePlan);let duration=state.startedAt?Math.floor((Date.now()-Date.parse(state.startedAt))/1000):null;let session={id:Date.now(),date:new Date().toISOString(),planName:plan?.name||null,sets:[...state.active],durationSeconds:duration,preWorkout:state.preWorkout?{...state.preWorkout}:null};session.calories=estimateCalories(session);session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);session.fatigueModel=2;state.sessions.unshift(session);state.active=[];extraRows={};removedRows={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;state.restUntil=null;save();render();tab('history');note('Trening zapisany — rozwiń Szczegóły, aby zobaczyć podsumowanie')}
+function finishWorkout(){if(!state.active.length){if(confirm('Nie zapisano żadnej serii. Zakończyć pusty trening bez dodawania do historii?')){state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();note('Trening zakończony bez zapisu')}return}if(!confirm('Zakończyć trening? Zapisane serie trafią do historii, nawet jeśli nie wykonano wszystkich ćwiczeń.'))return;let plan=state.plans.find(p=>p.id===state.activePlan);let duration=state.startedAt?Math.floor((Date.now()-Date.parse(state.startedAt))/1000):null;let session={id:Date.now(),date:new Date().toISOString(),planName:plan?.name||null,sets:[...state.active],durationSeconds:duration,preWorkout:state.preWorkout?{...state.preWorkout}:null};session.calories=estimateCalories(session);session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);session.fatigueModel=2;state.sessions.unshift(session);state.active=[];extraRows={};removedRows={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();tab('history');note('Trening zapisany — rozwiń Szczegóły, aby zobaczyć podsumowanie')}
 function addFromCatalog(id){let e=state.exercises.find(x=>x.id===id);if(!e)return;if(!draft.includes(id))draft.push(id);renderPlans();note('Dodano do nowego planu: '+e.name)}
 
 // Atlas techniki v1.2: instrukcje zapisane lokalnie; filmy otwierane na życzenie i wymagają Internetu.
