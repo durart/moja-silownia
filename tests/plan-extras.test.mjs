@@ -87,7 +87,7 @@ test('more than one extra is shown in chosen order with standard set editor',()=
  const markup=api.renderPlanExtraExercises(state.plans[0]);
  assert.ok(markup.indexOf('data-exercise-id="seed-4"')<markup.indexOf('data-exercise-id="seed-3"'));
  assert.match(markup,/pickerOpen\('plan-extra'\)/);
- assert.match(markup,/saveManualRow\('seed-4',0\)/);
+ assert.match(markup,/toggleManualRow\('seed-4',0\)/);
  assert.match(markup,/removeManualRow\('seed-4',0\)/);
 });
 test('0kg bodyweight extra set and rest timer are supported',()=>{
