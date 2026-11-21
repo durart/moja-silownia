@@ -1,0 +1,17 @@
+const test=require('node:test');const assert=require('node:assert/strict');
+const advisor=require('../assistant/assistant-core.js'),progress=require('../assistant/assistant-progression.js');
+const now=Date.parse('2026-11-21T12:00:00Z');
+const ex=[{id:'seed-0',group:'Klatka piersiowa'},{id:'seed-3',group:'Plecy'}];
+const plans=[{id:'A',name:'Trening A',exerciseIds:['seed-0']},{id:'B',name:'Trening B',exerciseIds:['seed-3']}];
+const session=(date,planName,sets=[],extra={})=>({date,planName,sets,...extra});
+test('empty state gives no plans',()=>{const r=advisor.evaluate({sessions:[],plans:[],exercises:[]},{now});assert.equal(r.status,'no_plans');assert.equal(r.recommended,null)});
+test('ongoing session is never replaced by recommendation',()=>{const r=advisor.evaluate({startedAt:'2026-11-21T10:00:00Z',activePlan:'A',plans,sessions:[]},{now});assert.equal(r.status,'in_progress')});
+test('does not mutate user state',()=>{const s={plans,exercises:ex,sessions:[session('2026-11-20T12:00:00Z','Trening A',[{exerciseId:'seed-0',weight:60,reps:10}])]};const before=JSON.stringify(s);const r=advisor.evaluate(s,{now});assert.equal(JSON.stringify(s),before);assert.equal(r.recommended.planId,'B')});
+test('last completed plan is not blindly preferred',()=>{const r=advisor.evaluate({plans,exercises:ex,sessions:[session('2026-11-20T12:00:00Z','Trening A',[],{fatigueModel:2,fatigueImpulse:{'Klatka piersiowa':95}})]},{now});assert.equal(r.recommended.planId,'B')});
+test('no history returns low confidence, not fake readiness',()=>{const r=advisor.evaluate({plans,exercises:ex,sessions:[]},{now});assert.equal(r.status,'ready');assert.equal(r.confidence,'low')});
+test('invalid and future sessions ignored',()=>{const r=advisor.evaluate({plans,exercises:ex,sessions:[session('bad','Trening A'),session('2026-11-23T12:00:00Z','Trening B')]},{now});assert.equal(r.confidence,'low')});
+test('fatigue decays with time',()=>{const ss=[session('2026-11-19T12:00:00Z','Trening A',[],{fatigueModel:2,fatigueImpulse:{'Klatka piersiowa':80}})];assert.equal(advisor.fatigueByMuscle(ss,ex,now)['Klatka piersiowa'],40)});
+test('bodyweight 0kg does not recommend weight increase',()=>{const r=progress.suggest([session('2026-11-20T12:00:00Z',null,[{exerciseId:'push',weight:0,reps:15,rir:3},{exerciseId:'push',weight:0,reps:15,rir:3}])],'push');assert.equal(r.action,'maintain')});
+test('no RIR never recommends increase',()=>{const r=progress.suggest([session('2026-11-20T12:00:00Z',null,[{exerciseId:'seed-0',weight:60,reps:12},{exerciseId:'seed-0',weight:60,reps:12}])],'seed-0');assert.equal(r.action,'maintain')});
+test('valid double progression gives suggestion only',()=>{const r=progress.suggest([session('2026-11-20T12:00:00Z',null,[{exerciseId:'seed-0',weight:60,reps:12,rir:2},{exerciseId:'seed-0',weight:60,reps:12,rir:3}])],'seed-0');assert.equal(r.action,'consider_increase');assert.equal(r.weight,60)});
+test('below target requests review',()=>{const r=progress.suggest([session('2026-11-20T12:00:00Z',null,[{exerciseId:'seed-0',weight:60,reps:6,rir:1},{exerciseId:'seed-0',weight:60,reps:9,rir:1}])],'seed-0');assert.equal(r.action,'review')});
