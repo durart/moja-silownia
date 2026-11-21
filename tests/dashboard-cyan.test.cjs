@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const core=require('../dashboard-cyan-core.js');
+const at=new Date('2026-11-21T12:00:00');
+const s=(date,weight,reps,seconds=600)=>({date,durationSeconds:seconds,sets:[{weight,reps}]});
+const data={sessions:[s('2026-11-18T12:00:00',60,10),s('2026-11-16T12:00:00',70,10),s('2026-11-09T12:00:00',40,10),{date:'invalid',sets:[]}]};
+const before=JSON.stringify(data);
+const x=core.snapshot(data,at,3);
+assert.equal(x.week.count,2);
+assert.equal(x.week.volume,1300);
+assert.equal(x.week.minutes,20);
+assert.equal(x.week.progress,67);
+assert.equal(x.last.date,'2026-11-18T12:00:00');
+assert.deepEqual(x.weeks.map(w=>w.count),[0,0,1,2]);
+assert.equal(JSON.stringify(data),before,'snapshot must not mutate state');
+assert.equal(core.snapshot({sessions:[]},at).last,null);
+assert.equal(core.snapshot({sessions:[]},at).week.volume,0);
+assert.equal(core.snapshot({sessions:[s('2026-11-21T10:00:00',0,20)]},at).week.volume,0);
+console.log('Dashboard Cyan core: all tests passed');
