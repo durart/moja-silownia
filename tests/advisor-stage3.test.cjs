@@ -1,0 +1,15 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.join(__dirname,'..');
+const get=p=>fs.readFileSync(path.join(root,p),'utf8');
+const index=get('index.html'),sw=get('sw.js'),ui=get('assistant/assistant-progression-ui.js');
+const progression=require('../assistant/assistant-progression.js');
+const s=(sets)=>[{date:'2026-11-20T12:00:00Z',sets}];
+test('script order: engine before integration',()=>assert.ok(index.indexOf('assistant/assistant-progression.js?v=1')<index.indexOf('assistant/assistant-progression-ui.js?v=1')));
+test('service worker caches stage 3 assets',()=>['assistant/assistant-progression.js?v=1','assistant/assistant-progression-ui.js?v=1','assistant/assistant-progression.css?v=1'].forEach(p=>assert.ok(sw.includes(p))));
+test('existing workout handlers wrapped, not replaced',()=>{assert.ok(ui.includes('plan.apply(this,arguments)'));assert.ok(ui.includes('manual.apply(this,arguments)'))});
+test('no persisted state writes in stage 3',()=>assert.ok(!/localStorage|sessionStorage|indexedDB|save\(\)|state\.active\.push|state\.sessions\s*=/.test(ui)));
+test('progression displays only, no direct weight mutation',()=>assert.ok(!/\.value\s*=|setAttribute\(['"]value/.test(ui)));
+test('RIR missing prevents increase',()=>assert.equal(progression.suggest(s([{exerciseId:'a',weight:60,reps:12},{exerciseId:'a',weight:60,reps:12}]),'a').action,'maintain'));
+test('RIR sufficient enables suggestion',()=>assert.equal(progression.suggest(s([{exerciseId:'a',weight:60,reps:12,rir:2},{exerciseId:'a',weight:60,reps:12,rir:2}]),'a').action,'consider_increase'));
+test('bodyweight never suggests loading',()=>assert.equal(progression.suggest(s([{exerciseId:'a',weight:0,reps:12,rir:2},{exerciseId:'a',weight:0,reps:12,rir:2}]),'a').action,'maintain'));
+test('no history has no invented weights',()=>assert.equal(progression.suggest([],'a').action,'insufficient_data'));
