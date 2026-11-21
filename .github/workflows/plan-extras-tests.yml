@@ -4,11 +4,17 @@ on:
     branches:
       - main
       - feature/plan-extra-exercises-v169
+      - feature/summary-sport-performance-v2
   pull_request:
     paths:
       - 'index.html'
       - 'sport-performance.css'
       - 'tests/plan-extras.test.mjs'
+      - 'tests/summary.test.mjs'
+      - 'summary-core.js'
+      - 'summary-ui.js'
+      - 'summary-export.js'
+      - 'summary.css'
       - '.github/workflows/plan-extras-tests.yml'
 jobs:
   test:
@@ -24,5 +30,5 @@ jobs:
         run: |
           node --check plan-importer.js
           node --check ui-enhancements.js
-      - name: Plan extra exercise regression suite
-        run: node --test tests/plan-extras.test.mjs
+      - name: Workout regression suites
+        run: node --test tests/*.test.mjs
