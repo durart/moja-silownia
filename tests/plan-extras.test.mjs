@@ -13,8 +13,10 @@ function fragment(from,to){
  return script.slice(a,b);
 }
 const code=[
+ fragment('function planSets(exerciseId,slotIndex){','/* BEGIN PLAN EXTRA CORE */'),
  fragment('/* BEGIN PLAN EXTRA CORE */','/* END PLAN EXTRA CORE */'),
  fragment('function focusPlanExercise(id){','let extraRows={};'),
+ fragment('let planUndoDrafts={};','function startManualWorkoutNow(){'),
  fragment('function saveManualRow(id,j){','function renderToday(){'),
  fragment('function finishWorkout(){','function addFromCatalog(id){')
 ].join('\n');
@@ -23,7 +25,7 @@ function setup(){
  const state={
   exercises:['seed-1','seed-2','seed-3','seed-4'].map(exercise),
   plans:[{id:17,name:'Trening A',exerciseIds:['seed-1','seed-2']}],
-  activePlan:17,workoutSwaps:{},planExtraExerciseIds:[],manualExerciseIds:[],
+  activePlan:17,workoutSwaps:{},planRowCounts:{},planExtraExerciseIds:[],manualExerciseIds:[],
   sessions:[],active:[],startedAt:new Date(Date.now()-600000).toISOString(),
   manualStarted:false,preWorkout:null,bodyWeight:100,restUntil:null
  };
@@ -44,7 +46,7 @@ function setup(){
   muscleLoads:()=>({}),muscleFatigueImpulse:()=>({})
  };
  vm.createContext(ctx);
- vm.runInContext(code+'\nthis.api={normalizePlanExtraIds,planExtraStatus,addPlanExtraExercise,removePlanExtraExercise,renderPlanExtraExercises,saveManualRow,removeManualRow,detachPlanExtrasToManual,finishWorkout};',ctx);
+ vm.runInContext(code+'\nthis.api={normalizePlanExtraIds,planExtraStatus,addPlanExtraExercise,removePlanExtraExercise,renderPlanExtraExercises,saveManualRow,removeManualRow,detachPlanExtrasToManual,finishWorkout,togglePlanRow,savePlanRow,planSets,manualSetRows,toggleManualRow};',ctx);
  return {state,store,calls,elements,api:ctx.api};
 }
 test('inline application code compiles',()=>assert.doesNotThrow(()=>new Function(script)));
@@ -178,4 +180,78 @@ test('CSS includes mobile editor and no broken brace pairs',()=>{
  assert.match(css,/@media \(max-width: 660px\)/);
  assert.match(css,/prefers-reduced-motion/);
  assert.equal(css.split('{').length,css.split('}').length);
+});
+
+test('starting at exercise 2 does not check exercise 1; undo works after the break',()=>{
+ const {api,state,store,calls,elements}=setup();
+ elements.r_1_0_w={value:'55'};elements.r_1_0_r={value:'12'};
+ api.togglePlanRow('seed-2',0,'r_1_0',1);
+ assert.equal(state.active.length,1);
+ assert.equal(state.active[0].planSlotIndex,1);
+ assert.equal(api.planSets('seed-1',0).length,0);
+ assert.equal(api.planSets('seed-2',1)[0].weight,55);
+ assert.equal(JSON.parse(store.value).active.length,1);
+ api.togglePlanRow('seed-2',0,'r_1_0',1);
+ assert.equal(state.active.length,0);
+ assert.equal(calls.timer,1,'Undo should not restart the rest timer');
+});
+test('duplicate exercise in plan is isolated by its position',()=>{
+ const {api,state,elements}=setup();
+ state.plans[0].exerciseIds=['seed-1','seed-2','seed-1'];
+ elements.r_2_0_w={value:'70'};elements.r_2_0_r={value:'10'};
+ api.togglePlanRow('seed-1',0,'r_2_0',2);
+ assert.equal(api.planSets('seed-1',0).length,0);
+ assert.equal(api.planSets('seed-1',2)[0].weight,70);
+ api.togglePlanRow('seed-1',0,'r_2_0',2);
+ assert.equal(state.active.length,0);
+});
+test('undoing first set keeps later sets completed at their original numbers',()=>{
+ const {api,state,elements}=setup();
+ for(const j of [0,1,2]){
+  elements['r_0_'+j+'_w']={value:String(50+j)};
+  elements['r_0_'+j+'_r']={value:'10'};
+  api.togglePlanRow('seed-1',j,'r_0_'+j,0);
+ }
+ api.togglePlanRow('seed-1',0,'r_0_0',0);
+ assert.equal(state.active.length,2);
+ assert.equal(api.planSets('seed-1',0)[0],undefined);
+ assert.equal(api.planSets('seed-1',0)[1].weight,51);
+ assert.equal(api.planSets('seed-1',0)[2].weight,52);
+ api.togglePlanRow('seed-1',0,'r_0_0',0);
+ assert.equal(api.planSets('seed-1',0)[0].weight,50);
+ assert.equal(api.planSets('seed-1',0)[2].weight,52);
+});
+test('manual completion toggle only changes the selected exercise',()=>{
+ const {api,state,elements}=setup();state.activePlan=null;
+ for(const id of ['seed-1','seed-2']){
+  elements['m_'+id+'_0_w']={value:'60'};elements['m_'+id+'_0_r']={value:'10'};
+  api.toggleManualRow(id,0);
+ }
+ api.toggleManualRow('seed-2',0);
+ assert.equal(state.active.length,1);
+ assert.equal(api.manualSetRows('seed-1')[0].weight,60);
+ assert.equal(api.manualSetRows('seed-2').length,0);
+ api.toggleManualRow('seed-2',0);
+ assert.equal(state.active.length,2);
+});
+test('additional exercise can be unchecked and checked without changing planned set',()=>{
+ const {api,state,elements}=setup();
+ api.addPlanExtraExercise('seed-3');
+ state.active.push({exerciseId:'seed-1',name:'seed-1',weight:65,reps:8});
+ elements['m_seed-3_0_w']={value:'35'};
+ elements['m_seed-3_0_r']={value:'12'};
+ api.toggleManualRow('seed-3',0);
+ assert.equal(state.active.length,2);
+ api.toggleManualRow('seed-3',0);
+ assert.equal(state.active.length,1);
+ assert.equal(state.active[0].exerciseId,'seed-1');
+ api.toggleManualRow('seed-3',0);
+ assert.equal(state.active.length,2);
+});
+test('legacy active sets retain ownership of their planned exercise',()=>{
+ const {api,state}=setup();
+ state.active.push({exerciseId:'seed-1',name:'seed-1',weight:55,reps:10});
+ assert.equal(api.planSets('seed-1',0)[0].weight,55);
+ assert.equal(api.planSets('seed-2',1).length,0);
+ assert.equal(state.active[0].planSlotIndex,0);
 });
