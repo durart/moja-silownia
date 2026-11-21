@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {detectRecords,isWorkingSet} from '../modules/records.js';
+import {parseBackup,serializeBackup,isValidBackup,chooseBackup} from '../modules/storage.js';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+test('old sets remain working',()=>assert.equal(isWorkingSet({weight:60,reps:10}),true));
+test('warmup excluded from PR comparison',()=>assert.deepEqual(detectRecords({exerciseId:'a',weight:90,reps:5,completedSessions:[{sets:[{exerciseId:'a',weight:150,reps:5,setType:'R'},{exerciseId:'a',weight:80,reps:5}]}]}),['Ciężar','Objętość']));
+test('record flags match legacy behavior',()=>assert.deepEqual(detectRecords({exerciseId:'a',weight:80,reps:10,activeSets:[{exerciseId:'a',weight:80,reps:8}]}),['Powtórzenia','Objętość']));
+test('backup roundtrip retains workout data',()=>{const state={exercises:[{id:'a',name:'Test'}],active:[{exerciseId:'a',setType:'R'}],sessions:[],plans:[]};assert.deepEqual(parseBackup(serializeBackup(state)),state)});
+test('invalid backup rejected',()=>assert.throws(()=>parseBackup('{"exercises":[]}'),/format/));
+test('backup only when valid and changed',()=>{assert.equal(chooseBackup('old','new',x=>x==='old'),'old');assert.equal(chooseBackup('bad','new',()=>false),null);assert.equal(chooseBackup('same','same',()=>true),null)});
+test('entry point uses native ES modules',()=>assert.match(read('index.html'),/<script type="module" src="\.\/modules\/bootstrap\.js\?v=1"><\/script>/));
+test('service worker precaches module graph',()=>['./modules/bootstrap.js?v=1','./modules/records.js','./modules/storage.js'].forEach(p=>assert.ok(read('sw.js').includes(p))));
