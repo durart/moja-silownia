@@ -669,7 +669,36 @@ function cancelEmptyWorkout(){if(state.active.length||state.activePlan)return;if
 function tick(){updateDashboardWorkoutClock();let el=document.getElementById('timers');if(!el)return;const running=!!state.startedAt&&(!!state.activePlan||!!state.manualStarted);el.classList.toggle('hidden',!running||currentTab!=='workout');const cancel=document.getElementById('cancelEmptyWorkoutBtn');if(cancel)cancel.style.display=running&&!state.active.length&&!state.activePlan?'inline-block':'none';const skip=document.getElementById('skipRestBtn');if(skip)skip.style.display=state.restUntil&&state.restUntil>Date.now()?'inline-block':'none';if(!running)return;document.getElementById('elapsed').textContent=formatTime((Date.now()-Date.parse(state.startedAt))/1000);let left=state.restUntil?Math.ceil((state.restUntil-Date.now())/1000):0;document.getElementById('remaining').textContent=left>0?Math.floor(left/60)+':'+String(left%60).padStart(2,'0'):'—';if(state.restUntil&&left>0)restAudioSchedule(state.restUntil);if(state.restUntil&&left<=0){const deadline=Number(state.restUntil);if(restAudioScheduledUntil!==deadline)beep();state.restUntil=null;save();note('Przerwa zakończona!')}}
 setInterval(tick,500);
 function lastSets(exerciseId){for(const session of state.sessions){let a=session.sets.filter(x=>x.exerciseId===exerciseId);if(a.length)return a}return []}
-function planSets(exerciseId){return state.active.filter(x=>x.exerciseId===exerciseId)}
+function planSets(exerciseId,slotIndex){
+ if(!Number.isInteger(slotIndex))return state.active.filter(x=>x.exerciseId===exerciseId);
+ const plan=state.plans.find(p=>p.id===state.activePlan);
+ const slots=effectivePlanExerciseIds(plan);
+ const fallbackSlot=slots.indexOf(exerciseId);
+ if(fallbackSlot<0||slots[slotIndex]!==exerciseId)return [];
+ const result=[];
+ for(const item of state.active){
+  if(item.exerciseId!==exerciseId)continue;
+  const slot=Number.isInteger(item.planSlotIndex)?item.planSlotIndex:fallbackSlot;
+  if(slot!==slotIndex||(item.planId!=null&&item.planId!==state.activePlan))continue;
+  let row=Number.isInteger(item.planSetIndex)?item.planSetIndex:0;
+  while(result[row])row++;
+  if(!Number.isInteger(item.planSlotIndex)){item.planSlotIndex=slot;item.planId=state.activePlan}
+  if(!Number.isInteger(item.planSetIndex))item.planSetIndex=row;
+  result[row]=item;
+ }
+ return result;
+}
+function manualSetRows(id){
+ const result=[];
+ for(const item of state.active){
+  if(item.exerciseId!==id)continue;
+  let row=Number.isInteger(item.manualSetIndex)?item.manualSetIndex:0;
+  while(result[row])row++;
+  if(!Number.isInteger(item.manualSetIndex))item.manualSetIndex=row;
+  result[row]=item;
+ }
+ return result;
+}
 
 /* BEGIN PLAN EXTRA CORE */
 function normalizePlanExtraIds(raw){
@@ -734,12 +763,12 @@ document.getElementById('manualWorkout').classList.toggle('hidden',!!plan||!stat
 document.getElementById('manualToday').classList.toggle('hidden',!!plan||!state.manualStarted);
 document.getElementById('manualStart').classList.toggle('hidden',!!plan||!!state.manualStarted||!!state.pendingWorkout);
 if(!plan)return;let html=`<div class="card sport-plan-intro"><span class="sport-overline">PLAN TRENINGOWY</span><h2>${safe(plan.name)}</h2><p>Wpisz KG, powtórzenia i RIR. ✓ oznacza serię jako wykonaną.</p><div class="toolbar"><button class="secondary" onclick="leavePlan()">Pełny katalog</button><button onclick="finishWorkout()">Zakończ trening</button></div></div>`;
-for(let idx=0;idx<plan.exerciseIds.length;idx++){let id=state.workoutSwaps?.[idx]||plan.exerciseIds[idx],e=state.exercises.find(x=>x.id===id);if(!e)continue;let current=planSets(id),previous=lastSets(id);html+=`<div class="exercise-card" data-exercise-id="${safe(id)}"><div class="sport-exercise-title-row"><span class="sport-exercise-art" aria-hidden="true">${sportExerciseArt(e)}</span><div class="sport-exercise-title-text"><h2>${idx+1}. ${safe(e.name)}</h2><span class="sport-muscle-chip">${safe(e.group)}</span></div></div><button class="secondary" onclick="openSwap('plan',${idx})">⇄ Zamień ćwiczenie</button><button class="secondary" onclick="openTechnique('${safe(id)}')">🎬 Zobacz technikę</button><small>${safe(e.group)} • ${safe(e.equipment)}</small>${plan.targets?.[idx]?`<p class="muted">Cel: ${safe(plan.targets[idx].sets||'—')} serie • ${safe(plan.targets[idx].reps||'—')} powt. ${plan.targets[idx].notes?' • '+safe(plan.targets[idx].notes):''}</p>`:''}<label>Przerwa po serii<select onchange="changeRest('${safe(id)}',this.value)">${restOptions.map(n=>`<option value="${n}" ${restSeconds(id)===n?'selected':''}>${n} sekund</option>`).join('')}</select></label><div class="set-grid set-head"><span>Nr</span><span>Poprzednio</span><span>Kg (0 = bez obciążenia)</span><span>Powt.</span><span>RIR</span><span></span><span></span></div>`;
-let target=plan.targets?.[idx];let plannedReps=String(target?.reps||'').split(/\s*[/,;]\s*/).map(x=>Number(x.trim())).filter(x=>Number.isFinite(x)&&x>0);let plannedSets=Number(target?.sets)||0;let count=planVisibleRows(id,plannedSets);
-for(let j=0;j<count;j++){let entry=current[j],old=previous[j],prefill=current[j-1]||previous[j]||previous.at(-1),prev=old?`${old.weight} × ${old.reps}`:'—';let rowId=`r_${idx}_${j}`;let setTarget=target?.setDetails?.[j],setReps=String(setTarget?.reps||'').match(/^\s*(\d+)/)?.[1];html+=`<div class="set-grid hevy-set ${entry?'hevy-done':j===current.length?'sport-next-set':''}"><span>${j+1}</span><span class="previous">${prev}</span><label class="sport-set-field sport-weight"><span class="sport-field-caption">CIĘŻAR (KG)</span><input id="${rowId}_w" type="number" min="0" step="0.5" inputmode="decimal" placeholder="kg" value="${entry?entry.weight:(setTarget?.weight||target?.weight||prefill?.weight||'')}"></label><label class="sport-set-field sport-reps"><span class="sport-field-caption">POWT.</span><input id="${rowId}_r" type="number" min="1" step="1" inputmode="numeric" placeholder="powt." value="${entry?entry.reps:(setReps??plannedReps[j]??(plannedReps.length===1?plannedReps[0]:(prefill?.reps??'')))}"></label><label class="sport-set-field sport-rir"><span class="sport-field-caption">RIR</span><select id="${rowId}_rir" aria-label="RIR serii"><option value="">—</option>${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${entry?.rir===n?'selected':''}>${n===5?'5+':n}</option>`).join('')}</select></label><button class="${entry?'done':''}" onclick="savePlanRow('${safe(id)}',${j},'${rowId}')">${entry?'✓':'+'}</button><button class="danger" title="Usuń serię" onclick="deletePlanRow('${safe(id)}',${j})">✕</button></div>`;
+for(let idx=0;idx<plan.exerciseIds.length;idx++){let id=state.workoutSwaps?.[idx]||plan.exerciseIds[idx],e=state.exercises.find(x=>x.id===id);if(!e)continue;let current=planSets(id,idx),previous=lastSets(id);html+=`<div class="exercise-card" data-exercise-id="${safe(id)}"><div class="sport-exercise-title-row"><span class="sport-exercise-art" aria-hidden="true">${sportExerciseArt(e)}</span><div class="sport-exercise-title-text"><h2>${idx+1}. ${safe(e.name)}</h2><span class="sport-muscle-chip">${safe(e.group)}</span></div></div><button class="secondary" onclick="openSwap('plan',${idx})">⇄ Zamień ćwiczenie</button><button class="secondary" onclick="openTechnique('${safe(id)}')">🎬 Zobacz technikę</button><small>${safe(e.group)} • ${safe(e.equipment)}</small>${plan.targets?.[idx]?`<p class="muted">Cel: ${safe(plan.targets[idx].sets||'—')} serie • ${safe(plan.targets[idx].reps||'—')} powt. ${plan.targets[idx].notes?' • '+safe(plan.targets[idx].notes):''}</p>`:''}<label>Przerwa po serii<select onchange="changeRest('${safe(id)}',this.value)">${restOptions.map(n=>`<option value="${n}" ${restSeconds(id)===n?'selected':''}>${n} sekund</option>`).join('')}</select></label><div class="set-grid set-head"><span>Nr</span><span>Poprzednio</span><span>Kg (0 = bez obciążenia)</span><span>Powt.</span><span>RIR</span><span></span><span></span></div>`;
+let target=plan.targets?.[idx];let plannedReps=String(target?.reps||'').split(/\s*[/,;]\s*/).map(x=>Number(x.trim())).filter(x=>Number.isFinite(x)&&x>0);let plannedSets=Number(target?.sets)||0;let count=planVisibleRows(id,plannedSets,idx);
+for(let j=0;j<count;j++){let entry=current[j],draft=planUndoDrafts['r_'+idx+'_'+j],old=previous[j],prefill=current[j-1]||previous[j]||previous.at(-1),prev=old?`${old.weight} × ${old.reps}`:'—';let rowId=`r_${idx}_${j}`;let setTarget=target?.setDetails?.[j],setReps=String(setTarget?.reps||'').match(/^\s*(\d+)/)?.[1];html+=`<div class="set-grid hevy-set ${entry?'hevy-done':j===current.length?'sport-next-set':''}"><span>${j+1}</span><span class="previous">${prev}</span><label class="sport-set-field sport-weight"><span class="sport-field-caption">CIĘŻAR (KG)</span><input id="${rowId}_w" type="number" min="0" step="0.5" inputmode="decimal" placeholder="kg" value="${entry?entry.weight:(draft?.weight??setTarget?.weight??target?.weight??prefill?.weight??'')}"></label><label class="sport-set-field sport-reps"><span class="sport-field-caption">POWT.</span><input id="${rowId}_r" type="number" min="1" step="1" inputmode="numeric" placeholder="powt." value="${entry?entry.reps:(draft?.reps??setReps??plannedReps[j]??(plannedReps.length===1?plannedReps[0]:(prefill?.reps??'')))}"></label><label class="sport-set-field sport-rir"><span class="sport-field-caption">RIR</span><select id="${rowId}_rir" aria-label="RIR serii"><option value="">—</option>${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${entry?.rir===n?'selected':''}>${n===5?'5+':n}</option>`).join('')}</select></label><button class="${entry?'done':''}" title="${entry?'Cofnij wykonanie serii':'Zapisz wykonaną serię'}" aria-label="${entry?'Cofnij wykonanie serii':'Zapisz wykonaną serię'}" onclick="togglePlanRow('${safe(id)}',${j},'${rowId}',${idx})">${entry?'✓':'+'}</button><button class="danger" title="Usuń serię" onclick="deletePlanRow('${safe(id)}',${j},${idx})">✕</button></div>`;
 if(setTarget&&(setTarget.weight||setTarget.reps))html+=`<p class="plan-set-caption">Cel serii ${j+1}: ${safe(setTarget.weight||'—')} kg × ${safe(setTarget.reps||'—')} powt.${/[-–]/.test(setTarget.reps||'')?' (zakres; wpisana dolna granica)':''}</p>`;
 }
-html+=`<div class="toolbar"><button class="secondary" onclick="addExtraRow('${safe(id)}')">+ Dodaj serię</button></div></div>`}
+html+=`<div class="toolbar"><button class="secondary" onclick="addExtraRow('${safe(id)}',${idx})">+ Dodaj serię</button></div></div>`}
 html+=renderPlanExtraExercises(plan);
 document.getElementById('planWorkout').innerHTML=html}
 
@@ -797,49 +826,70 @@ function renderPlanExtraExercises(plan){
 let extraRows={};let removedRows={};
 // Liczba serii dotyczy bieżącego treningu, a nie szablonu planu.
 // Zapis lokalny zapobiega odtwarzaniu usuniętych serii po odświeżeniu.
-function planVisibleRows(id,plannedSets){
- const completed=planSets(id).length;
- const configured=state.planRowCounts?.[id];
- const base=Number(plannedSets)||3;
- return Math.max(completed,Number.isInteger(configured)&&configured>=0?configured:base);
-}
-function addExtraRow(id){
- const plan=state.plans.find(p=>p.id===state.activePlan);
- if(!plan)return;
- const pos=plan.exerciseIds.findIndex((raw,i)=>(state.workoutSwaps?.[i]||raw)===id);
- if(pos<0)return;
- const last=planSets(id).at(-1)||lastSets(id).at(-1);
- const oldCount=planVisibleRows(id,plan.targets?.[pos]?.sets);
- state.planRowCounts[id]=oldCount+1;
- save();
- renderPlanWorkout();
- const prefix='r_'+pos+'_'+oldCount;
- if(last){
-  const w=document.getElementById(prefix+'_w'),r=document.getElementById(prefix+'_r');
-  if(w)w.value=last.weight;
-  if(r)r.value=last.reps;
+let planUndoDrafts={};
+function planVisibleRows(id,plannedSets,slotIndex){
+ const completed=planSets(id,slotIndex).length;
+ const slotKey=Number.isInteger(slotIndex)?'slot:'+slotIndex:id;
+ let configured=state.planRowCounts?.[slotKey];
+ if(configured==null&&Number.isInteger(slotIndex)){
+  const plan=state.plans.find(p=>p.id===state.activePlan);
+  if(effectivePlanExerciseIds(plan).filter(x=>x===id).length===1)configured=state.planRowCounts?.[id];
  }
+ return Math.max(completed,Number.isInteger(configured)&&configured>=0?configured:(Number(plannedSets)||3));
 }
-function deletePlanRow(id,index){
+function planSlot(id,slotIndex){
  const plan=state.plans.find(p=>p.id===state.activePlan);
- if(!plan)return;
- const planIndex=plan.exerciseIds.findIndex((raw,i)=>(state.workoutSwaps?.[i]||raw)===id);
- if(planIndex<0)return;
- const visible=planVisibleRows(id,plan.targets?.[planIndex]?.sets);
- if(!Number.isInteger(index)||index<0||index>=visible)return;
- const entries=planSets(id);
- if(entries[index]){
-  const pos=state.active.indexOf(entries[index]);
-  if(pos>=0)state.active.splice(pos,1);
-  note('Zapisana seria usunięta');
- }else{
-  note('Pusta seria usunięta');
- }
- state.planRowCounts[id]=Math.max(0,visible-1);
- save();
- renderPlanWorkout();
+ const ids=effectivePlanExerciseIds(plan);
+ const pos=Number.isInteger(slotIndex)?slotIndex:ids.indexOf(id);
+ return {plan,pos,valid:!!plan&&pos>=0&&ids[pos]===id};
 }
-function savePlanRow(id,index,row){let wInput=document.getElementById(row+'_w'),rInput=document.getElementById(row+'_r');let w=Number(wInput.value),r=Number(rInput.value),rir=readRir(row+'_rir');if(wInput.value===''||rInput.value===''||!Number.isFinite(w)||w<0||!Number.isInteger(r)||r<1){note('Podaj prawidłowy ciężar i powtórzenia');return}let e=state.exercises.find(x=>x.id===id);if(!e)return;let existing=state.active.filter(x=>x.exerciseId===id);let item=existing[index];if(item){item.weight=w;item.reps=r;item.rir=rir;item.at=new Date().toISOString();item.pr=detectPR(id,w,r,item)}else{let pr=detectPR(id,w,r);state.active.push({exerciseId:id,name:e.name,weight:w,reps:r,rir,at:new Date().toISOString(),pr})}state.startedAt??=new Date().toISOString();startRest(id);save();renderPlanWorkout();tick();note(state.active.filter(x=>x.exerciseId===id).at(-1)?.pr?.length?'🏆 Nowy PR!':'Seria zapisana')} 
+function addExtraRow(id,slotIndex){
+ const {plan,pos,valid}=planSlot(id,slotIndex);if(!valid)return;
+ const rows=planSets(id,pos);
+ const last=rows.filter(Boolean).at(-1)||lastSets(id).at(-1);
+ const count=planVisibleRows(id,plan.targets?.[pos]?.sets,pos);
+ state.planRowCounts['slot:'+pos]=count+1;save();renderPlanWorkout();
+ const prefix='r_'+pos+'_'+count;
+ if(last){const w=document.getElementById(prefix+'_w'),r=document.getElementById(prefix+'_r');if(w)w.value=last.weight;if(r)r.value=last.reps}
+}
+function deletePlanRow(id,index,slotIndex){
+ const {plan,pos,valid}=planSlot(id,slotIndex);if(!valid)return;
+ const count=planVisibleRows(id,plan.targets?.[pos]?.sets,pos);
+ if(!Number.isInteger(index)||index<0||index>=count)return;
+ const item=planSets(id,pos)[index];
+ if(item){const at=state.active.indexOf(item);if(at>=0)state.active.splice(at,1);note('Zapisana seria usunięta')}
+ else note('Pusta seria usunięta');
+ delete planUndoDrafts['r_'+pos+'_'+index];
+ state.planRowCounts['slot:'+pos]=Math.max(0,count-1,planSets(id,pos).length);
+ save();renderPlanWorkout();
+}
+function togglePlanRow(id,index,row,slotIndex){
+ const {plan,pos,valid}=planSlot(id,slotIndex);
+ if(!valid||!Number.isInteger(index)||index<0||row!=='r_'+pos+'_'+index)return;
+ const item=planSets(id,pos)[index];
+ if(!item){savePlanRow(id,index,row,pos);return}
+ const count=planVisibleRows(id,plan.targets?.[pos]?.sets,pos);
+ const at=state.active.indexOf(item);if(at<0)return;
+ planUndoDrafts[row]={weight:item.weight,reps:item.reps,rir:item.rir};
+ state.active.splice(at,1);
+ state.planRowCounts['slot:'+pos]=Math.max(count,index+1);
+ save();renderPlanWorkout();tick();note('↶ Cofnięto ukończenie tylko tej serii');
+}
+function savePlanRow(id,index,row,slotIndex){
+ const {pos,valid}=planSlot(id,slotIndex);
+ if(!valid||!Number.isInteger(index)||index<0||row!=='r_'+pos+'_'+index)return;
+ const wInput=document.getElementById(row+'_w'),rInput=document.getElementById(row+'_r');
+ if(!wInput||!rInput)return;
+ const w=Number(wInput.value),r=Number(rInput.value),rir=readRir(row+'_rir');
+ if(wInput.value===''||rInput.value===''||!Number.isFinite(w)||w<0||!Number.isInteger(r)||r<1){note('Podaj prawidłowy ciężar i powtórzenia');return}
+ const e=state.exercises.find(x=>x.id===id);if(!e)return;
+ const item=planSets(id,pos)[index];
+ if(item){item.weight=w;item.reps=r;item.rir=rir;item.at=new Date().toISOString();item.pr=detectPR(id,w,r,item)}
+ else {const pr=detectPR(id,w,r);state.active.push({exerciseId:id,name:e.name,weight:w,reps:r,rir,at:new Date().toISOString(),pr,planSlotIndex:pos,planSetIndex:index,planId:state.activePlan})}
+ delete planUndoDrafts[row];
+ state.startedAt??=new Date().toISOString();startRest(id);save();renderPlanWorkout();tick();
+ note(planSets(id,pos)[index]?.pr?.length?'🏆 Nowy PR!':'Seria zapisana');
+}
 function startManualWorkoutNow(){if(state.activePlan){note('Najpierw zakończ trening według planu');return}if(state.active.length){recoverActiveWorkout();render();note('Przywrócono zapisany trening, nie rozpoczęto nowego');return}if(state.manualStarted)return;state.manualStarted=true;state.manualExerciseIds=[];state.planExtraExerciseIds=[];manualDrafts={};state.startedAt=new Date().toISOString();state.restUntil=null;save();render();note('Trening dowolny rozpoczęty')}
 // Ekran wprowadzania serii inspirowany układem Hevy; zapisane serie mają zielony znacznik.
 let manualDrafts={};
