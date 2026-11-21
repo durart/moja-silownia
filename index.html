@@ -319,9 +319,9 @@ function pickerRender(){
  ["Nogi","Uda i pośladki","legs"],
  ["Brzuch","Brzuch","abs"],
  ["Łydki","Łydka","calves"],
- ["__own__","Własne","💪"],
+ ["Kalistenika","Kalistenika","🤸"],
  ["__all__","Całe ciało","🏋️"],
- ["__cardio__","Kardio","❤️"],["Kalistenika","Kalistenika","🤸"]
+ ["__cardio__","Kardio","❤️"]
  ];
  const query=document.getElementById("pickSearch").value.trim().toLocaleLowerCase("pl");
  const showList=pickerGroup!==null||query.length>0;
@@ -1069,7 +1069,7 @@ function openTechnique(id){
 function closeTechnique(){document.getElementById('techOverlay').classList.add('hidden');document.getElementById('techContent').innerHTML='';document.body.style.overflow='';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTechnique()});
 function renderCatalog(){let q=document.getElementById('search').value.toLocaleLowerCase('pl'),group=document.getElementById('muscleFilter').value;renderMuscleTiles(group);document.getElementById('catalogList').innerHTML=sortExercisesByUse(state.exercises.filter(e=>(!group||e.group===group)&&(e.name+' '+e.group+' '+e.equipment).toLocaleLowerCase('pl').includes(q))).map(e=>`<div class="item"><strong>${safe(e.name)}</strong><br><small>${safe(e.group)} • ${safe(e.equipment)}</small><br><button class="secondary" onclick="addFromCatalog('${safe(e.id)}')">+ Dodaj do planu</button> <button class="secondary" onclick="openTechnique('${safe(e.id)}')">🎬 Technika</button></div>`).join('')||'<p>Brak wyników</p>'}
-const tileDefs=[['Klatka piersiowa','Klatka','chest'],['Plecy','Plecy','back'],['Barki','Barki','shoulders'],['Triceps','Triceps','triceps'],['Biceps','Biceps','biceps'],['Przedramiona','Przedramiona','forearms'],['Nogi','Uda i pośladki','legs'],['Brzuch','Brzuch','abs'],['Łydki','Łydki','calves'],['Inne','Własne','other'],['Kalistenika','Kalistenika','abs']];
+const tileDefs=[['Klatka piersiowa','Klatka','chest'],['Plecy','Plecy','back'],['Barki','Barki','shoulders'],['Triceps','Triceps','triceps'],['Biceps','Biceps','biceps'],['Przedramiona','Przedramiona','forearms'],['Nogi','Uda i pośladki','legs'],['Brzuch','Brzuch','abs'],['Łydki','Łydki','calves'],['Kalistenika','Kalistenika','abs']];
 function muscleArt(part){
 const back=part==='back'||part==='triceps';
 const base=`<defs>
