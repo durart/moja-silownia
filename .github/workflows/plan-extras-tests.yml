@@ -1,0 +1,28 @@
+name: Plan extra exercises — regression
+on:
+  push:
+    branches:
+      - main
+      - feature/plan-extra-exercises-v169
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'sport-performance.css'
+      - 'tests/plan-extras.test.mjs'
+      - '.github/workflows/plan-extras-tests.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript files
+        run: |
+          node --check plan-importer.js
+          node --check ui-enhancements.js
+      - name: Plan extra exercise regression suite
+        run: node --test tests/plan-extras.test.mjs
