@@ -1,0 +1,18 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.join(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const core=require('../muscle-fatigue-core.js');const advisor=require('../assistant/assistant-core.js');const progression=require('../assistant/assistant-progression.js');const progress=require('../progress-core-v2.js');
+const ex=[{id:'seed-0',group:'Klatka piersiowa'},{id:'a',group:'Nogi'}];
+const sets=(rows)=>[{date:'2026-11-20T12:00:00Z',sets:rows}];
+test('shared profiles used by dashboard and advisor',()=>{const set={exerciseId:'seed-0',weight:60,reps:10,rir:2};const sessions=sets([set]);const now=Date.parse('2026-11-21T12:00:00Z');assert.deepEqual(core.fatigue(sessions,ex,now),advisor.fatigueByMuscle(sessions,ex,now));assert.equal(core.factors(set,ex)[0][0],'Klatka piersiowa')});
+test('stored fatigue model 2 respected',()=>assert.deepEqual(core.sessionImpulse({fatigueModel:2,fatigueImpulse:{Nogi:20}},ex),{Nogi:20}));
+test('warm-up excluded from progression',()=>{const s=sets([{exerciseId:'a',weight:20,reps:12,rir:2,setType:'R'},{exerciseId:'a',weight:60,reps:12,rir:2,setType:'W'},{exerciseId:'a',weight:60,reps:12,rir:2,setType:'W'}]);assert.equal(progression.suggest(s,'a').action,'consider_increase')});
+test('legacy set without setType is working',()=>assert.equal(progress.working({exerciseId:'a',weight:60,reps:5}),true));
+test('RIR-aware Epley: 100 x 5 @RIR2',()=>assert.ok(Math.abs(progress.estimatedRM({exerciseId:'a',weight:100,reps:5,rir:2})-123.333333)<.001));
+test('warm-up excluded from e1RM',()=>assert.equal(progress.estimatedRM({exerciseId:'a',weight:20,reps:10,rir:3,setType:'R'}),null));
+test('warm-up included in tonnage',()=>assert.equal(progress.exerciseSessions(sets([{exerciseId:'a',weight:20,reps:10,setType:'R'},{exerciseId:'a',weight:100,reps:5,setType:'W'}]),'a')[0].volume,700));
+test('warm-up does not count for record',()=>assert.equal(progress.records(sets([{exerciseId:'a',weight:200,reps:5,setType:'R'},{exerciseId:'a',weight:100,reps:5,setType:'W'}]),'a')[5].exact.weight,100));
+test('legacy profile fallback',()=>assert.equal(core.profile({id:'unknown',group:'Nogi'})[0][0],'Nogi'));
+const html=read('index.html'),sw=read('sw.js');
+test('canonical module is loaded synchronously before inline workout code',()=>assert.ok(html.indexOf('muscle-fatigue-core.js?v=1')<html.indexOf('function muscleFactors(')));
+test('plan and manual rows both support set type',()=>{assert.ok(html.includes('setTypePicker(rowId'));assert.ok(html.includes('setTypePicker(key'));assert.ok(html.includes('setType=readSetType(row)'));assert.ok(html.includes('setType=readSetType(prefix)'))});
+test('PWA precache has all updated modules',()=>['muscle-fatigue-core.js?v=1','progress-core-v2.js?v=3','assistant/assistant-core.js?v=2','assistant/assistant-progression.js?v=2','assistant/assistant-progression-ui.js?v=2'].forEach(p=>assert.ok(sw.includes(p))));
