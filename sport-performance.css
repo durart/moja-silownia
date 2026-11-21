@@ -212,6 +212,40 @@ body.sport-performance #workout .exercise-card::before {
   width: 4px; height: 61px; border-radius: 0 5px 5px 0;
   background: var(--sp-cyan); box-shadow: 0 0 13px rgba(35,222,244,.18);
 }
+body.sport-performance #workout .sport-exercise-title-row {
+  display: flex; align-items: center; gap: 13px; min-width: 0;
+  margin: 0 0 12px; padding-left: 3px;
+}
+body.sport-performance #workout .sport-exercise-art {
+  flex: 0 0 66px; height: 66px; display: grid; place-items: center;
+  overflow: hidden; color: var(--sp-cyan); border-radius: 13px;
+  background: #e8e9eb; border: 1px solid #335164;
+}
+body.sport-performance #workout .sport-exercise-art svg {
+  height: 40px; width: 40px; color: #096078;
+}
+body.sport-performance #workout .sport-exercise-sprite {
+  display: block; width: 66px; height: 66px;
+  background: #e8e9eb url("./assets/all-exercise-thumbnails.webp?v=160") no-repeat;
+  background-size: 800% 1300%;
+}
+body.sport-performance #workout .sport-exercise-title-text { min-width: 0; }
+body.sport-performance #workout .sport-exercise-title-text h2 {
+  color: #f5fbff; padding: 0; margin: 0 0 7px;
+  font-size: clamp(1.06rem,3vw,1.37rem);
+  letter-spacing: -.025em; font-weight: 850; line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+body.sport-performance #workout .sport-muscle-chip {
+  display: inline-block; border: 1px solid #268daa; background: #123a4d;
+  border-radius: 999px; color: #b3f3ff; font-size: .71rem;
+  font-weight: 730; line-height: 1.25; padding: 5px 9px;
+}
+@media (max-width: 365px) {
+  body.sport-performance #workout .sport-exercise-title-row { gap: 9px; }
+  body.sport-performance #workout .sport-exercise-art { flex-basis: 58px; height: 58px; }
+  body.sport-performance #workout .sport-exercise-sprite { width: 58px; height: 58px; }
+}
 body.sport-performance #workout .exercise-card > h2 {
   color: #f5fbff; padding-left: 6px; margin: 0 0 10px;
   font-size: clamp(1.1rem,3vw,1.37rem);
