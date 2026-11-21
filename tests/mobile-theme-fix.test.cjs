@@ -1,0 +1,12 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.join(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const html=read('index.html'),sw=read('sw.js'),css=read('mobile-theme-fix.css');
+test('theme fix loads after Sport Performance CSS',()=>assert.ok(html.indexOf('sport-performance.css?v=169')<html.indexOf('mobile-theme-fix.css?v=1')));
+test('iOS root and body share the same dark background',()=>{assert.ok(css.includes('html{min-height:100%;background:#07121b}'));assert.ok(css.includes('background-color:#07121b!important'))});
+test('mobile nav is balanced',()=>assert.ok(css.includes('repeat(3,minmax(0,1fr))')));
+test('wide nav shows all five destinations',()=>assert.ok(css.includes('repeat(5,minmax(0,1fr))')));
+test('Start is not selected in workout view',()=>assert.ok(css.includes(':has(#workout:not(.hidden))')));
+test('progress has selected navigation state',()=>assert.ok(css.includes(':has(#progress:not(.hidden)) .top-start-nav button:nth-child(5)')));
+test('manual workout CTA uses cyan',()=>assert.ok(css.includes('#manualStart button:not(.secondary)')));
+test('offline cache updated',()=>assert.ok(sw.includes('mobile-theme-fix.css?v=1')));
+test('fix does not modify user data',()=>assert.ok(!/localStorage|indexedDB|state\.|save\(\)/.test(css)));
