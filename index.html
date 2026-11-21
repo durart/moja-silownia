@@ -405,7 +405,13 @@ function beep(){return restAudio?.beep()}
 function cancelEmptyWorkout(){if(state.active.length||state.activePlan)return;if(!confirm('Anulować pusty trening i zatrzymać licznik?'))return;state.startedAt=null;state.restUntil=null;state.manualStarted=false;state.manualExerciseIds=[];state.pendingWorkout=null;restAudioStop();save();render();note('Pusty trening anulowany')}
 function tick(){updateDashboardWorkoutClock();let el=document.getElementById('timers');if(!el)return;const running=!!state.startedAt&&(!!state.activePlan||!!state.manualStarted);el.classList.toggle('hidden',!running||currentTab!=='workout');const cancel=document.getElementById('cancelEmptyWorkoutBtn');if(cancel)cancel.style.display=running&&!state.active.length&&!state.activePlan?'inline-block':'none';const skip=document.getElementById('skipRestBtn');if(skip)skip.style.display=state.restUntil&&state.restUntil>Date.now()?'inline-block':'none';if(!running)return;document.getElementById('elapsed').textContent=formatTime((Date.now()-Date.parse(state.startedAt))/1000);let left=state.restUntil?Math.ceil((state.restUntil-Date.now())/1000):0;document.getElementById('remaining').textContent=left>0?Math.floor(left/60)+':'+String(left%60).padStart(2,'0'):'—';if(state.restUntil&&left>0)restAudioSchedule(state.restUntil);if(state.restUntil&&left<=0){const deadline=Number(state.restUntil);if(restAudio?.getScheduledUntil()!==deadline)beep();state.restUntil=null;save();note('Przerwa zakończona!')}}
 setInterval(tick,500);
-function lastSets(exerciseId){for(const session of state.sessions){let a=session.sets.filter(x=>x.exerciseId===exerciseId);if(a.length)return a}return []}
+// Selectors are loaded asynchronously; original synchronous behavior is retained until ready.
+let workoutSelectors=null;
+import('./modules/workout-selectors.js?v=1').then(module=>{workoutSelectors=module}).catch(error=>console.warn('Selektory treningu:',error));
+function lastSets(exerciseId){
+ if(workoutSelectors)return workoutSelectors.selectLastSets(state.sessions,exerciseId);
+ for(const session of state.sessions){let a=session.sets.filter(x=>x.exerciseId===exerciseId);if(a.length)return a}return [];
+}
 function planSets(exerciseId,slotIndex){
  if(!Number.isInteger(slotIndex))return state.active.filter(x=>x.exerciseId===exerciseId);
  const plan=state.plans.find(p=>p.id===state.activePlan);
@@ -439,6 +445,7 @@ function manualSetRows(id){
 
 /* BEGIN PLAN EXTRA CORE */
 function normalizePlanExtraIds(raw){
+ if(workoutSelectors)return workoutSelectors.normalizeExtraExerciseIds(raw,state.exercises);
  if(!Array.isArray(raw))return [];
  const valid=new Set(state.exercises.map(e=>e.id));
  return [...new Set(raw.filter(id=>typeof id==='string'&&valid.has(id)))];
@@ -448,9 +455,11 @@ function planExtraIds(){
  return state.planExtraExerciseIds;
 }
 function effectivePlanExerciseIds(plan){
+ if(workoutSelectors)return workoutSelectors.selectEffectivePlanExerciseIds(plan,state.hiddenWorkoutSlots,state.workoutSwaps);
  return Array.isArray(plan?.exerciseIds)?plan.exerciseIds.map((id,i)=>(state.hiddenWorkoutSlots||[]).includes(i)?null:(state.workoutSwaps?.[i]||id)):[];
 }
 function planExtraStatus(id,plan){
+ if(workoutSelectors)return workoutSelectors.selectPlanExtraStatus(id,plan,state.exercises,effectivePlanExerciseIds(plan),planExtraIds());
  if(!plan)return 'no-plan';
  if(!state.exercises.some(e=>e.id===id))return 'missing-exercise';
  if(effectivePlanExerciseIds(plan).includes(id))return 'in-plan';
