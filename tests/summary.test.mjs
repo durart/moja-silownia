@@ -43,7 +43,7 @@ test('starting at exercise 2 and returning to exercise 1 keeps independent group
   ]);
   const m = core.build(s);
   assert.equal(m.exerciseCount, 2);
-  assert.deepEqual(m.groups.map(g => g.name), ['B', 'A']);
+  assert.deepEqual(Array.from(m.groups,g => g.name), ['B', 'A']);
   assert.equal(m.groups[0].count, 2);
   assert.equal(m.groups[1].count, 1);
 });
@@ -54,7 +54,7 @@ test('identical exercise repeated at different positions is not merged', () => {
     set('A', 80, 8, { planSlotIndex: 2 })
   ]));
   assert.equal(m.exerciseCount, 2);
-  assert.deepEqual(m.groups.map(g => g.slot), [0, 2]);
+  assert.deepEqual(Array.from(m.groups,g => g.slot), [0, 2]);
 });
 
 test('old sessions without plan indexes still render', () => {
