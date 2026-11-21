@@ -539,3 +539,55 @@ body.sport-performance #plans .imp-plan {
     scroll-behavior: auto !important;
   }
 }
+
+/* v1.6.9 — dodatki do aktywnego planu, zgodnie z motywem Sport Performance */
+body.sport-performance #planWorkout .plan-extra-section {
+  margin: 23px 0 16px; padding: 17px 13px 19px;
+  background: #091d2a; border: 1px dashed #2b9eb9;
+  border-radius: 18px;
+}
+body.sport-performance #planWorkout .plan-extra-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 3px 14px;
+}
+body.sport-performance #planWorkout .plan-extra-heading h2 {
+  margin: 5px 0 3px; font-size: clamp(1.18rem,4.6vw,1.5rem);
+}
+body.sport-performance #planWorkout .plan-extra-heading p { margin: 0; font-size: .82rem; }
+body.sport-performance #planWorkout .plan-extra-count {
+  display: grid; place-items: center; flex: none;
+  width: 33px; height: 33px; color: #04252c;
+  background: #23def4; border-radius: 10px; font-weight: 850;
+}
+body.sport-performance #planWorkout .plan-extra-card {
+  background: #112734 !important; border: 1px solid #34728a !important;
+}
+body.sport-performance #planWorkout .plan-extra-card .plan-extra-chip {
+  display: inline-block; margin: 2px 0 0 7px;
+  padding: 5px 8px; border-radius: 99px;
+  color: #162509; background: #b2fa4a;
+  font-size: .7rem; font-weight: 800;
+}
+body.sport-performance #planWorkout .plan-extra-card > label {
+  display: block; margin: 4px 0 10px;
+}
+body.sport-performance #planWorkout .plan-extra-card > label select {
+  width: 100%; max-width: 230px; margin: 6px 0 0; min-height: 44px;
+}
+body.sport-performance #planWorkout .plan-extra-card .hevy-add {
+  display: block; width: 100%; min-height: 46px;
+  background: #163646 !important; border: 1px dashed #37b5cb !important;
+  color: #c8f7fd !important; font-weight: 800;
+}
+body.sport-performance #planWorkout .plan-extra-add {
+  display: block; width: 100%; min-height: 52px;
+  margin: 13px 0 0; padding: 12px 14px;
+  color: #031c26; background: #27d8f1 !important;
+  border: 1px solid #48e0f3; border-radius: 12px;
+  font-size: 1rem; font-weight: 830;
+}
+body.sport-performance #planWorkout .plan-extra-card .hevy-set > button { min-width: 0; }
+@media (max-width: 380px) {
+  body.sport-performance #planWorkout .plan-extra-section { padding: 13px 9px 16px; }
+  body.sport-performance #planWorkout .plan-extra-chip { margin: 4px 0 0 !important; }
+}
