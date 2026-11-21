@@ -334,7 +334,7 @@ function pickerRender(){
   tiles.innerHTML=config.map(([group,label,part])=>{
    const count=state.exercises.filter(e=>pickerCategory(e,group)).length;
    const tileNo=config.findIndex(x=>x[0]===group);
-   const art=group==="Kalistenika"?'<span class="pick-symbol" aria-hidden="true">🤸</span>':'<span class="pick-source-image pick-source-'+tileNo+'" aria-hidden="true"></span>';
+   const art=group==="Kalistenika"?'<span class="pick-source-image pick-source-9" aria-hidden="true"></span>':'<span class="pick-source-image pick-source-'+tileNo+'" aria-hidden="true"></span>';
    return '<button type="button" class="pick-tile" data-pick-group="'+safe(group)+'" onclick="pickerChoose(this.dataset.pickGroup)">'+art+"<strong>"+safe(label)+"</strong><small>"+count+" ćw.</small></button>";
   }).join("");
   return;
@@ -1129,8 +1129,8 @@ return `<svg viewBox="0 0 120 340" aria-hidden="true" role="img">${base}<g fill=
 function renderMuscleTiles(selected){
  const el=document.getElementById('muscleTiles');
  el.innerHTML=tileDefs.map(([group,label,part],i)=>{
-  const count=state.exercises.filter(e=>e.group===group||(group==='Inne'&&e.equipment==='Własne')).length;
-  return `<button class="muscle-tile ${selected===group?'selected':''}" onclick="selectMuscle('${group}')"><span class="catalog-source-art ${group==='Kalistenika'?'cali-icon':'catalog-source-'+i}" aria-hidden="true">${group==='Kalistenika'?'🤸':''}</span><span>${label}</span><small>${count} ćw.</small></button>`;
+  const count=state.exercises.filter(e=>e.group===group).length;
+  return `<button class="muscle-tile ${selected===group?'selected':''}" onclick="selectMuscle('${group}')"><span class="catalog-source-art ${group==='Kalistenika'?'catalog-source-9':'catalog-source-'+i}" aria-hidden="true"></span><span>${label}</span><small>${count} ćw.</small></button>`;
  }).join('')+`<button class="muscle-tile all ${!selected?'selected':''}" onclick="selectMuscle('')"><span class="catalog-source-art catalog-source-10" aria-hidden="true"></span><span>Wszystkie</span><small>${state.exercises.length} ćw.</small></button>`;
 }
 function selectMuscle(group){let filter=document.getElementById('muscleFilter');filter.value=group;renderCatalog();document.getElementById('catalogList').scrollIntoView({behavior:'smooth',block:'start'})}
