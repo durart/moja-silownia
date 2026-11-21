@@ -453,7 +453,7 @@ const seeds=[
 ["Wspięcia na palce na maszynie siedząc","Łydki","Maszyna"]
 ].map((v,i)=>({id:'seed-'+i,name:v[0],group:v[1],equipment:v[2]}));
 const backupKey=key+'-previous-valid',corruptKey=key+'-unreadable';
-function validState(v){return v&&Array.isArray(v.exercises)&&Array.isArray(v.active)&&Array.isArray(v.sessions)}
+function validState(v){return v&&Array.isArray(v.exercises)&&Array.isArray(v.active)&&Array.isArray(v.sessions)} // bootstrap path remains synchronous until full state migration
 function readState(raw){if(!raw)return null;try{const parsed=JSON.parse(raw);return validState(parsed)?parsed:null}catch(e){console.error('Nieprawidłowy zapis treningów',e);return null}}
 let originalRaw=null;try{originalRaw=localStorage.getItem(key)}catch(e){console.error('Odczyt pamięci nieudany',e)}
 let state=readState(originalRaw);
@@ -473,11 +473,16 @@ let draft=[];
 let storageWarningShown=false;
 function save(){
  try{
-  const next=window.MojaSilowniaModules?.storage.serializeBackup(state)??JSON.stringify(state),previous=localStorage.getItem(key);
-  if(previous&&previous!==next&&validState(readState(previous))){
-   try{localStorage.setItem(backupKey,previous)}catch(e){console.warn('Kopia poprzedniego stanu nieudana',e)}
+  if(window.MojaSilowniaModules?.stateStorage){
+   window.MojaSilowniaModules.stateStorage.persist(state);
+  }else{
+   const next=JSON.stringify(state),previous=localStorage.getItem(key);
+   if(previous&&previous!==next&&validState(readState(previous))){
+    try{localStorage.setItem(backupKey,previous)}catch(e){console.warn('Kopia poprzedniego stanu nieudana',e)}
+   }
+   localStorage.setItem(key,next);
   }
-  localStorage.setItem(key,next);storageWarningShown=false;return true;
+  storageWarningShown=false;return true;
  }catch(e){
   console.error('Nie udało się zapisać treningu',e);
   if(!storageWarningShown){storageWarningShown=true;alert('UWAGA: dane nie zostały zapisane. Nie zamykaj aplikacji. Zwolnij miejsce i wyeksportuj kopię JSON.')}
@@ -488,6 +493,16 @@ function save(){
 /* Naprawa starszego zapisu: są serie, lecz znacznik rozpoczęcia lub plan zniknął.
    Bez zakładania nowej sesji i bez kasowania zapisanych serii. */
 function recoverActiveWorkout(){
+ const core=window.MojaSilowniaModules?.state;
+ if(core?.recoverActiveState){
+  if(!Array.isArray(state.active)||!state.active.length)return false;
+  if(state.plans?.some(p=>p.id===state.activePlan))return false;
+  // Preserve existing extra-exercise conversion before resetting activePlan.
+  if(state.activePlan!=null)detachPlanExtrasToManual();
+  const result=core.recoverActiveState(state);
+  if(result.changed)save();
+  return result.changed;
+ }
  if(!Array.isArray(state.active)||!state.active.length)return false;
  const activePlan=state.plans?.some(p=>p.id===state.activePlan);
  if(activePlan)return false;
