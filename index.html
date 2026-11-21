@@ -239,6 +239,7 @@ if(!state){
 // Aktualizacja katalogu bez utraty własnych ćwiczeń, planów ani historii.
 const existingIds=new Set(state.exercises.map(e=>e.id));for(const e of [...seeds,...(window.CALISTHENICS_LIBRARY||[])]){if(!existingIds.has(e.id))state.exercises.push(e)}
 // Zachowaj już rozpoczęte treningi z poprzednich wersji.
+let workoutSelectors=null;
 state.planExtraExerciseIds=normalizePlanExtraIds(state.planExtraExerciseIds);state.manualExerciseIds??=[];if(!('manualStarted' in state))state.manualStarted=!state.activePlan&&(state.active.length>0||!!state.startedAt);
 // Nie przywracaj pustego, dawno porzuconego treningu po odświeżeniu strony.
 // Aktywny trening nie wygasa automatycznie — kończy go tylko użytkownik.
@@ -415,7 +416,6 @@ function cancelEmptyWorkout(){if(state.active.length)return;if(!state.startedAt&
 function tick(){updateDashboardWorkoutClock();let el=document.getElementById('timers');if(!el)return;const running=!!state.startedAt&&(!!state.activePlan||!!state.manualStarted);el.classList.toggle('hidden',!running||currentTab!=='workout');const cancel=document.getElementById('cancelEmptyWorkoutBtn');if(cancel)cancel.style.display=running&&!state.active.length?'inline-block':'none';const skip=document.getElementById('skipRestBtn');if(skip)skip.style.display=state.restUntil&&state.restUntil>Date.now()?'inline-block':'none';if(!running)return;document.getElementById('elapsed').textContent=formatTime((Date.now()-Date.parse(state.startedAt))/1000);let left=state.restUntil?Math.ceil((state.restUntil-Date.now())/1000):0;document.getElementById('remaining').textContent=left>0?Math.floor(left/60)+':'+String(left%60).padStart(2,'0'):'—';if(state.restUntil&&left>0)restAudioSchedule(state.restUntil);if(state.restUntil&&left<=0){const deadline=Number(state.restUntil);if(restAudio?.getScheduledUntil()!==deadline)beep();state.restUntil=null;save();note('Przerwa zakończona!')}}
 setInterval(tick,500);
 // Selectors are loaded asynchronously; original synchronous behavior is retained until ready.
-let workoutSelectors=null;
 import('./modules/workout-selectors.js?v=1').then(module=>{workoutSelectors=module}).catch(error=>console.warn('Selektory treningu:',error));
 function lastSets(exerciseId){
  if(workoutSelectors)return workoutSelectors.selectLastSets(state.sessions,exerciseId);
