@@ -169,7 +169,7 @@ test('finish produces one session with plan name and completed extra sets',()=>{
  api.finishWorkout();
  assert.equal(state.sessions.length,1);
  assert.equal(state.sessions[0].planName,'Trening A');
- assert.deepEqual(state.sessions[0].sets.map(x=>x.exerciseId),['seed-1','seed-3']);
+ assert.deepEqual(Array.from(state.sessions[0].sets,x=>x.exerciseId),['seed-1','seed-3']);
  assert.equal(state.planExtraExerciseIds.length,0);
  assert.equal(calls.history,1);
 });
