@@ -23,14 +23,21 @@ function guidance(result){
 }
 function makeCard(exerciseId,options={}){
  const result=window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,options);
+ const pre=state.preWorkout||{};
+ const lowFeeling=typeof pre.feeling==='string'&&/^(bad|poor|low|slabo|słabo|zle|źle|1|2)$/i.test(pre.feeling);
+ const shortSleep=Number(pre.sleepHours)>0&&Number(pre.sleepHours)<6;
+ const lowBattery=pre.battery!=null&&pre.battery!==''&&Number(pre.battery)<30;
+ const lowSleepScore=pre.sleepScore!=null&&pre.sleepScore!==''&&Number(pre.sleepScore)<50;
+ const cautionToday=lowFeeling||shortSleep||lowBattery||lowSleepScore;
  const meta=guidance(result),box=document.createElement('section');
  box.className='advisor-progression advisor-'+meta.tone;box.setAttribute('aria-label','Wskazówka progresji treningowej');
  const eyebrow=document.createElement('span');eyebrow.className='advisor-progression-overline';eyebrow.textContent='ASYSTENT · PROGRESJA';
  const title=document.createElement('strong');title.textContent=meta.label;
  const reason=document.createElement('p');reason.textContent=result.reason;
  box.append(eyebrow,title,reason);
- const ongoing=currentSession(exerciseId).length;
+ const ongoing=currentSession(exerciseId).filter(x=>x.setType!=='R').length;
  if(ongoing){const info=document.createElement('small');info.textContent='W bieżącym treningu zapisano już '+ongoing+' serii tego ćwiczenia. Sugestia bazuje na ostatnim zakończonym treningu.';box.append(info);}
+ if(result.action==='consider_increase'&&cautionToday){const info=document.createElement('small');info.className='advisor-readiness-caution';info.textContent='Wyniki serii pozwalają rozważyć progresję, ale dzisiejszy sen lub samopoczucie sugerują ostrożność. Możesz utrzymać obecny ciężar albo zmniejszyć objętość. To nie jest medyczna ocena regeneracji.';box.append(info);}
  if(result.action==='consider_increase'){
   const caution=document.createElement('small');caution.textContent='Nie zwiększaj ciężaru przy bólu, pogorszeniu techniki lub dużym zmęczeniu. Ostateczna decyzja należy do Ciebie.';box.append(caution);
  }
