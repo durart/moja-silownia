@@ -1,6 +1,6 @@
 /* Moja Siłownia — versioned app-shell cache. User workout data stays in localStorage. */
-const CACHE='moja-silownia-shell-v12-cyan-dashboard-20261121';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg','./ui-enhancements.css?v=164','./dashboard-cyan.css?v=1','./sport-performance.css?v=169','./summary.css?v=1','./plan-importer.js?v=162','./ui-enhancements.js?v=161','./dashboard-cyan-core.js?v=1','./dashboard-cyan-ui.js?v=1','./summary-core.js?v=1','./summary-export.js?v=1','./summary-ui.js?v=1','./progress-core-v2.js?v=2','./progress-ui-v2.js?v=2','./calisthenics-library.js?v=1','./calisthenics-icons.js?v=2','./exercise-catalog-shared.js?v=1'];
+const CACHE='moja-silownia-shell-v13-history-stats-20261121';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg','./ui-enhancements.css?v=164','./dashboard-cyan.css?v=1','./sport-performance.css?v=169','./summary.css?v=1','./plan-importer.js?v=162','./ui-enhancements.js?v=161','./dashboard-cyan-core.js?v=1','./dashboard-cyan-ui.js?v=2','./summary-core.js?v=1','./summary-export.js?v=1','./summary-ui.js?v=1','./progress-core-v2.js?v=2','./progress-ui-v2.js?v=2','./calisthenics-library.js?v=1','./calisthenics-icons.js?v=2','./exercise-catalog-shared.js?v=1'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(ASSETS.map(asset=>cache.add(asset)))));
  self.skipWaiting();
