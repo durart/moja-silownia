@@ -74,7 +74,7 @@ Brak `package.json`, bundlera, serwera, backendu, produkcyjnego service workera.
 | `index.html:1091–1093` | Metryka i wykres `Technika` (6/12/26 tyg.) | Osobna metryka, zachować obecne trzy |
 | `index.html:1201–1202` | Istniejący eksport/import cały `state` | Normalizacja brakującego `formCheck` w starym imporcie |
 | `index.html:1204` | Skrypty `formcheck-library.js`, `formcheck-engine.js`, `formcheck-pose.js`, `formcheck-store.js`, `formcheck-ui.js` | W tej kolejności, `defer`; jedyny globalny punkt `window.FormCheck` |
-| `index.html:1,223,228` | `v1.7.0 — AI Form Check` | Wyłącznie Etap 4 |
+| `index.html:1,228` | `v1.7.0 — AI Form Check` w tytule i widocznym badge | Wyłącznie Etap 4; `index.html:223` to komentarz historyczny `v1.6.2` i nie jest numerem bieżącej wersji |
 
 `render()` z `index.html:546` nie buduje bezpośrednio serii, tylko wywołuje `renderPlanWorkout()` i `renderToday()`. Funkcja `renderCatalog()` ma oryginał w `index.html:1041` i bieżącą redefinicję w `ui-enhancements.js:65` — nie dopisywać hooków do obu wersji.
 
