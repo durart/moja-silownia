@@ -476,7 +476,17 @@ const seeds=[
 ["Wspięcia jednonóż na stopniu","Łydki","Masa ciała"],
 ["Wspięcia na palce na maszynie siedząc","Łydki","Maszyna"]
 ].map((v,i)=>({id:'seed-'+i,name:v[0],group:v[1],equipment:v[2]}));
-let state;try{state=JSON.parse(localStorage.getItem(key))}catch(e){}if(!state||!Array.isArray(state.exercises)||!Array.isArray(state.active)||!Array.isArray(state.sessions))state={exercises:seeds,active:[],sessions:[]};if(!Array.isArray(state.plans))state.plans=[];if(!('activePlan' in state))state.activePlan=null;state.restSettings??={};state.startedAt??=null;state.restUntil??=null;state.bodyWeight??=100.6;state.preWorkout??=null;state.pendingWorkout??=null;state.workoutSwaps??={};state.planRowCounts??={};
+const backupKey=key+'-previous-valid',corruptKey=key+'-unreadable';
+function validState(v){return v&&Array.isArray(v.exercises)&&Array.isArray(v.active)&&Array.isArray(v.sessions)}
+function readState(raw){if(!raw)return null;try{const parsed=JSON.parse(raw);return validState(parsed)?parsed:null}catch(e){console.error('Nieprawidłowy zapis treningów',e);return null}}
+let originalRaw=null;try{originalRaw=localStorage.getItem(key)}catch(e){console.error('Odczyt pamięci nieudany',e)}
+let state=readState(originalRaw);
+if(!state){
+ const backup=readState((()=>{try{return localStorage.getItem(backupKey)}catch(e){return null}})());
+ if(originalRaw){try{localStorage.setItem(corruptKey,originalRaw)}catch(e){console.error('Nie można zabezpieczyć uszkodzonego zapisu',e)}}
+ state=backup||{exercises:seeds,active:[],sessions:[]};
+ if(originalRaw)window.addEventListener('load',()=>alert(backup?'Odzyskano treningi z poprzedniej kopii. Wyeksportuj dane JSON.':'Nie udało się odczytać danych. Zachowano próbę kopii uszkodzonego zapisu. Przywróć kopię JSON, jeśli ją posiadasz.'));
+}if(!Array.isArray(state.plans))state.plans=[];if(!('activePlan' in state))state.activePlan=null;state.restSettings??={};state.startedAt??=null;state.restUntil??=null;state.bodyWeight??=100.6;state.preWorkout??=null;state.pendingWorkout??=null;state.workoutSwaps??={};state.planRowCounts??={};
 // Aktualizacja katalogu bez utraty własnych ćwiczeń, planów ani historii.
 const existingIds=new Set(state.exercises.map(e=>e.id));for(const e of seeds){if(!existingIds.has(e.id))state.exercises.push(e)}
 // Zachowaj już rozpoczęte treningi z poprzednich wersji.
@@ -484,7 +494,20 @@ state.planExtraExerciseIds=normalizePlanExtraIds(state.planExtraExerciseIds);sta
 // Nie przywracaj pustego, dawno porzuconego treningu po odświeżeniu strony.
 // Aktywny trening nie wygasa automatycznie — kończy go tylko użytkownik.
 let draft=[];
-function save(){localStorage.setItem(key,JSON.stringify(state))}
+let storageWarningShown=false;
+function save(){
+ try{
+  const next=JSON.stringify(state),previous=localStorage.getItem(key);
+  if(previous&&previous!==next&&validState(readState(previous))){
+   try{localStorage.setItem(backupKey,previous)}catch(e){console.warn('Kopia poprzedniego stanu nieudana',e)}
+  }
+  localStorage.setItem(key,next);storageWarningShown=false;return true;
+ }catch(e){
+  console.error('Nie udało się zapisać treningu',e);
+  if(!storageWarningShown){storageWarningShown=true;alert('UWAGA: dane nie zostały zapisane. Nie zamykaj aplikacji. Zwolnij miejsce i wyeksportuj kopię JSON.')}
+  return false;
+ }
+}
 
 /* Naprawa starszego zapisu: są serie, lecz znacznik rozpoczęcia lub plan zniknął.
    Bez zakładania nowej sesji i bez kasowania zapisanych serii. */
@@ -978,7 +1001,7 @@ function renderToday(){
  const e=state.exercises.find(x=>x.id===id);if(!e)return '';
  const rows=manualSetRows(id),prev=lastSets(id);
  const count=rows.length+(manualDrafts[id]??(rows.length?0:1));
- const head=`<div class="exercise-card hevy-card"><div class="sport-exercise-title-row"><span class="sport-exercise-art" aria-hidden="true">${sportExerciseArt(e)}</span><div class="sport-exercise-title-text"><h2>${k+1}. ${safe(e.name)}</h2><span class="sport-muscle-chip">${safe(e.group)}</span></div></div><div class="toolbar exercise-actions"><button class="secondary" onclick="openTechnique('${safe(id)}')">🎬 Technika</button><button class="secondary" onclick="openSwap('manual')">⇄ Zamień</button></div><div class="set-grid set-head"><span>Nr</span><span>Poprzednio</span><span>KG</span><span>Powt.</span><span>RIR</span><span>✓</span><span></span></div>`;
+ const head=`<div class="exercise-card hevy-card"><div class="sport-exercise-title-row"><span class="sport-exercise-art" aria-hidden="true">${sportExerciseArt(e)}</span><div class="sport-exercise-title-text"><h2>${k+1}. ${safe(e.name)}</h2><span class="sport-muscle-chip">${safe(e.group)}</span></div></div><div class="toolbar exercise-actions"><button class="secondary" onclick="openTechnique('${safe(id)}')">🎬 Technika</button><button class="secondary" onclick="openSwap('manual',null,'${safe(id)}')">⇄ Zamień</button></div><div class="set-grid set-head"><span>Nr</span><span>Poprzednio</span><span>KG</span><span>Powt.</span><span>RIR</span><span>✓</span><span></span></div>`;
  let body='';for(let j=0;j<count;j++){
  const entry=rows[j],old=prev[j],prefill=rows[j-1]||prev[j]||prev.at(-1),key=`m_${id}_${j}`,draft=planExtraInputDrafts[key];
  body+=`<div class="set-grid hevy-set ${entry?'hevy-done':j===rows.length?'sport-next-set':''}"><span>${entry?.pr?.length?'🏅':j+1}</span><span class="previous">${old?old.weight+'×'+old.reps:'—'}</span><label class="sport-set-field sport-weight"><span class="sport-field-caption">CIĘŻAR (KG)</span><input id="${key}_w" aria-label="Ciężar serii ${j+1}" type="number" min="0" step="0.5" inputmode="decimal" value="${entry?entry.weight:(draft?.weight??prefill?.weight??'')}"></label><label class="sport-set-field sport-reps"><span class="sport-field-caption">POWT.</span><input id="${key}_r" aria-label="Powtórzenia serii ${j+1}" type="number" min="1" step="1" inputmode="numeric" value="${entry?entry.reps:(draft?.reps??prefill?.reps??'')}"></label><label class="sport-set-field sport-rir"><span class="sport-field-caption">RIR</span><select id="${key}_rir" aria-label="RIR serii ${j+1}"><option value="">—</option>${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${(entry?.rir??draft?.rir)===n?'selected':''}>${n===5?'5+':n}</option>`).join('')}</select></label><button class="${entry?'done':''}" title="${entry?'Cofnij wykonanie serii':'Zapisz wykonaną serię'}" aria-label="${entry?'Cofnij wykonanie serii':'Zapisz wykonaną serię'}" onclick="toggleManualRow('${safe(id)}',${j})">${entry?'✓':'+'}</button><button class="danger" onclick="removeManualRow('${safe(id)}',${j})" title="Usuń serię">×</button></div>`;
@@ -1142,11 +1165,20 @@ function exerciseProfile(ex){return Object.fromEntries(exerciseMuscles[ex.id]||m
 function similarity(a,b){const pa=exerciseProfile(a),pb=exerciseProfile(b);let dot=0,aa=0,bb=0;for(const v of Object.values(pa))aa+=v*v;for(const v of Object.values(pb))bb+=v*v;for(const [k,v] of Object.entries(pa))dot+=v*(pb[k]||0);let cosine=dot/Math.sqrt(aa*bb||1);return Math.max(0,Math.min(100,Math.round(100*cosine)))}
 function swapSuggestions(id){const original=state.exercises.find(e=>e.id===id);if(!original)return [];const profile=exerciseProfile(original),main=Object.entries(profile).sort((a,b)=>b[1]-a[1])[0]?.[0];return state.exercises.filter(e=>e.id!==id&&Object.entries(exerciseProfile(e)).sort((a,b)=>b[1]-a[1])[0]?.[0]===main).map(e=>({e,score:similarity(original,e)})).sort((a,b)=>b.score-a.score||a.e.name.localeCompare(b.e.name,'pl'))}
 function closeSwap(){document.getElementById('swapOverlay').classList.add('hidden');swapContext=null}
-function openSwap(mode,index){let plan=state.plans.find(p=>p.id===state.activePlan);let id=mode==='manual'?document.getElementById('exercise').value:(state.workoutSwaps?.[index]||plan?.exerciseIds[index]);let e=state.exercises.find(x=>x.id===id);if(!e)return;swapContext={mode,index,id};let options=swapSuggestions(id),prof=exerciseProfile(e);let html=`<p><strong>Obecnie:</strong> ${safe(e.name)}</p><p class="swap-note">Zaangażowanie: ${Object.entries(prof).map(([m,v])=>safe(m)+' '+Math.round(v*100)+'%').join(' · ')}. Procenty to wagi porównawcze, nie pomiar EMG.</p><p class="swap-note">Zamienniki posortowane od najbardziej zbliżonych. Wybór nie zmieni zapisanego planu ani wcześniej wykonanych serii.</p>`;
+function openSwap(mode,index,manualId=null){let plan=state.plans.find(p=>p.id===state.activePlan);let id=mode==='manual'?(manualId||document.getElementById('exercise').value):(state.workoutSwaps?.[index]||plan?.exerciseIds[index]);let e=state.exercises.find(x=>x.id===id);if(!e)return;swapContext={mode,index,id};let options=swapSuggestions(id),prof=exerciseProfile(e);let html=`<p><strong>Obecnie:</strong> ${safe(e.name)}</p><p class="swap-note">Zaangażowanie: ${Object.entries(prof).map(([m,v])=>safe(m)+' '+Math.round(v*100)+'%').join(' · ')}. Procenty to wagi porównawcze, nie pomiar EMG.</p><p class="swap-note">Zamienniki posortowane od najbardziej zbliżonych. Wybór nie zmieni zapisanego planu ani wcześniej wykonanych serii.</p>`;
 if(!options.length)html+='<p>Brak podobnych ćwiczeń w katalogu.</p>';
 else html+=options.map(({e,score})=>`<button class="swap-option" onclick="applySwap('${safe(e.id)}')"><span class="swap-score">${score}% dopasowania</span><strong>${safe(e.name)}</strong><small>${safe(e.equipment||'Sprzęt nieokreślony')} · ${Object.entries(exerciseProfile(e)).map(([m,v])=>safe(m)+' '+Math.round(v*100)+'%').join(' · ')}</small></button>`).join('');
 document.getElementById('swapContents').innerHTML=html;document.getElementById('swapOverlay').classList.remove('hidden')}
-function applySwap(newId){if(!swapContext||!state.exercises.some(e=>e.id===newId))return;const {mode,index,id}=swapContext;let old=state.exercises.find(e=>e.id===id),replacement=state.exercises.find(e=>e.id===newId);if(mode==='manual'){document.getElementById('exercise').value=newId;prefillManual()}else{let plan=state.plans.find(p=>p.id===state.activePlan);if(!plan)return;const others=effectivePlanExerciseIds(plan).filter((_,i)=>i!==index);if(others.includes(newId)||planExtraIds().includes(newId)){note('To ćwiczenie jest już w bieżącym treningu — wybierz inne');return}state.workoutSwaps??={};state.workoutSwaps[index]=newId;extraRows={};removedRows={};save();render()}closeSwap();note('Zamieniono: '+(old?.name||'')+' → '+replacement.name)}
+function applySwap(newId){if(!swapContext||!state.exercises.some(e=>e.id===newId))return;const {mode,index,id}=swapContext;let old=state.exercises.find(e=>e.id===id),replacement=state.exercises.find(e=>e.id===newId);if(mode==='manual'){
+ if(manualIds().includes(newId)){note('To ćwiczenie jest już w treningu');return}
+ if(!manualIds().includes(id)){note('Nie znaleziono ćwiczenia do zamiany');return}
+ const hasSaved=state.active.some(x=>x.exerciseId===id);
+ state.manualExerciseIds=state.manualExerciseIds.filter(x=>x!==id||hasSaved);
+ state.manualExerciseIds.push(newId);
+ delete manualDrafts[id];manualDrafts[newId]=1;
+ document.getElementById('exercise').value=newId;
+ save();render();
+}else{let plan=state.plans.find(p=>p.id===state.activePlan);if(!plan)return;const others=effectivePlanExerciseIds(plan).filter((_,i)=>i!==index);if(others.includes(newId)||planExtraIds().includes(newId)){note('To ćwiczenie jest już w bieżącym treningu — wybierz inne');return}state.workoutSwaps??={};state.workoutSwaps[index]=newId;extraRows={};removedRows={};save();render()}closeSwap();note('Zamieniono: '+(old?.name||'')+' → '+replacement.name)}
 
 function muscleLoads(session){let result={};for(let x of session.sets||[])for(let [muscle,factor] of muscleFactors(x))result[muscle]=(result[muscle]||0)+factor;return result}
 // Impuls na serię: ważona liczba efektywnych serii + łagodna korekta tonażu.
@@ -1201,4 +1233,4 @@ async function exportWorkoutPNG(id){
 function exportData(){let b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='moja-silownia-kopia-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 async function importData(event){let f=event.target.files?.[0];if(!f)return;try{let v=JSON.parse(await f.text());if(!Array.isArray(v.exercises)||!Array.isArray(v.active)||!Array.isArray(v.sessions)||v.exercises.some(e=>typeof e.id!=='string'||typeof e.name!=='string'))throw Error('Nieprawidłowy format');if(!confirm('Import zastąpi wszystkie dane zapisane na tym urządzeniu. Kontynuować?'))return;state=v;if(!Array.isArray(state.plans))state.plans=[];if(!('activePlan' in state))state.activePlan=null;state.restSettings??={};state.startedAt??=null;state.restUntil??=null;state.planExtraExerciseIds=normalizePlanExtraIds(state.planExtraExerciseIds);state.manualStarted??=(!state.activePlan&&(state.active.length>0||!!state.startedAt));state.bodyWeight??=100.6;state.preWorkout??=null;state.pendingWorkout=null;state.workoutSwaps??={};state.planRowCounts??={};const known=new Set(state.exercises.map(e=>e.id));for(const e of seeds)if(!known.has(e.id))state.exercises.push(e);save();render();note('Dane zaimportowane')}catch(e){note('Błąd importu: '+e.message)}event.target.value=''}
 save();tab(workoutIsRunning()?'workout':'dashboard');
-</script><script src="./plan-importer.js?v=162" defer></script><script src="./ui-enhancements.js?v=160" defer></script><script src="./summary-core.js?v=1" defer></script><script src="./summary-export.js?v=1" defer></script><script src="./summary-ui.js?v=1" defer></script></body></html>
+</script><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(e=>console.warn('Tryb offline niedostępny',e)))}</script><script src="./plan-importer.js?v=162" defer></script><script src="./ui-enhancements.js?v=160" defer></script><script src="./summary-core.js?v=1" defer></script><script src="./summary-export.js?v=1" defer></script><script src="./summary-ui.js?v=1" defer></script></body></html>
