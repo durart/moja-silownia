@@ -390,102 +390,20 @@ function changeRest(id,v){state.restSettings[id]=Number(v);save();note('Przerwa:
 function startRest(id){restAudioStop();state.restUntil=Date.now()+restSeconds(id)*1000;save();restAudioUnlock();restAudioSchedule(state.restUntil);tick()}
 function skipRest(){restAudioStop();state.restUntil=null;save();tick()}
 function formatTime(n){n=Math.max(0,Math.floor(n));return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(x=>String(x).padStart(2,'0')).join(':')}
-let restAudioContext=null;
-let restAudioBuffer=null;
-let restAudioLoading=null;
-let restAudioSource=null;
-let restAudioScheduledUntil=null;
-const restAudioGain=0.70; // głośniej niż dawne pojedyncze piknięcie (gain=0.08)
-function restAudioGetContext(){
- if(restAudioContext)return restAudioContext;
- const Context=window.AudioContext||window.webkitAudioContext;
- if(!Context)return null;
- try{restAudioContext=new Context()}catch(e){return null}
- return restAudioContext;
-}
-function restAudioStop(){
- if(restAudioSource){try{restAudioSource.stop()}catch(e){}}
- restAudioSource=null;
- restAudioScheduledUntil=null;
-}
-function restAudioLoad(){
- if(restAudioBuffer)return Promise.resolve(restAudioBuffer);
- if(restAudioLoading)return restAudioLoading;
- const ctx=restAudioGetContext();
- if(!ctx)return Promise.resolve(null);
- restAudioLoading=fetch('./assets/rest-sound-a.mp3')
-  .then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.arrayBuffer()})
-  .then(bytes=>ctx.decodeAudioData(bytes))
-  .then(buffer=>{restAudioBuffer=buffer;restAudioSchedule(state.restUntil);return buffer})
-  .catch(error=>{console.warn('Dźwięk przerwy A:',error);restAudioLoading=null;return null});
- return restAudioLoading;
-}
-function restAudioPlay(offset,delay,marker){
- const ctx=restAudioGetContext();
- if(!ctx||ctx.state!=='running'||!restAudioBuffer)return false;
- if(offset>=restAudioBuffer.duration-0.06)return false;
- restAudioStop();
- const source=ctx.createBufferSource(),gain=ctx.createGain();
- source.buffer=restAudioBuffer;
- gain.gain.value=restAudioGain;
- source.connect(gain);gain.connect(ctx.destination);
- try{source.start(ctx.currentTime+Math.max(0,delay),Math.max(0,offset))}
- catch(e){console.warn('Dźwięk przerwy A:',e);return false}
- restAudioSource=source;
- restAudioScheduledUntil=marker;
- source.onended=()=>{if(restAudioSource===source)restAudioSource=null};
- return true;
-}
-function restAudioSchedule(deadline){
- if(!deadline)return false;
- const end=Number(deadline);
- if(!Number.isFinite(end)||restAudioScheduledUntil===end)return false;
- const left=end-Date.now();
- if(left<=-300)return false;
- // MP3 zawiera piknięcia od t=0,1,2,3,4 i dłuższy sygnał od t=5.
- // Punkt t=5 próbki ustawiamy dokładnie na koniec rzeczywistej przerwy.
- const delay=Math.max(0,(left-5000)/1000);
- const offset=Math.max(0,(5000-left)/1000);
- return restAudioPlay(offset,delay,end);
-}
-function restAudioUnlock(){
- const ctx=restAudioGetContext();
- if(!ctx)return;
- if(ctx.state!=='running'){
-  ctx.resume().then(()=>restAudioSchedule(state.restUntil)).catch(()=>{});
- }else restAudioSchedule(state.restUntil);
- void restAudioLoad();
-}
-async function restAudioDemo(){
- if(state.restUntil&&Number(state.restUntil)>Date.now()){
-  note('Poczekaj na koniec bieżącej przerwy, aby odtworzyć test.');
-  return;
- }
- const ctx=restAudioGetContext();
- if(!ctx){note('Ta przeglądarka nie obsługuje odtwarzania sygnału.');return}
- try{if(ctx.state!=='running')await ctx.resume()}catch(e){}
- const buffer=await restAudioLoad();
- if(!buffer||ctx.state!=='running'){note('Nie udało się włączyć dźwięku. Sprawdź głośność telefonu i internet.');return}
- restAudioPlay(0,0,'preview');
-}
-// Safari wymaga wcześniejszej aktywacji audio po dotknięciu ekranu.
-document.addEventListener('pointerdown',restAudioUnlock,{passive:true});
-document.addEventListener('touchstart',restAudioUnlock,{passive:true});
-document.addEventListener('keydown',restAudioUnlock);
-function beep(){ // dłuższy awaryjny ton końcowy, gdy MP3 nie zdążyło się wczytać
- const ctx=restAudioGetContext();
- if(!ctx||ctx.state!=='running')return;
- try{
-  const start=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();
-  o.type='sine';o.frequency.value=1040;
-  g.gain.setValueAtTime(0.20,start);
-  g.gain.exponentialRampToValueAtTime(0.001,start+0.66);
-  o.connect(g);g.connect(ctx.destination);o.start(start);o.stop(start+0.68);
- }catch(e){}
-}
+let restAudio=null;
+const restAudioReady=import('./modules/rest-audio.js?v=1').then(({createRestAudio})=>{
+ restAudio=createRestAudio({getRestUntil:()=>state.restUntil,note,document,window,fetch});
+ if(state.restUntil)restAudio.schedule(state.restUntil);
+ return restAudio;
+}).catch(error=>{console.warn('Moduł dźwięku przerwy:',error);return null});
+function restAudioStop(){return restAudio?.stop()}
+function restAudioSchedule(deadline){return restAudio?.schedule(deadline)||false}
+function restAudioUnlock(){return restAudio?.unlock()}
+function restAudioDemo(){return restAudio?restAudio.demo():restAudioReady.then(audio=>audio?.demo())}
+function beep(){return restAudio?.beep()}
 
 function cancelEmptyWorkout(){if(state.active.length||state.activePlan)return;if(!confirm('Anulować pusty trening i zatrzymać licznik?'))return;state.startedAt=null;state.restUntil=null;state.manualStarted=false;state.manualExerciseIds=[];state.pendingWorkout=null;restAudioStop();save();render();note('Pusty trening anulowany')}
-function tick(){updateDashboardWorkoutClock();let el=document.getElementById('timers');if(!el)return;const running=!!state.startedAt&&(!!state.activePlan||!!state.manualStarted);el.classList.toggle('hidden',!running||currentTab!=='workout');const cancel=document.getElementById('cancelEmptyWorkoutBtn');if(cancel)cancel.style.display=running&&!state.active.length&&!state.activePlan?'inline-block':'none';const skip=document.getElementById('skipRestBtn');if(skip)skip.style.display=state.restUntil&&state.restUntil>Date.now()?'inline-block':'none';if(!running)return;document.getElementById('elapsed').textContent=formatTime((Date.now()-Date.parse(state.startedAt))/1000);let left=state.restUntil?Math.ceil((state.restUntil-Date.now())/1000):0;document.getElementById('remaining').textContent=left>0?Math.floor(left/60)+':'+String(left%60).padStart(2,'0'):'—';if(state.restUntil&&left>0)restAudioSchedule(state.restUntil);if(state.restUntil&&left<=0){const deadline=Number(state.restUntil);if(restAudioScheduledUntil!==deadline)beep();state.restUntil=null;save();note('Przerwa zakończona!')}}
+function tick(){updateDashboardWorkoutClock();let el=document.getElementById('timers');if(!el)return;const running=!!state.startedAt&&(!!state.activePlan||!!state.manualStarted);el.classList.toggle('hidden',!running||currentTab!=='workout');const cancel=document.getElementById('cancelEmptyWorkoutBtn');if(cancel)cancel.style.display=running&&!state.active.length&&!state.activePlan?'inline-block':'none';const skip=document.getElementById('skipRestBtn');if(skip)skip.style.display=state.restUntil&&state.restUntil>Date.now()?'inline-block':'none';if(!running)return;document.getElementById('elapsed').textContent=formatTime((Date.now()-Date.parse(state.startedAt))/1000);let left=state.restUntil?Math.ceil((state.restUntil-Date.now())/1000):0;document.getElementById('remaining').textContent=left>0?Math.floor(left/60)+':'+String(left%60).padStart(2,'0'):'—';if(state.restUntil&&left>0)restAudioSchedule(state.restUntil);if(state.restUntil&&left<=0){const deadline=Number(state.restUntil);if(restAudio?.getScheduledUntil()!==deadline)beep();state.restUntil=null;save();note('Przerwa zakończona!')}}
 setInterval(tick,500);
 function lastSets(exerciseId){for(const session of state.sessions){let a=session.sets.filter(x=>x.exerciseId===exerciseId);if(a.length)return a}return []}
 function planSets(exerciseId,slotIndex){
