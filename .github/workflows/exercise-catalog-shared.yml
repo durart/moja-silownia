@@ -1,0 +1,19 @@
+name: Shared exercise catalog tests
+on:
+  push:
+    branches: [feature/shared-exercise-catalog-20261121]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate syntax
+        run: |
+          node --check exercise-catalog-shared.js
+          node --check calisthenics-library.js
+      - name: Run catalog regression tests
+        run: node --test tests/exercise-catalog-shared.test.cjs
