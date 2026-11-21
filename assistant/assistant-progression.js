@@ -6,7 +6,7 @@ function suggest(sessions,exerciseId,options={}){
  const low=valid(options.minReps)?options.minReps:8,high=valid(options.maxReps)?options.maxReps:12;
  if(low<1||high<low)return {action:'insufficient_data',reason:'Nieprawidłowy zakres powtórzeń.'};
  const candidates=(Array.isArray(sessions)?sessions:[]).filter(s=>s&&typeof s.date==='string'&&Number.isFinite(Date.parse(s.date))).slice().sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
- const recent=candidates.map(s=>(Array.isArray(s.sets)?s.sets:[]).filter(x=>String(x.exerciseId)===String(exerciseId)&&valid(Number(x.weight))&&valid(Number(x.reps))&&Number(x.reps)>0)).filter(a=>a.length);
+ const recent=candidates.map(s=>(Array.isArray(s.sets)?s.sets:[]).filter(x=>String(x.exerciseId)===String(exerciseId)&&valid(Number(x.weight))&&valid(Number(x.reps))&&Number(x.reps)>0&&x.setType!=='R'&&x.type!=='warmup')).filter(a=>a.length);
  if(!recent.length)return {action:'insufficient_data',reason:'Brak serii tego ćwiczenia w historii.'};
  const last=recent[0],weight=Number(last[0].weight);
  if(last.length<2||last.some(x=>Number(x.weight)!==weight))return {action:'maintain',weight,reason:'Zbyt mało porównywalnych serii, by sugerować progresję.'};
