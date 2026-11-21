@@ -3,7 +3,7 @@
 'use strict';
 let view='overview',metric='oneRM',days=90,selected='',picked=-1,recordMode='atLeast',reportMonth='';
 const C=()=>window.ProgressCore;
-const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;':'&quot;',"'":'&#39;'}[c]));
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=(n,d=1)=>Number.isFinite(n)?new Intl.NumberFormat('pl-PL',{maximumFractionDigits:d}).format(n):'—';
 const all=()=>Array.isArray(state?.sessions)?state.sessions:[];
 const period=()=>C().inPeriod(all(),days);
