@@ -734,13 +734,65 @@ document.getElementById('manualWorkout').classList.toggle('hidden',!!plan||!stat
 document.getElementById('manualToday').classList.toggle('hidden',!!plan||!state.manualStarted);
 document.getElementById('manualStart').classList.toggle('hidden',!!plan||!!state.manualStarted||!!state.pendingWorkout);
 if(!plan)return;let html=`<div class="card sport-plan-intro"><span class="sport-overline">PLAN TRENINGOWY</span><h2>${safe(plan.name)}</h2><p>Wpisz KG, powtórzenia i RIR. ✓ oznacza serię jako wykonaną.</p><div class="toolbar"><button class="secondary" onclick="leavePlan()">Pełny katalog</button><button onclick="finishWorkout()">Zakończ trening</button></div></div>`;
-for(let idx=0;idx<plan.exerciseIds.length;idx++){let id=state.workoutSwaps?.[idx]||plan.exerciseIds[idx],e=state.exercises.find(x=>x.id===id);if(!e)continue;let current=planSets(id),previous=lastSets(id);html+=`<div class="exercise-card"><div class="sport-exercise-title-row"><span class="sport-exercise-art" aria-hidden="true">${sportExerciseArt(e)}</span><div class="sport-exercise-title-text"><h2>${idx+1}. ${safe(e.name)}</h2><span class="sport-muscle-chip">${safe(e.group)}</span></div></div><button class="secondary" onclick="openSwap('plan',${idx})">⇄ Zamień ćwiczenie</button><button class="secondary" onclick="openTechnique('${safe(id)}')">🎬 Zobacz technikę</button><small>${safe(e.group)} • ${safe(e.equipment)}</small>${plan.targets?.[idx]?`<p class="muted">Cel: ${safe(plan.targets[idx].sets||'—')} serie • ${safe(plan.targets[idx].reps||'—')} powt. ${plan.targets[idx].notes?' • '+safe(plan.targets[idx].notes):''}</p>`:''}<label>Przerwa po serii<select onchange="changeRest('${safe(id)}',this.value)">${restOptions.map(n=>`<option value="${n}" ${restSeconds(id)===n?'selected':''}>${n} sekund</option>`).join('')}</select></label><div class="set-grid set-head"><span>Nr</span><span>Poprzednio</span><span>Kg (0 = bez obciążenia)</span><span>Powt.</span><span>RIR</span><span></span><span></span></div>`;
+for(let idx=0;idx<plan.exerciseIds.length;idx++){let id=state.workoutSwaps?.[idx]||plan.exerciseIds[idx],e=state.exercises.find(x=>x.id===id);if(!e)continue;let current=planSets(id),previous=lastSets(id);html+=`<div class="exercise-card" data-exercise-id="${safe(id)}"><div class="sport-exercise-title-row"><span class="sport-exercise-art" aria-hidden="true">${sportExerciseArt(e)}</span><div class="sport-exercise-title-text"><h2>${idx+1}. ${safe(e.name)}</h2><span class="sport-muscle-chip">${safe(e.group)}</span></div></div><button class="secondary" onclick="openSwap('plan',${idx})">⇄ Zamień ćwiczenie</button><button class="secondary" onclick="openTechnique('${safe(id)}')">🎬 Zobacz technikę</button><small>${safe(e.group)} • ${safe(e.equipment)}</small>${plan.targets?.[idx]?`<p class="muted">Cel: ${safe(plan.targets[idx].sets||'—')} serie • ${safe(plan.targets[idx].reps||'—')} powt. ${plan.targets[idx].notes?' • '+safe(plan.targets[idx].notes):''}</p>`:''}<label>Przerwa po serii<select onchange="changeRest('${safe(id)}',this.value)">${restOptions.map(n=>`<option value="${n}" ${restSeconds(id)===n?'selected':''}>${n} sekund</option>`).join('')}</select></label><div class="set-grid set-head"><span>Nr</span><span>Poprzednio</span><span>Kg (0 = bez obciążenia)</span><span>Powt.</span><span>RIR</span><span></span><span></span></div>`;
 let target=plan.targets?.[idx];let plannedReps=String(target?.reps||'').split(/\s*[/,;]\s*/).map(x=>Number(x.trim())).filter(x=>Number.isFinite(x)&&x>0);let plannedSets=Number(target?.sets)||0;let count=planVisibleRows(id,plannedSets);
 for(let j=0;j<count;j++){let entry=current[j],old=previous[j],prefill=current[j-1]||previous[j]||previous.at(-1),prev=old?`${old.weight} × ${old.reps}`:'—';let rowId=`r_${idx}_${j}`;let setTarget=target?.setDetails?.[j],setReps=String(setTarget?.reps||'').match(/^\s*(\d+)/)?.[1];html+=`<div class="set-grid hevy-set ${entry?'hevy-done':j===current.length?'sport-next-set':''}"><span>${j+1}</span><span class="previous">${prev}</span><label class="sport-set-field sport-weight"><span class="sport-field-caption">CIĘŻAR (KG)</span><input id="${rowId}_w" type="number" min="0" step="0.5" inputmode="decimal" placeholder="kg" value="${entry?entry.weight:(setTarget?.weight||target?.weight||prefill?.weight||'')}"></label><label class="sport-set-field sport-reps"><span class="sport-field-caption">POWT.</span><input id="${rowId}_r" type="number" min="1" step="1" inputmode="numeric" placeholder="powt." value="${entry?entry.reps:(setReps??plannedReps[j]??(plannedReps.length===1?plannedReps[0]:(prefill?.reps??'')))}"></label><label class="sport-set-field sport-rir"><span class="sport-field-caption">RIR</span><select id="${rowId}_rir" aria-label="RIR serii"><option value="">—</option>${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${entry?.rir===n?'selected':''}>${n===5?'5+':n}</option>`).join('')}</select></label><button class="${entry?'done':''}" onclick="savePlanRow('${safe(id)}',${j},'${rowId}')">${entry?'✓':'+'}</button><button class="danger" title="Usuń serię" onclick="deletePlanRow('${safe(id)}',${j})">✕</button></div>`;
 if(setTarget&&(setTarget.weight||setTarget.reps))html+=`<p class="plan-set-caption">Cel serii ${j+1}: ${safe(setTarget.weight||'—')} kg × ${safe(setTarget.reps||'—')} powt.${/[-–]/.test(setTarget.reps||'')?' (zakres; wpisana dolna granica)':''}</p>`;
 }
 html+=`<div class="toolbar"><button class="secondary" onclick="addExtraRow('${safe(id)}')">+ Dodaj serię</button></div></div>`}
+html+=renderPlanExtraExercises(plan);
 document.getElementById('planWorkout').innerHTML=html}
+
+function focusPlanExercise(id){
+ const row=[...document.querySelectorAll('#planWorkout [data-exercise-id]')].find(el=>el.dataset.exerciseId===id);
+ if(row)row.scrollIntoView({behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth',block:'center'});
+}
+function addPlanExtraExercise(id){
+ const plan=state.plans.find(p=>p.id===state.activePlan);
+ const status=planExtraStatus(id,plan);
+ if(status!=='ok'){
+  if(status==='in-plan'||status==='already-added'){
+   note(status==='in-plan'?'To ćwiczenie już znajduje się w aktywnym planie':'To ćwiczenie jest już dodane');
+   focusPlanExercise(id);
+  }else note('Nie można dodać tego ćwiczenia do planu');
+  return false;
+ }
+ if(!saveExtraMutation(()=>{planExtraIds().push(id);manualDrafts[id]=1;}))return false;
+ renderPlanWorkout();
+ focusPlanExercise(id);
+ note('Dodano ćwiczenie tylko do bieżącego treningu');
+ return true;
+}
+function removePlanExtraExercise(id){
+ if(!isPlanExtraExercise(id))return false;
+ const completed=state.active.filter(row=>row.exerciseId===id).length;
+ if(completed&&!confirm('Usunąć dodatkowe ćwiczenie i jego '+completed+' zapisanych serii? Te serie nie trafią do historii.'))return false;
+ if(!saveExtraMutation(()=>{
+  state.planExtraExerciseIds=planExtraIds().filter(x=>x!==id);
+  state.active=state.active.filter(x=>x.exerciseId!==id);
+  delete manualDrafts[id];
+ }))return false;
+ renderPlanWorkout();
+ note('Usunięto ćwiczenie dodatkowe');
+ return true;
+}
+function renderPlanExtraExercises(plan){
+ const ids=planExtraIds().filter(id=>!effectivePlanExerciseIds(plan).includes(id));
+ let html='<section class="plan-extra-section" aria-label="Dodatkowe ćwiczenia"><div class="plan-extra-heading"><div><span class="sport-overline">TYLKO TEN TRENING</span><h2>Dodatkowe ćwiczenia</h2><p>Nie zmieniają zapisanego planu.</p></div><span class="plan-extra-count">'+ids.length+'</span></div>';
+ for(const id of ids){
+  const e=state.exercises.find(x=>x.id===id);if(!e)continue;
+  const rows=planSets(id),previous=lastSets(id);
+  const count=rows.length+(manualDrafts[id]??(rows.length?0:1));
+  html+=`<div class="exercise-card hevy-card plan-extra-card" data-exercise-id="${safe(id)}"><div class="sport-exercise-title-row"><span class="sport-exercise-art" aria-hidden="true">${sportExerciseArt(e)}</span><div class="sport-exercise-title-text"><h2>${safe(e.name)}</h2><span class="sport-muscle-chip">${safe(e.group)}</span><span class="plan-extra-chip">Dodatkowe</span></div></div><div class="toolbar exercise-actions"><button class="secondary" onclick="openTechnique('${safe(id)}')">🎬 Technika</button><button class="secondary" onclick="removePlanExtraExercise('${safe(id)}')">Usuń ćwiczenie</button></div><label>Przerwa po serii<select onchange="changeRest('${safe(id)}',this.value)">${restOptions.map(n=>`<option value="${n}" ${restSeconds(id)===n?'selected':''}>${n} sekund</option>`).join('')}</select></label><div class="set-grid set-head"><span>Nr</span><span>Poprzednio</span><span>KG</span><span>Powt.</span><span>RIR</span><span>✓</span><span></span></div>`;
+  for(let j=0;j<count;j++){
+   const entry=rows[j],old=previous[j],prefill=rows[j-1]||previous[j]||previous.at(-1),key='m_'+id+'_'+j;
+   html+=`<div class="set-grid hevy-set ${entry?'hevy-done':j===rows.length?'sport-next-set':''}"><span>${entry?.pr?.length?'🏅':j+1}</span><span class="previous">${old?old.weight+'×'+old.reps:'—'}</span><label class="sport-set-field sport-weight"><span class="sport-field-caption">CIĘŻAR (KG)</span><input id="${key}_w" aria-label="Ciężar dodatkowej serii ${j+1}" type="number" min="0" step="0.5" inputmode="decimal" value="${entry?entry.weight:(prefill?.weight??'')}"></label><label class="sport-set-field sport-reps"><span class="sport-field-caption">POWT.</span><input id="${key}_r" aria-label="Powtórzenia dodatkowej serii ${j+1}" type="number" min="1" step="1" inputmode="numeric" value="${entry?entry.reps:(prefill?.reps??'')}"></label><label class="sport-set-field sport-rir"><span class="sport-field-caption">RIR</span><select id="${key}_rir" aria-label="RIR dodatkowej serii ${j+1}"><option value="">—</option>${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${entry?.rir===n?'selected':''}>${n===5?'5+':n}</option>`).join('')}</select></label><button class="${entry?'done':''}" aria-label="Zapisz dodatkową serię ${j+1}" onclick="saveManualRow('${safe(id)}',${j})">${entry?'✓':'+'}</button><button class="danger" aria-label="Usuń dodatkową serię ${j+1}" onclick="removeManualRow('${safe(id)}',${j})">×</button></div>`;
+  }
+  html+=`<button class="secondary hevy-add" onclick="addManualRow('${safe(id)}')">＋ Dodaj serię</button></div>`;
+ }
+ html+='<button type="button" class="plan-extra-add" onclick="pickerOpen(\'plan-extra\')">＋ Wybierz ćwiczenie z atlasu</button></section>';
+ return html;
+}
 let extraRows={};let removedRows={};
 // Liczba serii dotyczy bieżącego treningu, a nie szablonu planu.
 // Zapis lokalny zapobiega odtwarzaniu usuniętych serii po odświeżeniu.
