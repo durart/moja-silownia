@@ -563,8 +563,8 @@ function openPreWorkout(kind,index){state.pendingWorkout={kind,index};document.g
 function cancelWorkoutStart(){state.pendingWorkout=null;render()}
 function optionalNumber(id,min,max){let raw=document.getElementById(id).value.trim();if(raw==='')return null;let n=Number(raw);if(!Number.isFinite(n)||n<min||n>max)throw Error('Sprawdź pole: '+id);return n}
 function confirmWorkoutStart(){if(!state.pendingWorkout)return;let p;try{p={battery:optionalNumber('preBattery',0,100),sleepHours:optionalNumber('preSleep',0,24),sleepScore:optionalNumber('preSleepScore',0,100),feeling:document.getElementById('preFeeling').value||null,weight:optionalNumber('preWeight',20,350),recordedAt:new Date().toISOString()}}catch(e){note(e.message);return}state.preWorkout=p;if(p.weight)state.bodyWeight=p.weight;let pending=state.pendingWorkout;state.pendingWorkout=null;document.getElementById('preWorkout').classList.add('hidden');if(pending.kind==='plan')startPlanNow(pending.index);else startManualWorkoutNow();save();render()}
-function startPlanNow(i){let p=state.plans[i];if(!p)return;if(state.active.length&&!confirm('Masz niezakończone serie. Przełączyć aktywny plan, zachowując serie?'))return;extraRows={};removedRows={};state.planRowCounts={};state.planExtraExerciseIds=[];state.manualStarted=false;state.activePlan=p.id;state.workoutSwaps={};state.startedAt??=new Date().toISOString();save();tab('workout');let e=state.exercises.find(x=>x.id===p.exerciseIds[0]);if(e)document.getElementById('exercise').value=e.id;note('Uruchomiono plan: '+p.name)}
-function leavePlan(){detachPlanExtrasToManual();state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.manualStarted=!!state.startedAt||state.active.length>0;recoverActiveWorkout();save();render();note('Dostępny cały katalog ćwiczeń — zapisane serie zachowane')}
+function startPlanNow(i){let p=state.plans[i];if(!p)return;if(state.active.length&&!confirm('Masz niezakończone serie. Przełączyć aktywny plan, zachowując serie?'))return;extraRows={};removedRows={};state.planRowCounts={};state.planExtraExerciseIds=[];planExtraInputDrafts={};state.manualStarted=false;state.activePlan=p.id;state.workoutSwaps={};state.startedAt??=new Date().toISOString();save();tab('workout');let e=state.exercises.find(x=>x.id===p.exerciseIds[0]);if(e)document.getElementById('exercise').value=e.id;note('Uruchomiono plan: '+p.name)}
+function leavePlan(){detachPlanExtrasToManual();planExtraInputDrafts={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.manualStarted=!!state.startedAt||state.active.length>0;recoverActiveWorkout();save();render();note('Dostępny cały katalog ćwiczeń — zapisane serie zachowane')}
 const restOptions=[30,60,90,120,180];
 function restSeconds(id){return restOptions.includes(Number(state.restSettings[id]))?Number(state.restSettings[id]):90}
 function changeRest(id,v){state.restSettings[id]=Number(v);save();note('Przerwa: '+v+' s')}
@@ -772,6 +772,7 @@ function removePlanExtraExercise(id){
   state.active=state.active.filter(x=>x.exerciseId!==id);
   delete manualDrafts[id];
  }))return false;
+ for(const k of Object.keys(planExtraInputDrafts))if(k.startsWith('m_'+id+'_'))delete planExtraInputDrafts[k];
  renderPlanWorkout();
  note('Usunięto ćwiczenie dodatkowe');
  return true;
@@ -842,6 +843,13 @@ function savePlanRow(id,index,row){let wInput=document.getElementById(row+'_w'),
 function startManualWorkoutNow(){if(state.activePlan){note('Najpierw zakończ trening według planu');return}if(state.active.length){recoverActiveWorkout();render();note('Przywrócono zapisany trening, nie rozpoczęto nowego');return}if(state.manualStarted)return;state.manualStarted=true;state.manualExerciseIds=[];state.planExtraExerciseIds=[];manualDrafts={};state.startedAt=new Date().toISOString();state.restUntil=null;save();render();note('Trening dowolny rozpoczęty')}
 // Ekran wprowadzania serii inspirowany układem Hevy; zapisane serie mają zielony znacznik.
 let manualDrafts={};
+let planExtraInputDrafts={};
+function rememberPlanExtraDraft(id,index,field,value){
+ const key='m_'+id+'_'+index;
+ planExtraInputDrafts[key]??={};
+ planExtraInputDrafts[key][field]=value;
+}
+
 function manualIds(){
  state.manualExerciseIds??=[];
  for(const row of state.active){if(row.exerciseId&&!state.manualExerciseIds.includes(row.exerciseId))state.manualExerciseIds.push(row.exerciseId)}
@@ -858,7 +866,7 @@ function addManualExercise(){
 function addManualRow(id){
  const count=state.active.filter(x=>x.exerciseId===id).length;
  manualDrafts[id]=(manualDrafts[id]||0)+1;
- renderToday();
+ if(isPlanExtraExercise(id))renderPlanWorkout();else renderToday();
  const input=document.getElementById('m_'+id+'_'+count+'_w');if(input)input.focus();
 }
 function saveManualRow(id,j){
@@ -866,13 +874,32 @@ function saveManualRow(id,j){
  const w=Number(wEl?.value),r=Number(rEl?.value),rir=readRir(prefix+'_rir');
  if(!wEl||wEl.value===''||!rEl||rEl.value===''||!Number.isFinite(w)||w<0||!Number.isInteger(r)||r<1){note('Wpisz ciężar (dla pompek może być 0) i liczbę powtórzeń');return}
  const e=state.exercises.find(x=>x.id===id);if(!e)return;
- const rows=state.active.filter(x=>x.exerciseId===id);
- if(rows[j]){const item=rows[j];item.weight=w;item.reps=r;item.rir=rir;item.at=new Date().toISOString();item.pr=detectPR(id,w,r,item)}
- else{state.active.push({exerciseId:id,name:e.name,weight:w,reps:r,rir,at:new Date().toISOString(),pr:detectPR(id,w,r)});manualDrafts[id]=Math.max(0,(manualDrafts[id]||1)-1)}
- startRest(id);save();renderToday();tick();note('✓ Seria wykonana');
+ const mutate=()=>{
+  const rows=state.active.filter(x=>x.exerciseId===id);
+  if(rows[j]){
+   const item=rows[j];item.weight=w;item.reps=r;item.rir=rir;item.at=new Date().toISOString();item.pr=detectPR(id,w,r,item);
+  }else{
+   state.active.push({exerciseId:id,name:e.name,weight:w,reps:r,rir,at:new Date().toISOString(),pr:detectPR(id,w,r)});
+   manualDrafts[id]=Math.max(0,(manualDrafts[id]||1)-1);
+  }
+ };
+ if(isPlanExtraExercise(id)){
+  if(!saveExtraMutation(mutate))return;
+  delete planExtraInputDrafts[prefix];
+  try{startRest(id)}catch(err){note('Seria zapisana, lecz timer przerwy nie został zaktualizowany')}
+  renderPlanWorkout();tick();note('✓ Dodatkowa seria zapisana');return;
+ }
+ mutate();startRest(id);save();renderToday();tick();note('✓ Seria wykonana');
 }
 function removeManualRow(id,j){
  const rows=state.active.filter(x=>x.exerciseId===id);
+ if(isPlanExtraExercise(id)){
+  if(rows[j]){
+   if(!saveExtraMutation(()=>state.active.splice(state.active.indexOf(rows[j]),1)))return;
+  }else manualDrafts[id]=Math.max(0,(manualDrafts[id]||0)-1);
+  delete planExtraInputDrafts['m_'+id+'_'+j];
+  renderPlanWorkout();return;
+ }
  if(rows[j]){state.active.splice(state.active.indexOf(rows[j]),1);save()}
  else manualDrafts[id]=Math.max(0,(manualDrafts[id]||0)-1);
  renderToday();
@@ -897,7 +924,7 @@ function addSet(){if(!state.manualStarted||state.activePlan){note('Najpierw klik
 function detectPR(id,w,r,exclude=null){let prior=[...state.sessions.flatMap(s=>s.sets||[]),...state.active].filter(s=>s.exerciseId===id&&s!==exclude);if(!prior.length)return [];let flags=[];let maxWeight=Math.max(...prior.map(s=>Number(s.weight)||0));if(w>maxWeight)flags.push('Ciężar');let maxAtWeight=Math.max(0,...prior.filter(s=>Number(s.weight)===w).map(s=>Number(s.reps)||0));if(r>maxAtWeight&&prior.some(s=>Number(s.weight)===w))flags.push('Powtórzenia');let maxVolume=Math.max(...prior.map(s=>(Number(s.weight)||0)*(Number(s.reps)||0)));if(w*r>maxVolume)flags.push('Objętość');return flags}
 function prefillManual(){return}
 function removeSet(i){state.active.splice(i,1);save();renderToday()}
-function finishWorkout(){if(!state.active.length){if(confirm('Nie zapisano żadnej serii. Zakończyć pusty trening bez dodawania do historii?')){state.planExtraExerciseIds=[];state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();note('Trening zakończony bez zapisu')}return}if(!confirm('Zakończyć trening? Zapisane serie trafią do historii, nawet jeśli nie wykonano wszystkich ćwiczeń.'))return;let plan=state.plans.find(p=>p.id===state.activePlan);let duration=state.startedAt?Math.floor((Date.now()-Date.parse(state.startedAt))/1000):null;let session={id:Date.now(),date:new Date().toISOString(),planName:plan?.name||null,sets:[...state.active],durationSeconds:duration,preWorkout:state.preWorkout?{...state.preWorkout}:null};session.calories=estimateCalories(session);session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);session.fatigueModel=2;state.sessions.unshift(session);state.active=[];extraRows={};removedRows={};state.planExtraExerciseIds=[];state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();tab('history');note('Trening zapisany — rozwiń Szczegóły, aby zobaczyć podsumowanie')}
+function finishWorkout(){if(!state.active.length){if(confirm('Nie zapisano żadnej serii. Zakończyć pusty trening bez dodawania do historii?')){state.planExtraExerciseIds=[];planExtraInputDrafts={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();note('Trening zakończony bez zapisu')}return}if(!confirm('Zakończyć trening? Zapisane serie trafią do historii, nawet jeśli nie wykonano wszystkich ćwiczeń.'))return;let plan=state.plans.find(p=>p.id===state.activePlan);let duration=state.startedAt?Math.floor((Date.now()-Date.parse(state.startedAt))/1000):null;let session={id:Date.now(),date:new Date().toISOString(),planName:plan?.name||null,sets:[...state.active],durationSeconds:duration,preWorkout:state.preWorkout?{...state.preWorkout}:null};session.calories=estimateCalories(session);session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);session.fatigueModel=2;state.sessions.unshift(session);state.active=[];extraRows={};removedRows={};state.planExtraExerciseIds=[];planExtraInputDrafts={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();tab('history');note('Trening zapisany — rozwiń Szczegóły, aby zobaczyć podsumowanie')}
 function addFromCatalog(id){let e=state.exercises.find(x=>x.id===id);if(!e)return;if(!draft.includes(id))draft.push(id);renderPlans();note('Dodano do nowego planu: '+e.name)}
 
 // Atlas techniki v1.2: instrukcje zapisane lokalnie; filmy otwierane na życzenie i wymagają Internetu.
