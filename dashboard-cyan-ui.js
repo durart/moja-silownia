@@ -19,11 +19,7 @@ function draw(){
   const points=v.map((n,i)=>(8+i*104)+','+(92-Math.round(n/max*78))).join(' ');
   trend.innerHTML='<svg viewBox="0 0 330 105" role="img" aria-label="Objętość w ostatnich czterech tygodniach"><polyline fill="none" stroke="#21d8e8" stroke-width="3" stroke-linejoin="round" points="'+points+'"/></svg>';
  }
- const muscles=document.getElementById('dcMuscles');
- if(muscles&&typeof fatigueAt==='function'){
-  const groups=['Klatka piersiowa','Plecy','Barki','Nogi','Biceps','Triceps'];
-  muscles.innerHTML=groups.map(name=>{const n=Math.max(0,Math.min(100,Number(fatigueAt(name))||0));return '<div class="dc-muscle"><div class="dc-row"><span>'+name+'</span><span>'+Math.round(n)+'/100</span></div><div class="dc-meter"><span style="width:'+n+'%"></span></div></div>'}).join('');
- }
+
 }
 function init(){
  const host=document.getElementById('dashboard');if(!host||host.dataset.cyanReady)return;
@@ -31,7 +27,7 @@ function init(){
  const hero=document.getElementById('dashboardHero');
  if(hero){hero.insertAdjacentHTML('beforebegin','<header class="dc-header"><div><span class="dc-overline">PANEL TRENINGOWY</span><h1>Moja Siłownia</h1><span class="dc-muted">Trening · Postępy · Obciążenie mięśni</span></div><span aria-hidden="true" style="font-size:28px">🏋️</span></header>');}
  const recovery=host.querySelector('.dash-recovery');
- if(recovery){recovery.insertAdjacentHTML('beforebegin','<div class="dc-stats"><div class="dc-card dc-stat"><strong id="dcWeeklyCount">—</strong><small>Treningi w tygodniu</small></div><div class="dc-card dc-stat"><strong id="dcWeeklyVolume">—</strong><small>Objętość kg</small></div><div class="dc-card dc-stat"><strong id="dcWeeklyMinutes">—</strong><small>Czas min</small></div></div><div class="dc-columns"><section class="dc-card"><h2>Cel tygodniowy</h2><div class="dc-row"><strong>3 treningi</strong><span id="dcGoal">—</span></div><div class="dc-meter" role="progressbar" aria-label="Cel tygodniowy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="dcGoalBarWrap"><span id="dcGoalBar"></span></div></section><section class="dc-card"><h2>Trend objętości · 4 tygodnie</h2><div id="dcTrend"></div></section></div>');recovery.insertAdjacentHTML('afterend','<section class="dc-card"><h2>Obciążenie mięśni — szczegóły</h2><p class="dc-note">Szacunek na podstawie treningów, nie pomiar regeneracji.</p><div class="dc-stack" id="dcMuscles"></div></section>');}
+ if(recovery){recovery.insertAdjacentHTML('beforebegin','<div class="dc-stats"><div class="dc-card dc-stat"><strong id="dcWeeklyCount">—</strong><small>Treningi w tygodniu</small></div><div class="dc-card dc-stat"><strong id="dcWeeklyVolume">—</strong><small>Objętość kg</small></div><div class="dc-card dc-stat"><strong id="dcWeeklyMinutes">—</strong><small>Czas min</small></div></div><div class="dc-columns"><section class="dc-card"><h2>Cel tygodniowy</h2><div class="dc-row"><strong>3 treningi</strong><span id="dcGoal">—</span></div><div class="dc-meter" role="progressbar" aria-label="Cel tygodniowy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="dcGoalBarWrap"><span id="dcGoalBar"></span></div></section><section class="dc-card"><h2>Trend objętości · 4 tygodnie</h2><div id="dcTrend"></div></section></div>');}
  const old=window.renderDashboard;
  if(typeof old==='function')window.renderDashboard=function(){old();draw()};
  draw();
