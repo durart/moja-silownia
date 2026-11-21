@@ -77,6 +77,7 @@ function beginOverlay(exercise='Przysiad ze sztangą'){
  const config=lib.find(exercise);
  if(!config){setStatus('Brak konfiguracji dla tego ćwiczenia');return Promise.resolve(null)}
  engine=engineAPI.createSession(config);
+ video.style.display='';$('fcSimBadge').hidden=true;
  stopRequested=false;started=true;lastDrawn=null;frameTimes=[];delegate='';
  text('fcHint',config.cameraHint);text('fcAdvice','System nie zastępuje oceny trenera.');
  text('fcCount','0');text('fcTransfer','');$('fcProgress').removeAttribute('value');
@@ -113,6 +114,7 @@ function loop(now){
  try{
   const frame=camera.detect(now);
   if(!frame)return;
+  stage.style.aspectRatio=frame.width+' / '+frame.height;
   lastDrawn=frame.landmarks;draw(frame.landmarks);
   const info=engine.ingest(frame);present(info);
  }catch(e){setStatus('Błąd analizy: '+(e?.message||e));stopCamera();showScreen('initial')}
