@@ -261,7 +261,7 @@ p,small,.muted,.hint{color:#d3cadd}
 <section id="progress" class="hidden"><div id="progressContent"></div></section>
 <section id="history" class="hidden"><div class="card"><h2>Zakończone treningi</h2><div id="historyList"></div></div><div class="card"><h2>Kopia danych</h2><p>Eksportuj plik JSON, aby przenieść dane na drugie urządzenie. Synchronizacja automatyczna będzie w późniejszej wersji.</p><button onclick="exportData()">Eksport JSON</button><label>Import kopii JSON<input type="file" accept=".json,application/json" onchange="importData(event)"></label></div></section>
 <p class="muted">Dane pozostają w pamięci tej przeglądarki. Nie czyść danych witryny bez wykonania kopii.</p><div id="techOverlay" class="tech-overlay hidden" role="dialog" aria-modal="true" aria-label="Atlas techniki"><div class="tech-sheet"><div class="tech-header"><h2 id="techTitle">Technika ćwiczenia</h2><button class="secondary" onclick="closeTechnique()">Zamknij ✕</button></div><div id="techContent"></div></div></div><div id="swapOverlay" class="swap-overlay hidden" role="dialog" aria-modal="true" aria-label="Zamiana ćwiczenia"><div class="swap-sheet"><div class="swap-header"><h2>⇄ Zamień ćwiczenie</h2><button class="secondary" onclick="closeSwap()">Zamknij ✕</button></div><div id="swapContents"></div></div></div><div id="exercisePicker" hidden role="dialog" aria-modal="true" aria-label="Wybierz partię ciała lub ćwiczenie"><div class="pick-wrap"><div class="pick-head"><button type="button" onclick="pickerBack()" aria-label="Wstecz">←</button><h2 id="pickTitle">Wybierz partię ciała</h2><span></span></div><div class="pick-search"><span class="search-icon" aria-hidden="true">⌕</span><input id="pickSearch" type="search" autocomplete="off" placeholder="Wyszukaj ćwiczenie..." oninput="pickerRender()" aria-label="Wyszukaj ćwiczenie"><button id="pickSort" type="button" onclick="pickerSortToggle()" aria-label="Zmień sortowanie">☰</button></div><div id="pickTiles" class="pick-tiles"></div><div id="pickResults" class="pick-results" hidden></div></div></div></main>
-<script>
+<script src="./calisthenics-library.js?v=1"></script><script>
 let pickerGroup=null;
 let pickerOrder='recent';
 let pickerContext='workout';
@@ -321,7 +321,7 @@ function pickerRender(){
  ["Łydki","Łydka","calves"],
  ["__own__","Własne","💪"],
  ["__all__","Całe ciało","🏋️"],
- ["__cardio__","Kardio","❤️"]
+ ["__cardio__","Kardio","❤️"],["Kalistenika","Kalistenika","🤸"]
  ];
  const query=document.getElementById("pickSearch").value.trim().toLocaleLowerCase("pl");
  const showList=pickerGroup!==null||query.length>0;
@@ -334,7 +334,7 @@ function pickerRender(){
   tiles.innerHTML=config.map(([group,label,part])=>{
    const count=state.exercises.filter(e=>pickerCategory(e,group)).length;
    const tileNo=config.findIndex(x=>x[0]===group);
-   const art='<span class="pick-source-image pick-source-'+tileNo+'" aria-hidden="true"></span>';
+   const art=group==="Kalistenika"?'<span class="pick-symbol" aria-hidden="true">🤸</span>':'<span class="pick-source-image pick-source-'+tileNo+'" aria-hidden="true"></span>';
    return '<button type="button" class="pick-tile" data-pick-group="'+safe(group)+'" onclick="pickerChoose(this.dataset.pickGroup)">'+art+"<strong>"+safe(label)+"</strong><small>"+count+" ćw.</small></button>";
   }).join("");
   return;
@@ -346,7 +346,7 @@ function pickerRender(){
  results.innerHTML='<p class="pick-count">'+filtered.length+" ćwiczeń · "+(pickerOrder==="recent"?"ostatnio używane najpierw":"kolejność alfabetyczna")+"</p>"+
  (filtered.length?filtered.map(e=>
   '<div class="pick-row"><button type="button" class="pick-exercise" data-pick-id="'+safe(e.id)+'" onclick="pickerAdd(this.dataset.pickId)"><span class="pick-thumb" aria-hidden="true">'+
-  uiExerciseThumb(e)+'</span><span class="pick-exercise-name">'+safe(e.name)+"<small>"+safe(e.equipment||e.group)+"</small></span></button>"+
+  (e.group==='Kalistenika'?calisthenicsArt(e.kind):uiExerciseThumb(e))+'</span><span class="pick-exercise-name">'+safe(e.name)+"<small>"+safe(e.equipment||e.group)+"</small></span></button>"+
   '<button type="button" class="pick-more" data-pick-id="'+safe(e.id)+'" onclick="pickerTechnique(this.dataset.pickId)" title="Zobacz technikę" aria-label="Zobacz technikę: '+safe(e.name)+'">⋮</button></div>'
  ).join(""):'<p class="pick-empty">Brak ćwiczeń w tej grupie. Możesz wrócić i wybrać inną partię.</p>');
 }
@@ -489,7 +489,7 @@ if(!state){
  if(originalRaw)window.addEventListener('load',()=>alert(backup?'Odzyskano treningi z poprzedniej kopii. Wyeksportuj dane JSON.':'Nie udało się odczytać danych. Zachowano próbę kopii uszkodzonego zapisu. Przywróć kopię JSON, jeśli ją posiadasz.'));
 }if(!Array.isArray(state.plans))state.plans=[];if(!('activePlan' in state))state.activePlan=null;state.restSettings??={};state.startedAt??=null;state.restUntil??=null;state.bodyWeight??=100.6;state.preWorkout??=null;state.pendingWorkout??=null;state.workoutSwaps??={};state.planRowCounts??={};
 // Aktualizacja katalogu bez utraty własnych ćwiczeń, planów ani historii.
-const existingIds=new Set(state.exercises.map(e=>e.id));for(const e of seeds){if(!existingIds.has(e.id))state.exercises.push(e)}
+const existingIds=new Set(state.exercises.map(e=>e.id));for(const e of [...seeds,...(window.CALISTHENICS_LIBRARY||[])]){if(!existingIds.has(e.id))state.exercises.push(e)}
 // Zachowaj już rozpoczęte treningi z poprzednich wersji.
 state.planExtraExerciseIds=normalizePlanExtraIds(state.planExtraExerciseIds);state.manualExerciseIds??=[];if(!('manualStarted' in state))state.manualStarted=!state.activePlan&&(state.active.length>0||!!state.startedAt);
 // Nie przywracaj pustego, dawno porzuconego treningu po odświeżeniu strony.
@@ -1050,20 +1050,26 @@ function getExerciseSearchUrl(e){
  return 'https://www.google.com/search?q='+encodeURIComponent('site:musclewiki.com/exercise/ '+query);
 }
 
+function calisthenicsArt(kind){
+ const paths={push:'M40 140 L95 125 L148 137 L202 163 M95 125 L85 185 M148 137 L160 188',pull:'M60 40 H190 M85 40 L105 90 L125 118 L145 90 L165 40 M125 118 L110 170 L88 211 M110 170 L150 211',legs:'M110 60 L130 110 L95 145 L150 155 L175 205 M95 145 L65 185 L42 213',core:'M35 180 L95 160 L150 166 L212 145 M95 160 L120 115 M150 166 L175 120',balance:'M125 40 L125 100 L105 155 L90 205 M105 155 L150 205 M125 100 L80 115 M125 100 L165 115'};
+ const path=paths[kind]||paths.core;
+ return '<svg viewBox="0 0 250 230" role="img" aria-label="Uproszczona rycina pozycji ciała" style="width:100%;max-width:350px;height:190px"><rect width="250" height="230" rx="15" fill="#192b43"/><path d="M20 215 H230" stroke="#64748b" stroke-width="2"/><path d="'+path+'" fill="none" stroke="#7bd6b4" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><circle cx="'+(kind==='pull'?125:kind==='legs'?110:kind==='balance'?125:40)+'" cy="'+(kind==='pull'?117:kind==='legs'?45:kind==='balance'?26:kind==='core'?180:140)+'" r="12" fill="#d6e3f2"/></svg>';
+}
 function openTechnique(id){
  const e=state.exercises.find(x=>x.id===id);if(!e)return;
- const guide=techniqueLibrary.find(x=>x.match.test(e.name));
+ const cali=e.group==='Kalistenika'?(window.CALISTHENICS_LIBRARY||[]).find(x=>x.id===e.id):null;
+ const guide=cali?{muscles:cali.muscles,steps:cali.steps,errors:[cali.errors],tip:'Poziom: '+cali.level+'. Wykonuj ruch kontrolowanie.'}:techniqueLibrary.find(x=>x.match.test(e.name));
  const g=guide||{muscles:e.group||'Sprawdź opis konkretnego ćwiczenia',steps:['Ustaw sprzęt do swojego wzrostu i przyjmij stabilną pozycję.','Rozpocznij od lekkiego ciężaru i poznaj zakres ruchu bez bólu.','Wykonuj powtórzenia powoli i bez szarpania.','Jeśli nie masz pewności co do techniki, poproś trenera o demonstrację.'],errors:['Zbyt duży ciężar.','Gwałtowne ruchy i brak kontroli.','Ignorowanie bólu stawów.'],tip:'Dla tego ćwiczenia przygotowujemy jeszcze indywidualną instrukcję.'};
  const url=getTechniqueLink(e.name);
- const linkHtml=url?`<a class="tech-direct-link" href="${url}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;background:#294d70;color:white;padding:15px 12px;border-radius:12px;font-weight:700;text-decoration:none;margin:12px 0">🎬 Zobacz wykonanie — MuscleWiki ↗</a><p class="hint">Otwiera konkretny pokaz ćwiczenia w nowej karcie. Wymaga Internetu.</p>`:`<a class="tech-direct-link" href="${getExerciseSearchUrl(e)}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;background:#374151;color:white;padding:15px 12px;border-radius:12px;font-weight:700;text-decoration:none;margin:12px 0">🔎 Znajdź pokaz tego ćwiczenia w MuscleWiki ↗</a><p class="hint">Przygotowane wyszukiwanie konkretnego wariantu. To nie jest jeszcze zweryfikowany bezpośredni link do filmu.</p>`;
+ const linkHtml=cali?`<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(cali.query+' calisthenics tutorial')}" target="_blank" rel="noopener noreferrer" style="display:block;background:#294d70;color:white;padding:15px;border-radius:12px;text-align:center">🎬 Wyszukaj film instruktażowy na YouTube ↗</a><p class="hint">Wyszukiwanie, nie zweryfikowany bezpośredni film.</p>`:url?`<a class="tech-direct-link" href="${url}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;background:#294d70;color:white;padding:15px 12px;border-radius:12px;font-weight:700;text-decoration:none;margin:12px 0">🎬 Zobacz wykonanie — MuscleWiki ↗</a><p class="hint">Otwiera konkretny pokaz ćwiczenia w nowej karcie. Wymaga Internetu.</p>`:`<a class="tech-direct-link" href="${getExerciseSearchUrl(e)}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;background:#374151;color:white;padding:15px 12px;border-radius:12px;font-weight:700;text-decoration:none;margin:12px 0">🔎 Znajdź pokaz tego ćwiczenia w MuscleWiki ↗</a><p class="hint">Przygotowane wyszukiwanie konkretnego wariantu. To nie jest jeszcze zweryfikowany bezpośredni link do filmu.</p>`;
  document.getElementById('techTitle').textContent='🎬 '+e.name;
- document.getElementById('techContent').innerHTML=`${linkHtml}<h3>💪 Pracujące mięśnie</h3><p>${safe(g.muscles)}</p><h3>📖 Jak wykonać ćwiczenie</h3><ol class="tech-steps">${g.steps.map(x=>`<li>${safe(x)}</li>`).join('')}</ol><div class="tech-warning"><strong>⚠️ Najczęstsze błędy</strong><ul>${g.errors.map(x=>`<li>${safe(x)}</li>`).join('')}</ul></div><div class="tech-tip"><strong>💡 Wskazówka trenera</strong><p>${safe(g.tip)}</p></div><p class="hint">Instrukcja ma charakter edukacyjny. Jeśli ruch powoduje ból, przerwij ćwiczenie. W razie wątpliwości poproś trenera o korektę techniki.</p>`;
+ document.getElementById('techContent').innerHTML=`${cali?calisthenicsArt(cali.kind):''}${linkHtml}<h3>💪 Pracujące mięśnie</h3><p>${safe(g.muscles)}</p><h3>📖 Jak wykonać ćwiczenie</h3><ol class="tech-steps">${g.steps.map(x=>`<li>${safe(x)}</li>`).join('')}</ol><div class="tech-warning"><strong>⚠️ Najczęstsze błędy</strong><ul>${g.errors.map(x=>`<li>${safe(x)}</li>`).join('')}</ul></div><div class="tech-tip"><strong>💡 Wskazówka trenera</strong><p>${safe(g.tip)}</p></div><p class="hint">Instrukcja ma charakter edukacyjny. Jeśli ruch powoduje ból, przerwij ćwiczenie. W razie wątpliwości poproś trenera o korektę techniki.</p>`;
  document.getElementById('techOverlay').classList.remove('hidden');document.body.style.overflow='hidden';
 }
 function closeTechnique(){document.getElementById('techOverlay').classList.add('hidden');document.getElementById('techContent').innerHTML='';document.body.style.overflow='';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTechnique()});
 function renderCatalog(){let q=document.getElementById('search').value.toLocaleLowerCase('pl'),group=document.getElementById('muscleFilter').value;renderMuscleTiles(group);document.getElementById('catalogList').innerHTML=sortExercisesByUse(state.exercises.filter(e=>(!group||e.group===group)&&(e.name+' '+e.group+' '+e.equipment).toLocaleLowerCase('pl').includes(q))).map(e=>`<div class="item"><strong>${safe(e.name)}</strong><br><small>${safe(e.group)} • ${safe(e.equipment)}</small><br><button class="secondary" onclick="addFromCatalog('${safe(e.id)}')">+ Dodaj do planu</button> <button class="secondary" onclick="openTechnique('${safe(e.id)}')">🎬 Technika</button></div>`).join('')||'<p>Brak wyników</p>'}
-const tileDefs=[['Klatka piersiowa','Klatka','chest'],['Plecy','Plecy','back'],['Barki','Barki','shoulders'],['Triceps','Triceps','triceps'],['Biceps','Biceps','biceps'],['Przedramiona','Przedramiona','forearms'],['Nogi','Uda i pośladki','legs'],['Brzuch','Brzuch','abs'],['Łydki','Łydki','calves'],['Inne','Własne','other']];
+const tileDefs=[['Klatka piersiowa','Klatka','chest'],['Plecy','Plecy','back'],['Barki','Barki','shoulders'],['Triceps','Triceps','triceps'],['Biceps','Biceps','biceps'],['Przedramiona','Przedramiona','forearms'],['Nogi','Uda i pośladki','legs'],['Brzuch','Brzuch','abs'],['Łydki','Łydki','calves'],['Inne','Własne','other'],['Kalistenika','Kalistenika','abs']];
 function muscleArt(part){
 const back=part==='back'||part==='triceps';
 const base=`<defs>
@@ -1104,7 +1110,7 @@ function renderMuscleTiles(selected){
  const el=document.getElementById('muscleTiles');
  el.innerHTML=tileDefs.map(([group,label,part],i)=>{
   const count=state.exercises.filter(e=>e.group===group||(group==='Inne'&&e.equipment==='Własne')).length;
-  return `<button class="muscle-tile ${selected===group?'selected':''}" onclick="selectMuscle('${group}')"><span class="catalog-source-art catalog-source-${i}" aria-hidden="true"></span><span>${label}</span><small>${count} ćw.</small></button>`;
+  return `<button class="muscle-tile ${selected===group?'selected':''}" onclick="selectMuscle('${group}')"><span class="catalog-source-art ${group==='Kalistenika'?'cali-icon':'catalog-source-'+i}" aria-hidden="true">${group==='Kalistenika'?'🤸':''}</span><span>${label}</span><small>${count} ćw.</small></button>`;
  }).join('')+`<button class="muscle-tile all ${!selected?'selected':''}" onclick="selectMuscle('')"><span class="catalog-source-art catalog-source-10" aria-hidden="true"></span><span>Wszystkie</span><small>${state.exercises.length} ćw.</small></button>`;
 }
 function selectMuscle(group){let filter=document.getElementById('muscleFilter');filter.value=group;renderCatalog();document.getElementById('catalogList').scrollIntoView({behavior:'smooth',block:'start'})}
@@ -1234,4 +1240,4 @@ async function exportWorkoutPNG(id){
 function exportData(){let b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='moja-silownia-kopia-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 async function importData(event){let f=event.target.files?.[0];if(!f)return;try{let v=JSON.parse(await f.text());if(!Array.isArray(v.exercises)||!Array.isArray(v.active)||!Array.isArray(v.sessions)||v.exercises.some(e=>typeof e.id!=='string'||typeof e.name!=='string'))throw Error('Nieprawidłowy format');if(!confirm('Import zastąpi wszystkie dane zapisane na tym urządzeniu. Kontynuować?'))return;state=v;if(!Array.isArray(state.plans))state.plans=[];if(!('activePlan' in state))state.activePlan=null;state.restSettings??={};state.startedAt??=null;state.restUntil??=null;state.planExtraExerciseIds=normalizePlanExtraIds(state.planExtraExerciseIds);state.manualStarted??=(!state.activePlan&&(state.active.length>0||!!state.startedAt));state.bodyWeight??=100.6;state.preWorkout??=null;state.pendingWorkout=null;state.workoutSwaps??={};state.planRowCounts??={};const known=new Set(state.exercises.map(e=>e.id));for(const e of seeds)if(!known.has(e.id))state.exercises.push(e);save();render();note('Dane zaimportowane')}catch(e){note('Błąd importu: '+e.message)}event.target.value=''}
 save();tab(workoutIsRunning()?'workout':'dashboard');
-</script><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(e=>console.warn('Tryb offline niedostępny',e)))}</script><script src="./plan-importer.js?v=162" defer></script><script src="./ui-enhancements.js?v=160" defer></script><script src="./summary-core.js?v=1" defer></script><script src="./summary-export.js?v=1" defer></script><script src="./summary-ui.js?v=1" defer></script><script src="./progress-core-v2.js?v=2" defer></script><script src="./progress-ui-v2.js?v=2" defer></script><style>.progress-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.progress-stats>div{background:#20324a;border-radius:12px;padding:12px;min-width:0}.progress-stats strong{display:block;font-size:1.15rem;overflow-wrap:anywhere}.progress-stats small{display:block;margin-top:5px}</style></body></html>
+</script><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(e=>console.warn('Tryb offline niedostępny',e)))}</script><script src="./plan-importer.js?v=162" defer></script><script src="./ui-enhancements.js?v=160" defer></script><script src="./summary-core.js?v=1" defer></script><script src="./summary-export.js?v=1" defer></script><script src="./summary-ui.js?v=1" defer></script><script src="./progress-core-v2.js?v=2" defer></script><script src="./progress-ui-v2.js?v=2" defer></script><style>.progress-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.progress-stats>div{background:#20324a;border-radius:12px;padding:12px;min-width:0}.progress-stats strong{display:block;font-size:1.15rem;overflow-wrap:anywhere}.progress-stats small{display:block;margin-top:5px}.cali-icon{display:grid;place-items:center;font-size:2.8rem}.pick-thumb svg[aria-label]{width:50px;height:65px}</style></body></html>
