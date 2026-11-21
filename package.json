@@ -1,0 +1,13 @@
+{
+  "name": "moja-silownia-regression",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Browser regression tests for Moja Silownia PWA",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2"
+  }
+}
