@@ -23,3 +23,22 @@
 @media(max-width:380px){.dashboard-cyan-v2{padding:12px}.dashboard-cyan-v2 .dc-columns{grid-template-columns:1fr}.dashboard-cyan-v2 .dc-stats{gap:5px}}
 @media(min-width:720px){.dashboard-cyan-v2{max-width:920px;margin:auto;padding:24px}.dashboard-cyan-v2 .dc-columns{grid-template-columns:1fr 1fr}}
 @media(prefers-reduced-motion:reduce){.dashboard-cyan-v2 *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* Adapt existing Dashboard components, never target the active workout. */
+#dashboard.dashboard-cyan-v2{display:grid;gap:14px;border-radius:18px}
+#dashboard.dashboard-cyan-v2.hidden{display:none!important}
+#dashboard.dashboard-cyan-v2 .card{background:var(--dc-panel);color:var(--dc-text);border:1px solid var(--dc-border);border-radius:var(--dc-radius);margin:0;box-shadow:none}
+#dashboard.dashboard-cyan-v2 .dashboard-hero{background:linear-gradient(135deg,#102535,#163e50);display:grid;gap:14px}
+#dashboard.dashboard-cyan-v2 .dash-start{background:var(--dc-accent);color:#05212a;border:0;border-radius:14px;font-size:18px;font-weight:800;min-height:56px}
+#dashboard.dashboard-cyan-v2 .dash-stat-card{order:8}
+#dashboard.dashboard-cyan-v2 .dash-recovery{order:5}
+#dashboard.dashboard-cyan-v2 .dc-stats{order:2}
+#dashboard.dashboard-cyan-v2 .dc-columns{order:3}
+#dashboard.dashboard-cyan-v2 .dc-card:has(#dcLast){order:4}
+#dashboard.dashboard-cyan-v2 .dc-card:has(#dcMuscles){order:6}
+#dashboard.dashboard-cyan-v2 .card:has(#dashboardLatest){order:7}
+#dashboard.dashboard-cyan-v2 .dc-meter[role="progressbar"]{width:100%}
+#dashboard.dashboard-cyan-v2 #dcTrend svg{display:block;width:100%;height:auto}
+#dashboard.dashboard-cyan-v2 .dc-muscle{display:grid;gap:5px}
+#dashboard.dashboard-cyan-v2 .dash-muscle .muscle-bar{background:var(--dc-border)}
+#dashboard.dashboard-cyan-v2 .dc-stats strong{color:var(--dc-text)}
