@@ -32,7 +32,7 @@ test('@smoke application boots and navigation buttons respond without JavaScript
 test('@smoke empty manual workout ends without losing history or plans',async({page})=>{
  await openWithFixture(page);
  await page.getByRole('button',{name:'Start',exact:true}).click();
- await page.getByRole('button',{name:'Rozpocznij trening',exact:true}).first().click();
+ await page.locator('#dashWorkoutAction').click();
  await page.getByRole('button',{name:'Zacznij trening',exact:true}).click();
  await page.getByRole('button',{name:'Rozpocznij trening',exact:true}).last().click();
  await expect(page.locator('#workoutRunningBadge')).toBeVisible();
@@ -52,7 +52,7 @@ test('empty plan workout ends and preserves the plan',async({page})=>{
  const data=fixture();data.activePlan='p1';data.startedAt='2026-11-21T10:00:00.000Z';
  await openWithFixture(page,data);
  await page.getByRole('button',{name:'Start',exact:true}).click();
- await page.getByRole('button',{name:'Rozpocznij trening',exact:true}).first().click();
+ await page.locator('#dashWorkoutAction').click();
  await expect(page.locator('#workoutFinishButton')).toBeVisible();
  page.once('dialog',dialog=>dialog.accept());
  await page.locator('#workoutFinishButton').click();
@@ -66,7 +66,7 @@ test('finished workout with a saved set appears in history after reload',async({
  data.manualExerciseIds=['e1'];data.active=[{exerciseId:'e1',name:'Pompki',weight:0,reps:12,at:'2026-11-21T10:05:00.000Z',manualSetIndex:0}];
  await openWithFixture(page,data);
  await page.getByRole('button',{name:'Start',exact:true}).click();
- await page.getByRole('button',{name:'Rozpocznij trening',exact:true}).first().click();
+ await page.locator('#dashWorkoutAction').click();
  page.once('dialog',dialog=>dialog.accept());
  await page.locator('#workoutFinishButton').click();
  const after=await stored(page);
@@ -90,7 +90,7 @@ test('JSON export contains plans and history, and import restores them',async({p
  const exported=JSON.parse(text);
  expect(exported.sessions).toHaveLength(1);expect(exported.plans).toHaveLength(1);
  const restored={...exported,plans:[...exported.plans,{id:'p2',name:'Po imporcie',exerciseIds:['e1'],targets:{}}]};
- const input=page.locator('input[type=file]').first();
+ const input=page.locator('input[type=file][accept=".json,application/json"]');
  page.once('dialog',dialog=>dialog.accept());
  await input.setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(restored))});
  await expect.poll(async()=> (await stored(page)).plans.length).toBe(2);
