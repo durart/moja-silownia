@@ -1,0 +1,14 @@
+const test=require('node:test');const assert=require('node:assert/strict');
+const fs=require('node:fs');const path=require('node:path');
+const root=path.join(__dirname,'..');
+const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
+const ui=fs.readFileSync(path.join(root,'assistant','assistant-ui.js'),'utf8');
+const css=fs.readFileSync(path.join(root,'assistant','assistant.css'),'utf8');
+test('scripts loaded in dependency order',()=>{const a=index.indexOf('assistant/assistant-core.js?v=1'),b=index.indexOf('assistant/assistant-ui.js?v=1');assert.ok(a>0&&b>a)});
+test('dashboard retains existing hero and Sport Performance',()=>{assert.ok(index.includes('id="dashboardHero"'));assert.ok(index.includes('class="sport-workout-heading"'))});
+test('no changes to persistent workout schema or writes from assistant',()=>{assert.ok(!/localStorage|sessionStorage|indexedDB|\.save\(/.test(ui));assert.ok(!/localStorage|sessionStorage/.test(css))});
+test('advisor calls existing startPlan, never starts workout itself',()=>{assert.ok(ui.includes('startPlan(index)'));assert.ok(!ui.includes('startPlanNow('));assert.ok(!ui.includes('confirmWorkoutStart('))});
+test('service worker caches new modules and CSS',()=>{for(const name of ['assistant/assistant-core.js?v=1','assistant/assistant-ui.js?v=1','assistant/assistant.css?v=1'])assert.ok(sw.includes(name))});
+test('DOM content uses textContent not untrusted innerHTML',()=>{assert.ok(ui.includes('node.textContent='));assert.ok(!ui.includes('.innerHTML'))});
+test('card can fail closed',()=>{assert.ok(ui.includes('panel.hidden=true'));assert.ok(ui.includes('try{'))});
