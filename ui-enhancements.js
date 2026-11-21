@@ -1,25 +1,10 @@
-/* Moja Siłownia — UI v1.6.0. Only presentation; all training and history state stays intact. */
-const uiMuscleGroups = [
-  ['Klatka piersiowa','Klatka',0],
-  ['Plecy','Plecy',1],
-  ['Barki','Barki',2],
-  ['Triceps','Triceps',3],
-  ['Biceps','Biceps',4],
-  ['Przedramiona','Przedramię',5],
-  ['Nogi','Uda i pośladki',6],
-  ['Brzuch','Brzuch',7],
-  ['Łydki','Łydka',8],
-  ['__own__','Własne',9],
-  ['__all__','Całe ciało',10],
-  ['__cardio__','Kardio',11]
-];
+/* Atlas categories are sourced from the same ExerciseCatalog used by the workout and plan pickers. */
+const uiMuscleGroups = ExerciseCatalog.categories.map(({id,label,art})=>[id,label,art]);
 let uiCatalogGroup = null;
 let uiCatalogOrder = 'recent';
 function uiExerciseMatchesGroup(e,group){
-  if(group===null || group==='' || group==='__all__')return true;
-  if(group==='__own__')return e.group==='Inne'||e.equipment==='Własne';
-  if(group==='__cardio__')return e.group==='Kardio';
-  return e.group===group;
+ if(group===null||group==='')return true;
+ return ExerciseCatalog.matches(e,group);
 }
 function uiExerciseThumb(e){
   const match=/^seed-(\d+)$/.exec(String(e.id||''));
@@ -56,7 +41,7 @@ function renderMuscleTiles(){
  const el=document.getElementById('muscleTiles');
  if(!el)return;
  el.innerHTML=uiMuscleGroups.map(([group,label,idx])=>{
-  const count=state.exercises.filter(e=>uiExerciseMatchesGroup(e,group)).length;
+  const count=ExerciseCatalog.count(state.exercises,group);
   return `<button class="catalog-muscle-button" type="button" data-muscle="${safe(group)}" onclick="uiCatalogChoose(this.dataset.muscle)"><span class="catalog-full-icon catalog-source-${idx}" aria-hidden="true"></span><strong>${safe(label)}</strong><small>${count} ćw.</small></button>`;
  }).join('');
 }
@@ -84,7 +69,7 @@ function renderCatalog(){
  list.innerHTML=`<p class="catalog-count">${hits.length} ćwiczeń · ${uiCatalogOrder==='recent'?'ostatnio używane najpierw':'kolejność alfabetyczna'}</p>`+
  (hits.length?hits.map(e=>`<div class="catalog-exercise-row">
   <button class="catalog-exercise-main" type="button" data-id="${safe(e.id)}" onclick="uiCatalogAdd(this.dataset.id)" title="Dodaj do planu: ${safe(e.name)}">
-   <span class="catalog-thumb" aria-hidden="true">${uiExerciseThumb(e)}</span>
+   <span class="catalog-thumb" aria-hidden="true">${window.CALISTHENICS_ICON_SVGS?.[e.id]||uiExerciseThumb(e)}</span>
    <span class="catalog-exercise-label">${safe(e.name)}<small>${safe(e.equipment||e.group)} · dotknij, aby dodać do planu</small></span>
   </button>
   <button class="catalog-technique" type="button" data-id="${safe(e.id)}" onclick="openTechnique(this.dataset.id)" title="Zobacz technikę" aria-label="Zobacz technikę: ${safe(e.name)}">⋮</button>

@@ -104,3 +104,6 @@ button.secondary,.swap-option{background:#574a69!important;color:#fff!important}
 .top-start-nav button:not(:first-child){background:#554968;color:#fff}
 .top-start-nav button:first-child{background:#2c84ef;color:#fff}
 @media(max-width:370px){.top-start-nav{gap:5px}.top-start-nav button{padding:9px 3px;font-size:.73rem}}
+
+/* Original anatomical thumbnails in Atlas (same assets as workout picker). */
+#catalog .catalog-thumb img{display:block;width:100%;height:100%;object-fit:contain;border-radius:8px}
