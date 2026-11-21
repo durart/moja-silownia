@@ -24,7 +24,7 @@ function guidance(result){
 function makeCard(exerciseId,options={}){
  const result=window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,options);
  const pre=state.preWorkout||{};
- const lowFeeling=typeof pre.feeling==='string'&&/^(bad|poor|low|slabo|słabo|zle|źle|1|2)$/i.test(pre.feeling);
+ const lowFeeling=typeof pre.feeling==='string'&&/^(bad|poor|low|slabo|słabo|zle|źle|tired|1|2)$/i.test(pre.feeling);
  const shortSleep=Number(pre.sleepHours)>0&&Number(pre.sleepHours)<6;
  const lowBattery=pre.battery!=null&&pre.battery!==''&&Number(pre.battery)<30;
  const lowSleepScore=pre.sleepScore!=null&&pre.sleepScore!==''&&Number(pre.sleepScore)<50;
