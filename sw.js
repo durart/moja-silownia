@@ -1,5 +1,5 @@
 /* Moja Siłownia — versioned app-shell cache. User workout data stays in localStorage. */
-const CACHE='moja-silownia-shell-v4-calisthenics-20261121';
+const CACHE='moja-silownia-shell-v5-remove-empty-20261121';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg','./ui-enhancements.css?v=163','./sport-performance.css?v=169','./summary.css?v=1','./plan-importer.js?v=162','./ui-enhancements.js?v=160','./summary-core.js?v=1','./summary-export.js?v=1','./summary-ui.js?v=1','./progress-core-v2.js?v=2','./progress-ui-v2.js?v=2','./calisthenics-library.js?v=1'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(ASSETS.map(asset=>cache.add(asset)))));
