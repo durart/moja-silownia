@@ -1,0 +1,19 @@
+name: Progress 2.0 tests
+on:
+  push:
+    branches: [feature/progress-v2-isolated-20261121]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax validation
+        run: |
+          node --check progress-core-v2.js
+          node --check progress-ui-v2.js
+      - name: Unit tests
+        run: node --test tests/progress-v2.test.cjs
