@@ -756,7 +756,44 @@ function addSet(){if(!state.manualStarted||state.activePlan){note('Najpierw klik
 function detectPR(id,w,r,exclude=null){if(window.MojaSilowniaModules?.records)return window.MojaSilowniaModules.records.detectRecords({exerciseId:id,weight:w,reps:r,completedSessions:state.sessions,activeSets:state.active,exclude});let prior=[...state.sessions.flatMap(s=>s.sets||[]),...state.active].filter(s=>s.exerciseId===id&&s!==exclude&&s.setType!=='R'&&s.type!=='warmup');if(!prior.length)return [];let flags=[];let maxWeight=Math.max(...prior.map(s=>Number(s.weight)||0));if(w>maxWeight)flags.push('Ciężar');let maxAtWeight=Math.max(0,...prior.filter(s=>Number(s.weight)===w).map(s=>Number(s.reps)||0));if(r>maxAtWeight&&prior.some(s=>Number(s.weight)===w))flags.push('Powtórzenia');let maxVolume=Math.max(...prior.map(s=>(Number(s.weight)||0)*(Number(s.reps)||0)));if(w*r>maxVolume)flags.push('Objętość');return flags}
 function prefillManual(){return}
 function removeSet(i){state.active.splice(i,1);save();renderToday()}
-function finishWorkout(){if(!state.active.length){if(confirm('Nie zapisano żadnej serii. Zakończyć pusty trening bez dodawania do historii?')){state.active=[];state.planExtraExerciseIds=[];planExtraInputDrafts={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.hiddenWorkoutSlots=[];state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};extraRows={};removedRows={};state.pendingWorkout=null;state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();note('Trening zakończony bez zapisu')}return}if(!confirm('Zakończyć trening? Zapisane serie trafią do historii, nawet jeśli nie wykonano wszystkich ćwiczeń.'))return;let plan=state.plans.find(p=>p.id===state.activePlan);let duration=state.startedAt?Math.floor((Date.now()-Date.parse(state.startedAt))/1000):null;let session={id:Date.now(),date:new Date().toISOString(),planName:plan?.name||null,sets:[...state.active],durationSeconds:duration,preWorkout:state.preWorkout?{...state.preWorkout}:null};session.calories=estimateCalories(session);session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);session.fatigueModel=2;state.sessions.unshift(session);state.active=[];extraRows={};removedRows={};state.planExtraExerciseIds=[];planExtraInputDrafts={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();if(typeof window.openSportSummary!=='function'||!window.openSportSummary(session.id))tab('history');note('Trening zapisany — podsumowanie Sport Performance 2.0')}
+function finishWorkout(){
+ if(!state.active.length){
+  if(!confirm('Nie zapisano żadnej serii. Zakończyć pusty trening bez dodawania do historii?'))return;
+  // Reset only the active workout. Keep plans, exercises and session history intact.
+  const snapshot={...state};
+  state.active=[];
+  state.activePlan=null;
+  state.startedAt=null;
+  state.restUntil=null;
+  state.manualStarted=false;
+  state.manualExerciseIds=[];
+  state.planExtraExerciseIds=[];
+  state.pendingWorkout=null;
+  state.preWorkout=null;
+  state.planRowCounts={};
+  state.workoutSwaps={};
+  state.hiddenWorkoutSlots=[];
+  // Persist and verify before reporting success; do not silently keep a running timer.
+  if(!save()){
+   state=snapshot;
+   note('Nie udało się zakończyć treningu — problem z zapisem danych.');
+   return;
+  }
+  try{
+   const stored=readState(localStorage.getItem(key));
+   if(!stored||stored.startedAt||stored.activePlan||stored.manualStarted||stored.active.length){
+    note('Zapis zakończenia treningu nie został potwierdzony.');
+    return;
+   }
+  }catch(error){console.warn('Weryfikacja zakończenia treningu:',error)}
+  restAudioStop();
+  planExtraInputDrafts={};manualDrafts={};extraRows={};removedRows={};
+  render();
+  tab('dashboard');
+  note('Pusty trening zakończony — nie dodano go do historii');
+  return;
+ }
+ if(!confirm('Zakończyć trening? Zapisane serie trafią do historii, nawet jeśli nie wykonano wszystkich ćwiczeń.'))return;let plan=state.plans.find(p=>p.id===state.activePlan);let duration=state.startedAt?Math.floor((Date.now()-Date.parse(state.startedAt))/1000):null;let session={id:Date.now(),date:new Date().toISOString(),planName:plan?.name||null,sets:[...state.active],durationSeconds:duration,preWorkout:state.preWorkout?{...state.preWorkout}:null};session.calories=estimateCalories(session);session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);session.fatigueModel=2;state.sessions.unshift(session);state.active=[];extraRows={};removedRows={};state.planExtraExerciseIds=[];planExtraInputDrafts={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();if(typeof window.openSportSummary!=='function'||!window.openSportSummary(session.id))tab('history');note('Trening zapisany — podsumowanie Sport Performance 2.0')}
 function addFromCatalog(id){let e=state.exercises.find(x=>x.id===id);if(!e)return;if(!draft.includes(id))draft.push(id);renderPlans();note('Dodano do nowego planu: '+e.name)}
 
 // Atlas techniki v1.2: instrukcje zapisane lokalnie; filmy otwierane na życzenie i wymagają Internetu.
