@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {detectRecords,isWorkingSet} from '../modules/records.js';
-import {parseBackup,serializeBackup,isValidBackup,chooseBackup} from '../modules/storage.js';
+const records=await import('data:text/javascript;base64,'+Buffer.from(readFileSync(new URL('../modules/records.js',import.meta.url))).toString('base64'));
+const storage=await import('data:text/javascript;base64,'+Buffer.from(readFileSync(new URL('../modules/storage.js',import.meta.url))).toString('base64'));
+const {detectRecords,isWorkingSet}=records;
+const {parseBackup,serializeBackup,isValidBackup,chooseBackup}=storage;
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('old sets remain working',()=>assert.equal(isWorkingSet({weight:60,reps:10}),true));
 test('warmup excluded from PR comparison',()=>assert.deepEqual(detectRecords({exerciseId:'a',weight:90,reps:5,completedSessions:[{sets:[{exerciseId:'a',weight:150,reps:5,setType:'R'},{exerciseId:'a',weight:80,reps:5}]}]}),['Ciężar','Objętość']));
