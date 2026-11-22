@@ -1,0 +1,19 @@
+name: Progression 1.8.4 regression
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  progression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify progression and existing regression tests
+        run: node --test tests/progression-v184.test.cjs tests/*.test.mjs
