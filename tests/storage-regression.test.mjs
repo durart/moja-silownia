@@ -35,3 +35,10 @@ test('valid primary state takes precedence over backup', () => {
   assert.equal(result.source, 'primary');
   assert.equal(result.state.sessions.length, 1);
 });
+
+test('backup selection does not mutate stored records', () => {
+  const raw = JSON.stringify({ exercises: [], active: [], sessions: [{ id: 7 }] });
+  const result = stateCore.selectInitialState(raw, '{broken', []);
+  assert.equal(result.state.sessions[0].id, 7);
+  assert.equal(result.unreadable, null);
+});
