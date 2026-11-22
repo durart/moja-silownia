@@ -15,5 +15,5 @@ test('persist does not back up invalid previous data',()=>{const s=store(),a=ada
 test('recover unfinished workout without plan',()=>{const state={...example,manualStarted:false,manualExerciseIds:[],activePlan:null,startedAt:null};const r=core.recoverActiveState(state);assert.equal(r.changed,true);assert.equal(state.manualStarted,true);assert.deepEqual(state.manualExerciseIds,['x']);assert.ok(state.startedAt)});
 test('do not change workout with valid active plan',()=>{const state={...example,activePlan:'p',plans:[{id:'p'}]};assert.equal(core.recoverActiveState(state).changed,false)});
 test('no schema migration',()=>assert.deepEqual(core.normalizeBaseState({...example}).active,example.active));
-test('app uses storage adapter',()=>assert.match(source('index.html'),/MojaStateStorage\.persist\(state\)/));
+test('app uses storage adapter',()=>assert.match(source('index.html'),/window\.MojaSilowniaModules\.stateStorage\.persist\(state\)/));
 test('service worker caches modules',()=>['./modules/state-core.js','./modules/state-storage.js'].forEach(p=>assert.ok(source('sw.js').includes(p))));
