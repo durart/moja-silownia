@@ -235,6 +235,7 @@ function impFromText(){
 function impSave(){
  if(!importedDraft.length)return;
  if(!confirm('Zapisać '+importedDraft.length+' planów? Nowe ćwiczenia zostaną dodane do katalogu.'))return;
+ const previousState=structuredClone(state);
  let count=0,newCount=0;
  for(const p of importedDraft){
   let ids=[],targets=[];
@@ -251,5 +252,6 @@ function impSave(){
   }
   if(ids.length){state.plans.push({id:Date.now()+count+1,name:p.name||'Importowany plan',exerciseIds:ids,targets,importedAt:new Date().toISOString()});count++}
  }
- save();importedDraft=[];impRender();render();impNotice('Zapisano '+count+' planów i '+newCount+' nowych ćwiczeń. Parametry docelowe zachowano w danych planu.');
+ if(!save()){state=previousState;impNotice('Nie udało się zapisać planów. Poprzednie dane zostały zachowane.');return;}
+ importedDraft=[];impRender();render();impNotice('Zapisano '+count+' planów i '+newCount+' nowych ćwiczeń. Parametry docelowe zachowano w danych planu.');
 }
