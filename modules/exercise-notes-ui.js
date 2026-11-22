@@ -38,6 +38,7 @@ function decorate(root) {
     }
     if (!id) continue;
     card.insertAdjacentHTML('beforeend', noteMarkup(String(id)));
+    updateProgressionWarning(card, String(id));
   }
 }
 function refreshNotes() {
@@ -54,17 +55,8 @@ function onNoteChange(event) {
   });
   state.activeExerciseNotes = next;
   save();
-  // Update advisory cards without changing the user's text or focus.
-  const constraint = progressionNoteConstraint(getExerciseNote(next,id));
-  const card = panel.closest('.exercise-card');
-  const advisor = card?.querySelector('.advisor-progression');
-  if (advisor) {
-    let warning = advisor.querySelector('.exercise-note-warning');
-    if (!constraint.allowIncrease) {
-      if (!warning) { warning = document.createElement('small'); warning.className='exercise-note-warning'; advisor.append(warning); }
-      warning.textContent = 'Uwaga: '+constraint.reason+' Nie zwiększaj ciężaru na podstawie tej sugestii.';
-    } else warning?.remove();
-  }
+  updateProgressionWarning(panel.closest('.exercise-card'), id);
+
 }
 function decorateHistory() {
   const root = document.getElementById('historyList');
@@ -95,31 +87,31 @@ function wrapRender(name,callback) {
   if (typeof original !== 'function') return;
   window[name] = function(...args) { const result=original.apply(this,args);callback();return result; };
 }
-function wrapFinish() {
-  const original = window.finishWorkout;
-  if (typeof original !== 'function') return;
-  window.finishWorkout = function(...args) {
-    const count = state.sessions.length;
-    const notes = structuredClone(currentNotes());
-    const result = original.apply(this,args);
-    if (state.sessions.length > count) {
-      state.sessions[0].exerciseNotes = notes;
-      state.activeExerciseNotes = {};
-      save();
-      decorateHistory();
-    } else if (!state.active.length && !state.startedAt && !state.manualStarted) {
-      state.activeExerciseNotes = {};
-      save();
+function updateProgressionWarning(card, id) {
+  const advisor = card?.querySelector('.advisor-progression');
+  if (!advisor) return;
+  const current = getExerciseNote(currentNotes(), id);
+  const prior = previousNote(id);
+  const currentConstraint = progressionNoteConstraint(current);
+  const priorConstraint = progressionNoteConstraint(prior);
+  const constraint = !currentConstraint.allowIncrease ? currentConstraint : priorConstraint;
+  let warning = advisor.querySelector('.exercise-note-warning');
+  if (!constraint.allowIncrease) {
+    if (!warning) {
+      warning = document.createElement('small');
+      warning.className = 'exercise-note-warning';
+      advisor.append(warning);
     }
-    return result;
-  };
+    warning.textContent = 'Uwaga: ' + constraint.reason + ' Nie zwiększaj ciężaru na podstawie tej sugestii.';
+  } else {
+    warning?.remove();
+  }
 }
 function init() {
   if (window.__exerciseNotes180) return;
   window.__exerciseNotes180 = true;
   for (const name of ['renderToday','renderPlanWorkout']) wrapRender(name,refreshNotes);
   wrapRender('renderHistory',decorateHistory);
-  wrapFinish();
   for (const id of ['today','planWorkout']) {
     const root = document.getElementById(id);
     root?.addEventListener('input',onNoteChange);
