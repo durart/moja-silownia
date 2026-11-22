@@ -36,7 +36,7 @@ function setup(){
   window:{matchMedia:()=>({matches:false})},
   document:{querySelectorAll:()=>[],getElementById:id=>elements[id]||null},
   note:message=>calls.messages.push(message),confirm:()=>calls.confirm,
-  save:()=>{if(store.fail)throw Error('Storage full');store.value=JSON.stringify(state)},
+  save:()=>{if(store.fail)throw Error('Storage full');store.value=JSON.stringify(state);return true},
   renderPlanWorkout:()=>{},renderToday:()=>{},render:()=>{},tick:()=>{},
   tab:name=>{if(name==='history')calls.history++},
   restAudioStop:()=>{},startRest:()=>{calls.timer++},
