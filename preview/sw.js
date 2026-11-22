@@ -15,8 +15,8 @@ self.addEventListener('fetch',event=>{
  if(!url.pathname.startsWith(appRoot))return;
  if(req.mode==='navigate'){
   if(!url.pathname.startsWith(new URL(self.registration.scope).pathname))return;
-  event.respondWith(fetch(req).then(response=>{if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put('./index.html',copy)).catch(()=>{}));}return response}).catch(async()=>await caches.match('./index.html')||Response.error()));
+  event.respondWith(fetch(req).then(response=>{if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put('./index.html',copy)).catch(()=>{}));}return response}).catch(async()=>await (await caches.open(CACHE)).match('./index.html')||Response.error()));
   return;
  }
- event.respondWith(caches.match(req).then(cached=>cached||fetch(req).then(response=>{if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(req,copy)).catch(()=>{}));}return response})));
+ event.respondWith(caches.open(CACHE).then(cache=>cache.match(req)).then(cached=>cached||fetch(req).then(response=>{if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put(req,copy)).catch(()=>{}));}return response})));
 });
