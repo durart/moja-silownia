@@ -111,7 +111,7 @@ function init() {
   if (window.__exerciseNotes180) return;
   window.__exerciseNotes180 = true;
   for (const name of ['renderToday','renderPlanWorkout']) wrapRender(name,refreshNotes);
-  wrapRender('renderHistory',decorateHistory);
+  window.refreshExerciseNotesHistory = decorateHistory;
   for (const id of ['today','planWorkout']) {
     const root = document.getElementById(id);
     root?.addEventListener('input',onNoteChange);
