@@ -43,6 +43,7 @@ function makeCard(exerciseId,options={}){
   if(Number.isFinite(result.suggestedWeight)){
    const apply=document.createElement('button');apply.type='button';apply.className='secondary';apply.textContent='Ustaw '+result.suggestedWeight+' kg w tym treningu';
    apply.addEventListener('click',()=>{
+    if(['pain','equipment','technique'].includes(state.activeExerciseNotes?.[exerciseId]?.flag)){alert('Najpierw wyjaśnij problem oznaczony w notatce. Zwiększenie ciężaru jest zablokowane.');return;}
     if(!confirm('Ustawić '+result.suggestedWeight+' kg w niezapisanych seriach tego ćwiczenia? Historia i plan pozostaną bez zmian.'))return;
     const card=box.closest('.exercise-card');
     const inputs=[...(card?.querySelectorAll('input[id$="_w"]')||[])].filter(input=>!input.closest('.hevy-done'));
