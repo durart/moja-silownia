@@ -825,6 +825,7 @@ function finishWorkout(){
   state.planRowCounts={};
   state.workoutSwaps={};
   state.hiddenWorkoutSlots=[];
+  state.activeExerciseNotes={};
   // Persist and verify before reporting success; do not silently keep a running timer.
   if(!save()){
    state=snapshot;
@@ -845,7 +846,7 @@ function finishWorkout(){
   note('Pusty trening zakończony — nie dodano go do historii');
   return;
  }
- if(!confirm('Zakończyć trening? Zapisane serie trafią do historii, nawet jeśli nie wykonano wszystkich ćwiczeń.'))return;let plan=state.plans.find(p=>p.id===state.activePlan);let duration=state.startedAt?Math.floor((Date.now()-Date.parse(state.startedAt))/1000):null;let session={id:Date.now(),date:new Date().toISOString(),planName:plan?.name||null,sets:[...state.active],durationSeconds:duration,preWorkout:state.preWorkout?{...state.preWorkout}:null};session.calories=estimateCalories(session);session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);session.fatigueModel=2;state.sessions.unshift(session);state.active=[];extraRows={};removedRows={};state.planExtraExerciseIds=[];planExtraInputDrafts={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();if(typeof window.openSportSummary!=='function'||!window.openSportSummary(session.id))tab('history');note('Trening zapisany — podsumowanie Sport Performance 2.0')}
+ if(!confirm('Zakończyć trening? Zapisane serie trafią do historii, nawet jeśli nie wykonano wszystkich ćwiczeń.'))return;let plan=state.plans.find(p=>p.id===state.activePlan);let duration=state.startedAt?Math.floor((Date.now()-Date.parse(state.startedAt))/1000):null;let session={id:Date.now(),date:new Date().toISOString(),planName:plan?.name||null,sets:[...state.active],exerciseNotes:{...(state.activeExerciseNotes||{})},durationSeconds:duration,preWorkout:state.preWorkout?{...state.preWorkout}:null};session.calories=estimateCalories(session);session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);session.fatigueModel=2;state.sessions.unshift(session);state.active=[];state.activeExerciseNotes={};extraRows={};removedRows={};state.planExtraExerciseIds=[];planExtraInputDrafts={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.workoutSwaps={};state.manualStarted=false;state.manualExerciseIds=[];manualDrafts={};state.preWorkout=null;state.startedAt=null;restAudioStop();state.restUntil=null;save();render();if(typeof window.openSportSummary!=='function'||!window.openSportSummary(session.id))tab('history');note('Trening zapisany — podsumowanie Sport Performance 2.0')}
 function addFromCatalog(id){let e=state.exercises.find(x=>x.id===id);if(!e)return;if(!draft.includes(id))draft.push(id);renderPlans();note('Dodano do nowego planu: '+e.name)}
 
 // Atlas techniki v1.2: instrukcje zapisane lokalnie; filmy otwierane na życzenie i wymagają Internetu.
