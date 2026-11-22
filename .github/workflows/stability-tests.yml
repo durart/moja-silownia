@@ -2,13 +2,9 @@ name: Stabilization regression tests
 
 on:
   pull_request:
-    paths:
-      - 'index.html'
-      - 'plan-importer.js'
-      - 'sw.js'
-      - 'modules/**'
-      - 'tests/**'
-      - '.github/workflows/stability-tests.yml'
+  push:
+    branches:
+      - 'fix/stability-v1.8.1-20261122'
   workflow_dispatch:
 
 permissions:
