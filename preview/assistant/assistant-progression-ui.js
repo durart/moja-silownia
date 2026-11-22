@@ -53,7 +53,14 @@ function makeCard(exerciseId,options={}){
   }
  }
  if(Number.isFinite(result.weight)){
-  const info=document.createElement('span');info.className='advisor-progression-weight';info.textContent='Ostatnio: '+result.weight+' kg';box.append(info);
+  const info=document.createElement('span');info.className='advisor-progression-weight';info.textContent='Ciężar roboczy (ostatni trening): '+result.weight+' kg';box.append(info);
+ }
+ if(Number.isFinite(result.bestWeight)){
+  const detail=document.createElement('small');
+  detail.textContent='Najcięższa seria ostatnio: '+result.lastTopWeight+' kg × '+result.lastTopReps+
+   ' • Największy ciężar w historii: '+result.bestWeight+' kg'+
+   ' • Treningi w historii: '+result.sessionCount;
+  box.append(detail);
  }
  return box;
 }
