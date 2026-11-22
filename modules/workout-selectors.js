@@ -17,7 +17,7 @@ export function selectEffectivePlanExerciseIds(plan,hiddenWorkoutSlots,workoutSw
 export function selectPlanExtraStatus(id,plan,exercises,effectiveIds,extraIds){
  if(!plan)return 'no-plan';
  if(!(Array.isArray(exercises)?exercises:[]).some(exercise=>exercise?.id===id))return 'missing-exercise';
- if(effectiveIds.includes(id))return 'in-plan';
- if(extraIds.includes(id))return 'already-added';
+ if((Array.isArray(effectiveIds)?effectiveIds:[]).includes(id))return 'in-plan';
+ if((Array.isArray(extraIds)?extraIds:[]).includes(id))return 'already-added';
  return 'ok';
 }
