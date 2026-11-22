@@ -38,8 +38,18 @@ function makeCard(exerciseId,options={}){
  const ongoing=currentSession(exerciseId).filter(x=>x.setType!=='R').length;
  if(ongoing){const info=document.createElement('small');info.textContent='W bieżącym treningu zapisano już '+ongoing+' serii tego ćwiczenia. Sugestia bazuje na ostatnim zakończonym treningu.';box.append(info);}
  if(result.action==='consider_increase'&&cautionToday){const info=document.createElement('small');info.className='advisor-readiness-caution';info.textContent='Wyniki serii pozwalają rozważyć progresję, ale dzisiejszy sen lub samopoczucie sugerują ostrożność. Możesz utrzymać obecny ciężar albo zmniejszyć objętość. To nie jest medyczna ocena regeneracji.';box.append(info);}
- if(result.action==='consider_increase'){
+ if(result.action==='consider_increase'&&!cautionToday&&!['pain','equipment','technique'].includes(state.activeExerciseNotes?.[exerciseId]?.flag)){
   const caution=document.createElement('small');caution.textContent='Nie zwiększaj ciężaru przy bólu, pogorszeniu techniki lub dużym zmęczeniu. Ostateczna decyzja należy do Ciebie.';box.append(caution);
+  if(Number.isFinite(result.suggestedWeight)){
+   const apply=document.createElement('button');apply.type='button';apply.className='secondary';apply.textContent='Ustaw '+result.suggestedWeight+' kg w tym treningu';
+   apply.addEventListener('click',()=>{
+    if(!confirm('Ustawić '+result.suggestedWeight+' kg w niezapisanych seriach tego ćwiczenia? Historia i plan pozostaną bez zmian.'))return;
+    const card=box.closest('.exercise-card');
+    const inputs=[...(card?.querySelectorAll('input[id$="_w"]')||[])].filter(input=>!input.closest('.hevy-done'));
+    for(const input of inputs){input.value=String(result.suggestedWeight);input.dispatchEvent(new Event('change',{bubbles:true}));}
+    apply.textContent='Ustawiono '+result.suggestedWeight+' kg';apply.disabled=true;
+   });box.append(apply);
+  }
  }
  if(Number.isFinite(result.weight)){
   const info=document.createElement('span');info.className='advisor-progression-weight';info.textContent='Ostatnio: '+result.weight+' kg';box.append(info);
