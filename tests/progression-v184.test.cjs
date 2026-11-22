@@ -97,3 +97,17 @@ test('isolated staging uses its own storage, script version and offline cache',(
  assert.match(sw,/\.\/assistant\/assistant-progression\.js\?v=184/);
  assert.doesNotMatch(sw,/const CACHE='moja-silownia-shell-/);
 });
+
+test('release engine matches validated staging and keeps the existing storage key',()=>{
+ const root=path.join(__dirname,'..');
+ const staging=fs.readFileSync(path.join(root,'preview/assistant/assistant-progression.js'),'utf8');
+ const production=fs.readFileSync(path.join(root,'assistant/assistant-progression.js'),'utf8');
+ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
+ assert.equal(production,staging);
+ assert.match(html,/const key='moja-silownia-v01'/);
+ assert.match(html,/v1\.8\.4/);
+ assert.match(html,/assistant\/assistant-progression\.js\?v=184/);
+ assert.match(sw,/moja-silownia-shell-v36-progression-1\.8\.4/);
+ assert.match(sw,/assistant\/assistant-progression\.js\?v=184/);
+});
