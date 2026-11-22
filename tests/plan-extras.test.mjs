@@ -32,7 +32,7 @@ function setup(){
  };
  const store={value:null,fail:false},calls={messages:[],timer:0,history:0,confirm:true},elements={};
  const ctx={
-  state,workoutSelectors,manualDrafts:{},planExtraInputDrafts:{},restOptions:[30,90,120],
+  state,workoutSelectors,structuredClone,manualDrafts:{},planExtraInputDrafts:{},restOptions:[30,90,120],
   window:{matchMedia:()=>({matches:false})},
   document:{querySelectorAll:()=>[],getElementById:id=>elements[id]||null},
   note:message=>calls.messages.push(message),confirm:()=>calls.confirm,
