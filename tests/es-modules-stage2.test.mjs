@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const core=await import('data:text/javascript;base64,'+Buffer.from(source('modules/state-core.js')).toString('base64'));
 const rawAdapter=source('modules/state-storage.js').replace("import {readState,selectInitialState} from './state-core.js';",'');
-const adapter=await import('data:text/javascript;base64,'+Buffer.from(rawAdapter.replace('export function createStateStorage','export function createStateStorage')+'\nconst readState='+core.readState.toString()+';\nconst selectInitialState='+core.selectInitialState.toString()+';').toString('base64'));
+const adapter=await import('data:text/javascript;base64,'+Buffer.from(rawAdapter.replace('export function createStateStorage','export function createStateStorage')+'\nconst validState='+core.validState.toString()+';\nconst readState='+core.readState.toString()+';\nconst selectInitialState='+core.selectInitialState.toString()+';').toString('base64'));
 const store=()=>{const m=new Map();return {m,getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,v)}};
 const example={exercises:[{id:'x',name:'Test'}],active:[{exerciseId:'x',weight:60,reps:10}],sessions:[],plans:[]};
 test('primary state wins',()=>assert.equal(core.selectInitialState(JSON.stringify(example),null,[]).source,'primary'));
