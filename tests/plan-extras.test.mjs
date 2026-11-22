@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const css=readFileSync(new URL('../sport-performance.css',import.meta.url),'utf8');
+const workoutSelectors=await import('../modules/workout-selectors.js');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script,'Missing inline JavaScript');
 function fragment(from,to){
@@ -31,15 +32,15 @@ function setup(){
  };
  const store={value:null,fail:false},calls={messages:[],timer:0,history:0,confirm:true},elements={};
  const ctx={
-  state,manualDrafts:{},planExtraInputDrafts:{},restOptions:[30,90,120],
+  state,workoutSelectors,structuredClone,manualDrafts:{},planExtraInputDrafts:{},restOptions:[30,90,120],
   window:{matchMedia:()=>({matches:false})},
   document:{querySelectorAll:()=>[],getElementById:id=>elements[id]||null},
   note:message=>calls.messages.push(message),confirm:()=>calls.confirm,
-  save:()=>{if(store.fail)throw Error('Storage full');store.value=JSON.stringify(state)},
+  save:()=>{if(store.fail)throw Error('Storage full');store.value=JSON.stringify(state);return true},
   renderPlanWorkout:()=>{},renderToday:()=>{},render:()=>{},tick:()=>{},
   tab:name=>{if(name==='history')calls.history++},
   restAudioStop:()=>{},startRest:()=>{calls.timer++},
-  detectPR:()=>[],readRir:()=>2,
+  detectPR:()=>[],readRir:()=>2,readSetType:()=> 'W',
   safe:String,sportExerciseArt:()=>'<span>icon</span>',
   lastSets:()=>[],planSets:id=>state.active.filter(row=>row.exerciseId===id),
   restSeconds:()=>90,estimateCalories:()=>({active:90,total:120}),
