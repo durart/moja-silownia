@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const css=readFileSync(new URL('../sport-performance.css',import.meta.url),'utf8');
+const workoutSelectors=await import('../modules/workout-selectors.js');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script,'Missing inline JavaScript');
 function fragment(from,to){
@@ -31,7 +32,7 @@ function setup(){
  };
  const store={value:null,fail:false},calls={messages:[],timer:0,history:0,confirm:true},elements={};
  const ctx={
-  state,manualDrafts:{},planExtraInputDrafts:{},restOptions:[30,90,120],
+  state,workoutSelectors,manualDrafts:{},planExtraInputDrafts:{},restOptions:[30,90,120],
   window:{matchMedia:()=>({matches:false})},
   document:{querySelectorAll:()=>[],getElementById:id=>elements[id]||null},
   note:message=>calls.messages.push(message),confirm:()=>calls.confirm,
