@@ -40,7 +40,7 @@ function setup(){
   renderPlanWorkout:()=>{},renderToday:()=>{},render:()=>{},tick:()=>{},
   tab:name=>{if(name==='history')calls.history++},
   restAudioStop:()=>{},startRest:()=>{calls.timer++},
-  detectPR:()=>[],readRir:()=>2,
+  detectPR:()=>[],readRir:()=>2,readSetType:()=> 'W',
   safe:String,sportExerciseArt:()=>'<span>icon</span>',
   lastSets:()=>[],planSets:id=>state.active.filter(row=>row.exerciseId===id),
   restSeconds:()=>90,estimateCalories:()=>({active:90,total:120}),
