@@ -19,11 +19,11 @@ function noteMarkup(id) {
   const previous = previousNote(id);
   const options = flagLabels.map(([value,label]) => `<option value="${value}" ${note.flag===value?'selected':''}>${label}</option>`).join('');
   return `<div class="exercise-note-panel" data-note-id="${escapeHtml(id)}">
-    <label>Notatka do całego ćwiczenia
-      <textarea class="exercise-note-text" rows="2" maxlength="2000" placeholder="Np. bolał bark, inna maszyna...">${escapeHtml(note.text)}</textarea>
+    <label>Notatka do całego ćwiczenia (opcjonalna)
+      <textarea class="exercise-note-text" rows="3" maxlength="2000" style="display:block;box-sizing:border-box;width:100%;height:4.8em;min-height:4.8em;max-height:4.8em;resize:none" placeholder="Np. bolał bark, inna maszyna...">${escapeHtml(note.text)}</textarea>
     </label>
     <label>Oznaczenie <select class="exercise-note-flag">${options}</select></label>
-    ${previous ? `<details><summary>Poprzednia notatka</summary><p>${escapeHtml(previous.text || flagLabels.find(([value])=>value===previous.flag)?.[1] || '')}</p></details>` : ''}
+    ${previous ? `<details><summary>Notatka z poprzednich treningów</summary><p>${escapeHtml(previous.text || flagLabels.find(([value])=>value===previous.flag)?.[1] || '')}</p></details>` : ''}
   </div>`;
 }
 function decorate(root) {
