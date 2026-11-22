@@ -16,4 +16,14 @@ jobs:
         with:
           node-version: '22'
       - name: Verify progression and existing regression tests
-        run: node --test tests/progression-v184.test.cjs tests/*.test.mjs
+        run: node --test tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
+      - name: Verify published staging is reachable and serves version 1.8.4
+        run: |
+          curl -fsSL --retry 6 --retry-all-errors --retry-delay 5 --max-time 25 \
+            https://durart.github.io/moja-silownia/preview/ -o /tmp/staging.html
+          grep -q 'Asystent Progresji 1.8.4' /tmp/staging.html
+          curl -fsSL --retry 6 --retry-all-errors --retry-delay 5 --max-time 25 \
+            'https://durart.github.io/moja-silownia/preview/assistant/assistant-progression.js?v=184' \
+            -o /tmp/staging-progression.js
+          grep -q 'function mainLoad' /tmp/staging-progression.js
+          node --check /tmp/staging-progression.js
