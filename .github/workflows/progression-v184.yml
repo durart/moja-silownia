@@ -1,4 +1,4 @@
-name: Progression 1.8.4 regression
+name: Progression and profile v1.9.0 regression
 
 on:
   pull_request:
@@ -15,15 +15,37 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify progression and existing regression tests
+      - name: Verify progression, profile and existing regression tests
         run: node --test tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
-      - name: Verify published staging is reachable and serves version 1.8.4
+      - name: Verify live profile staging and unchanged production
         run: |
-          curl -fsSL --retry 6 --retry-all-errors --retry-delay 5 --max-time 25 \
-            https://durart.github.io/moja-silownia/preview/ -o /tmp/staging.html
-          grep -q 'Asystent Progresji 1.8.4' /tmp/staging.html
-          curl -fsSL --retry 6 --retry-all-errors --retry-delay 5 --max-time 25 \
-            'https://durart.github.io/moja-silownia/preview/assistant/assistant-progression.js?v=184' \
-            -o /tmp/staging-progression.js
-          grep -q 'function mainLoad' /tmp/staging-progression.js
-          node --check /tmp/staging-progression.js
+          set -euo pipefail
+          PREVIEW='https://durart.github.io/moja-silownia/preview/'
+          PROD='https://durart.github.io/moja-silownia/'
+          for attempt in $(seq 1 10); do
+            curl -fsSL --max-time 25 "$PREVIEW" -o /tmp/staging.html || true
+            if grep -q 'TEST v1.9.0' /tmp/staging.html 2>/dev/null; then
+              break
+            fi
+            sleep 8
+          done
+          grep -q 'Moja Siłownia TEST v1.9.0' /tmp/staging.html
+          grep -q 'moja-silownia-preview-v01' /tmp/staging.html
+          grep -q 'id="profileContent"' /tmp/staging.html
+          for asset in profile-core.js profile-ui.js sw.js; do
+            curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
+              "$PREVIEW$asset" -o "/tmp/$asset"
+            node --check "/tmp/$asset"
+          done
+          curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
+            "$PREVIEW""profile.css" -o /tmp/profile.css
+          grep -q 'relativeStrength' /tmp/profile-core.js
+          grep -q 'profileWeightDate' /tmp/profile-ui.js
+          grep -q 'v190-profile' /tmp/sw.js
+          curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
+            "$PROD" -o /tmp/production.html
+          grep -q 'v1.8.4' /tmp/production.html
+          if grep -q 'id="profileContent"' /tmp/production.html; then
+            echo 'Unexpected profile in production' >&2
+            exit 1
+          fi
