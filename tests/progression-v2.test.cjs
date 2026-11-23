@@ -194,3 +194,97 @@ test('invalid step inputs are rejected by the equipment UI', () => {
   assert.match(settingsFile,/validStep/);
   assert.match(settingsFile,/step !== null && !validStep\(step\)/);
 });
+
+
+test('pyramid with repeated lighter sets never suggests increasing the back-off load', () => {
+  const result = evaluate([session(dates[0], [
+    row(60, 12, 5), row(60, 12, 5), row(85, 8, 0)
+  ])]);
+  assert.equal(result.weight, 85);
+  assert.equal(result.lastTopWeight, 85);
+  assert.equal(result.action, 'maintain');
+  assert.equal(result.suggestedWeight, undefined);
+  assert.match(result.reason, /piramidzie/);
+});
+
+test('descending pyramid also uses the highest working set as baseline', () => {
+  const result = evaluate([session(dates[0], [
+    row(85, 10, 1), row(70, 12, 4), row(70, 12, 4)
+  ])]);
+  assert.equal(result.weight, 85);
+  assert.equal(result.action, 'maintain');
+});
+
+test('repeated high-load working sets can progress despite lighter back-off sets', () => {
+  const result = evaluate([session(dates[0], [
+    row(60, 12, 4), row(75, 12, 4), row(75, 12, 4), row(60, 12, 5)
+  ])]);
+  assert.equal(result.weight, 75);
+  assert.equal(result.path, 'FAST_TRACK_1_SESSION');
+  assert.equal(result.suggestedWeight, 77.5);
+});
+
+test('RIR from lower pyramid sets cannot override missing RIR at the peak', () => {
+  const result = evaluate([session(dates[0], [
+    row(60, 12, 5), row(70, 12, null), row(70, 12, 4)
+  ])]);
+  assert.equal(result.weight, 70);
+  assert.equal(result.action, 'maintain');
+  assert.equal(result.suggestedWeight, undefined);
+});
+
+test('recent drop from a heavy standard session is not interpreted as a progression signal', () => {
+  const result = evaluate([
+    session(dates[0], sets(60, 12, [4, 4, 4])),
+    session(dates[1], [row(80, 8, 0), row(75, 9, 1), row(65, 10, 2)])
+  ]);
+  assert.equal(result.weight, 60);
+  assert.equal(result.bestWeight, 80);
+  assert.equal(result.action, 'maintain');
+  assert.match(result.reason, /wyraźnie lżejszy/);
+});
+
+test('a historical personal record does not permanently block recent progression', () => {
+  const result = evaluate([
+    session(dates[0], sets(60, 12, [4, 4, 4])),
+    session('2026-07-01T08:00:00Z', [row(90, 8, 1)])
+  ]);
+  assert.equal(result.weight, 60);
+  assert.equal(result.bestWeight, 90);
+  assert.equal(result.path, 'FAST_TRACK_1_SESSION');
+});
+
+test('two sessions with different numbers of peak sets are not treated as comparable', () => {
+  const result = evaluate([
+    session(dates[0], sets(60, 12, [3, 3, 3])),
+    session(dates[1], sets(60, 12, [3, 3]))
+  ]);
+  assert.equal(result.action, 'maintain');
+  assert.equal(result.suggestedWeight, undefined);
+});
+
+test('regenerative pyramid with apparent high RIR cannot replace last heavy baseline', () => {
+  const heavy = session(dates[1], [
+    row(50, 5, 4), row(70, 10, 2), row(85, 8, 0)
+  ]);
+  const recovery = {...session(dates[0], [
+    row(50, 12, 5), row(60, 12, 5), row(60, 12, 5)
+  ]), sessionMode: 'recovery'};
+  const result = evaluate([recovery, heavy]);
+  assert.equal(result.weight, 85);
+  assert.equal(result.bestWeight, 85);
+  assert.equal(result.skippedRecoveryCount, 1);
+  assert.equal(result.action, 'maintain');
+  assert.equal(result.suggestedWeight, undefined);
+});
+
+test('recovery-session pain flag blocks increase without changing the original data', () => {
+  const standard = session(dates[1], sets(60, 12, [4, 4, 4]));
+  const recovery = {...session(dates[0], sets(50, 10, [5, 5])),
+    sessionMode: 'recovery', exerciseNotes: {[exerciseId]: {flag: 'pain'}}};
+  const sessions = [recovery, standard];
+  const original = JSON.stringify(sessions);
+  const result = evaluate(sessions);
+  assert.equal(result.action, 'review');
+  assert.equal(JSON.stringify(sessions), original);
+});
