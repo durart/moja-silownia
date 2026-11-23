@@ -16,7 +16,7 @@ test('release 2.0 assets are wired exactly once and in executable order', () => 
   const scripts = [
     'assistant/session-mode.js?v=200',
     'assistant/assistant-core.js?v=200',
-    'assistant/assistant-progression.js?v=200',
+    'assistant/assistant-progression.js?v=201',
     'assistant/equipment-settings-ui.js?v=200',
     'assistant/assistant-progression-ui.js?v=200'
   ];
@@ -26,7 +26,7 @@ test('release 2.0 assets are wired exactly once and in executable order', () => 
   }
   assert.ok(index.indexOf('assistant/session-mode.js?v=200') < index.indexOf("const key='moja-silownia-v01'"));
   assert.ok(index.indexOf('assistant/assistant-core.js?v=200') < index.indexOf('assistant/assistant-ui.js?v=1'));
-  assert.ok(index.indexOf('assistant/assistant-progression.js?v=200') < index.indexOf('assistant/assistant-progression-ui.js?v=200'));
+  assert.ok(index.indexOf('assistant/assistant-progression.js?v=201') < index.indexOf('assistant/assistant-progression-ui.js?v=200'));
   assert.ok(index.indexOf('assistant/equipment-settings-ui.js?v=200') < index.indexOf('assistant/assistant-progression-ui.js?v=200'));
 });
 
@@ -35,7 +35,7 @@ test('data key and profile 1.9 remain unchanged while 2.0 gets a new PWA shell',
   assert.match(index, /id="profileContent"/);
   assert.match(index, /profile-core\.js\?v=190/);
   assert.match(index, /profile-ui\.js\?v=190/);
-  assert.match(sw, /moja-silownia-shell-v38-progression-2\.0\.0-20261123/);
+  assert.match(sw, /moja-silownia-shell-v39-progression-2\.0\.0-guardrails-20261123/);
   assert.match(sw, /profile-core\.js\?v=190/);
   assert.match(sw, /modules\/state-storage\.js/);
   assert.match(index, /state\.profile/);

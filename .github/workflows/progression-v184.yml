@@ -69,7 +69,7 @@ jobs:
           PROD='https://durart.github.io/moja-silownia/'
           for attempt in $(seq 1 24); do
             curl -fsSL --max-time 25 "$PROD" -o /tmp/production.html || true
-            if grep -q 'Moja Siłownia v2.0.0' /tmp/production.html 2>/dev/null; then
+            if grep -q 'assistant/assistant-progression.js?v=201' /tmp/production.html 2>/dev/null; then
               break
             fi
             sleep 6
@@ -84,7 +84,7 @@ jobs:
           done
           curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
             "$PROD""profile.css" -o /tmp/prod-profile.css
-          grep -q 'moja-silownia-shell-v38-progression-2.0.0-20261123' /tmp/prod-sw.js
+          grep -q 'moja-silownia-shell-v39-progression-2.0.0-guardrails-20261123' /tmp/prod-sw.js
           grep -q 'profile-core.js?v=190' /tmp/prod-sw.js
           grep -q 'profile-ui.js?v=190' /tmp/prod-sw.js
           grep -q 'profile.css?v=190' /tmp/prod-sw.js
@@ -92,7 +92,7 @@ jobs:
           grep -q 'id="activeRecoveryMode"' /tmp/production.html
           grep -q 'assistant/session-mode.js?v=200' /tmp/production.html
           grep -q 'assistant/assistant-core.js?v=200' /tmp/production.html
-          grep -q 'assistant/assistant-progression.js?v=200' /tmp/production.html
+          grep -q 'assistant/assistant-progression.js?v=201' /tmp/production.html
           grep -q 'assistant/equipment-settings-ui.js?v=200' /tmp/production.html
           grep -q 'assistant/assistant-progression-ui.js?v=200' /tmp/production.html
           for asset in session-mode.js assistant-core.js assistant-progression.js equipment-settings-ui.js assistant-progression-ui.js; do
@@ -105,6 +105,6 @@ jobs:
           grep -q 'equipmentStepKg' /tmp/prod-equipment-settings-ui.js
           grep -q 'assistant/session-mode.js?v=200' /tmp/prod-sw.js
           grep -q 'assistant/assistant-core.js?v=200' /tmp/prod-sw.js
-          grep -q 'assistant/assistant-progression.js?v=200' /tmp/prod-sw.js
+          grep -q 'assistant/assistant-progression.js?v=201' /tmp/prod-sw.js
           grep -q 'assistant/equipment-settings-ui.js?v=200' /tmp/prod-sw.js
           grep -q 'assistant/assistant-progression-ui.js?v=200' /tmp/prod-sw.js
