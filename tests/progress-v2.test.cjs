@@ -70,3 +70,20 @@ test('training breaks use calendar elapsed days and skip recovery sessions',()=>
   assert.equal(C.trainingBreaks(rows,{minDays:21}).length,0);
   assert.equal(C.trainingBreaks([]).length,0);
 });
+
+test('long exercise gap resets strength trend without erasing historical sessions',()=>{
+  const before=history.slice(0,4);
+  const after=[
+    s('2026-12-10T10:00:00',[[60,10]]),
+    s('2026-12-17T10:00:00',[[62.5,10]]),
+    s('2026-12-24T10:00:00',[[65,10]])
+  ];
+  const insufficient=C.trend([...before,...after],'bench');
+  assert.equal(insufficient.kind,'insufficient');
+  assert.equal(insufficient.count,3);
+  assert.equal(insufficient.afterBreak,true);
+  const enough=C.trend([...before,...after,s('2026-12-31T10:00:00',[[67.5,10]])],'bench');
+  assert.equal(enough.kind,'up');
+  assert.equal(enough.count,4);
+  assert.equal(enough.afterBreak,true);
+});
