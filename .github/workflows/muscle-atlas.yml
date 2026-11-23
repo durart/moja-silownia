@@ -30,5 +30,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify standalone browser module syntax
+        run: node --check musclemap-hybrid-assets.js && node --check muscle-anatomy-art.js && node --check muscle-atlas-ui.js
       - name: Run atlas and regression tests
         run: node --test tests/muscle-atlas.test.cjs tests/musclemap-hybrid.test.cjs tests/exercise-catalog-shared.test.cjs tests/production-progression-v2.test.cjs tests/session-mode.test.cjs tests/storage-regression.test.mjs tests/service-worker.test.mjs
