@@ -1,0 +1,27 @@
+.ma-atlas{margin-top:20px;padding-top:18px;border-top:1px solid #34586a;color:#effbff}
+.ma-atlas .ma-heading h3{margin:0 0 6px;font-size:1.1rem}
+.ma-atlas .ma-heading p,.ma-atlas .ma-hint{font-size:.82rem;color:#afd0da;line-height:1.5;margin:4px 0 10px}
+.ma-visual{max-width:680px;margin:4px auto 0;background:radial-gradient(ellipse at 50% 34%,#183448 0%,#0c202e 70%);border:1px solid #274a5d;border-radius:14px;padding:6px}
+.ma-svg{display:block;width:100%;height:auto}
+.ma-silhouette{fill:#183342;stroke:#5b8291;stroke-width:2.3;stroke-linejoin:round}
+.ma-anatomy-lines{fill:none;stroke:#537484;stroke-width:1.5;opacity:.55}
+.ma-region{fill:#2f5061;stroke:#90b3c1;stroke-width:1.7;stroke-linejoin:round;cursor:pointer;transition:fill .15s ease,stroke .15s ease}
+.ma-region.ma-level-low{fill:#2bbcb0;stroke:#a6e3df}
+.ma-region.ma-level-medium{fill:#eba83a;stroke:#ffe0a0}
+.ma-region.ma-level-high{fill:#ed5b67;stroke:#ffc1c5}
+.ma-region:hover,.ma-region[aria-pressed="true"]{stroke:#fff;stroke-width:3.6;filter:drop-shadow(0 0 4px #9de8ff)}
+.ma-region:focus-visible{outline:none;stroke:#fff;stroke-width:4;filter:drop-shadow(0 0 5px #fff)}
+.ma-view-labels{fill:#b7d1db;font-size:18px;letter-spacing:3px;font-weight:700;text-anchor:middle}
+.ma-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}
+.ma-atlas .ma-chip{min-height:44px;padding:7px 4px;border:1px solid #466578;border-radius:9px;background:#153040;color:#e9f6fa;font-size:.76rem;line-height:1.2;white-space:normal}
+.ma-atlas .ma-chip[aria-pressed="true"]{background:#17627b;border-color:#4cdaee;color:#fff}
+.ma-atlas button:focus-visible{outline:3px solid #8de6f2;outline-offset:2px}
+.ma-detail{display:flex;flex-direction:column;gap:5px;background:#112b3b;padding:13px;border-radius:11px;border:1px solid #31566d}
+.ma-detail strong{font-size:1.05rem}
+.ma-detail span{font-weight:600;color:#a9ecf6}
+.ma-detail small{color:#c3dbe3}
+.ma-atlas .ma-visit{align-self:flex-start;min-height:44px;margin-top:8px;padding:8px 13px;border-radius:10px;background:#17627b;color:#fff;border:1px solid #5dcfe0;font-size:.88rem}
+.ma-atlas .ma-visit:disabled{opacity:.5;cursor:not-allowed}
+.ma-atlas .ma-error{color:#ffb0b3;font-size:.85rem}
+@media(max-width:380px){.ma-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.ma-atlas .ma-chip{font-size:.78rem}}
+@media(prefers-reduced-motion:reduce){.ma-region{transition:none}}
