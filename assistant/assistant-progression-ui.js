@@ -22,7 +22,12 @@ function guidance(result){
  }
 }
 function makeCard(exerciseId,options={}){
- const result=window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,options);
+ const exercise=state.exercises?.find(item=>String(item.id)===String(exerciseId));
+ const result=window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,{
+  ...options,
+  equipmentType:exercise?.equipmentType||exercise?.equipment,
+  equipmentStepKg:exercise?.equipmentStepKg
+ });
  const pre=state.preWorkout||{};
  const lowFeeling=typeof pre.feeling==='string'&&/^(bad|poor|low|slabo|słabo|zle|źle|tired|1|2)$/i.test(pre.feeling);
  const shortSleep=Number(pre.sleepHours)>0&&Number(pre.sleepHours)<6;
@@ -35,6 +40,11 @@ function makeCard(exerciseId,options={}){
  const title=document.createElement('strong');title.textContent=meta.label;
  const reason=document.createElement('p');reason.textContent=result.reason;
  box.append(eyebrow,title,reason);
+ if(result.action==='consider_increase'&&Number.isFinite(result.increment)){
+  const detail=document.createElement('small');
+  detail.textContent='Ścieżka: '+({FAST_TRACK_1_SESSION:'szybka',ACCELERATED_2_SESSIONS:'przyspieszona',E1RM_TREND_CONFIRMED:'trend e1RM',STANDARD_3_SESSIONS:'standardowa'}[result.path]||'standardowa')+' • sugerowany skok: +'+result.increment+' kg';
+  box.append(detail);
+ }
  const ongoing=currentSession(exerciseId).filter(x=>x.setType!=='R').length;
  if(ongoing){const info=document.createElement('small');info.textContent='W bieżącym treningu zapisano już '+ongoing+' serii tego ćwiczenia. Sugestia bazuje na ostatnim zakończonym treningu.';box.append(info);}
  if(result.action==='consider_increase'&&cautionToday){const info=document.createElement('small');info.className='advisor-readiness-caution';info.textContent='Wyniki serii pozwalają rozważyć progresję, ale dzisiejszy sen lub samopoczucie sugerują ostrożność. Możesz utrzymać obecny ciężar albo zmniejszyć objętość. To nie jest medyczna ocena regeneracji.';box.append(info);}
