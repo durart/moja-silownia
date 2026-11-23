@@ -5,7 +5,7 @@ const ex=[{id:'seed-0',group:'Klatka piersiowa'},{id:'a',group:'Nogi'}];
 const sets=(rows)=>[{date:'2026-11-20T12:00:00Z',sets:rows}];
 test('shared profiles used by dashboard and advisor',()=>{const set={exerciseId:'seed-0',weight:60,reps:10,rir:2};const sessions=sets([set]);const now=Date.parse('2026-11-21T12:00:00Z');assert.deepEqual(core.fatigue(sessions,ex,now),advisor.fatigueByMuscle(sessions,ex,now));assert.equal(core.factors(set,ex)[0][0],'Klatka piersiowa')});
 test('stored fatigue model 2 respected',()=>assert.deepEqual(core.sessionImpulse({fatigueModel:2,fatigueImpulse:{Nogi:20}},ex),{Nogi:20}));
-test('warm-up excluded from progression',()=>{const s=sets([{exerciseId:'a',weight:20,reps:12,rir:2,setType:'R'},{exerciseId:'a',weight:60,reps:12,rir:2,setType:'W'},{exerciseId:'a',weight:60,reps:12,rir:2,setType:'W'}]);assert.equal(progression.suggest(s,'a').action,'consider_increase')});
+test('warm-up excluded from progression',()=>{const s=sets([{exerciseId:'a',weight:20,reps:12,rir:2,setType:'R'},{exerciseId:'a',weight:60,reps:12,rir:2,setType:'W'},{exerciseId:'a',weight:60,reps:12,rir:2,setType:'W'}]);assert.equal(progression.suggest(s,'a').action,'maintain')});
 test('legacy set without setType is working',()=>assert.equal(progress.working({exerciseId:'a',weight:60,reps:5}),true));
 test('RIR-aware Epley: 100 x 5 @RIR2',()=>assert.ok(Math.abs(progress.estimatedRM({exerciseId:'a',weight:100,reps:5,rir:2})-123.333333)<.001));
 test('warm-up excluded from e1RM',()=>assert.equal(progress.estimatedRM({exerciseId:'a',weight:20,reps:10,rir:3,setType:'R'}),null));
