@@ -93,7 +93,7 @@ function decorate(card, exercise, refresh) {
       return next;
     });
     try {
-      save();
+      if (save() !== true) throw new Error('Storage rejected equipment changes');
       if (typeof refresh === 'function') refresh();
     } catch (error) {
       state.exercises = original;
