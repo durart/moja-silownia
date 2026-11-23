@@ -30,7 +30,7 @@ test('v2 staging keeps RIR, pain and real-world load guards',()=>{
  assert.equal(largeStep.suggestedWeight,null);
  assert.equal(largeStep.blockedByStep,true);
 });
-test('preview retains profile and isolated PWA cache; production 1.9 stays unchanged',()=>{
+test('preview retains profile and isolated PWA cache; production 2.0 preserves data',()=>{
  const index=read('preview/index.html'),sw=read('preview/sw.js'),prod=read('index.html');
  assert.match(index,/TEST v2\.0\.0/);
  assert.match(index,/moja-silownia-preview-v01/);
@@ -38,7 +38,7 @@ test('preview retains profile and isolated PWA cache; production 1.9 stays uncha
  assert.match(index,/equipment-settings-ui\.js\?v=200/);
  assert.match(sw,/moja-silownia-preview-shell-v201-recovery-/);
  assert.match(sw,/equipment-settings-ui\.js\?v=200/);
- assert.match(prod,/Moja Siłownia v1\.9\.0/);
- assert.doesNotMatch(prod,/equipment-settings-ui\.js/);
+ assert.match(prod,/Moja Siłownia v2\.0\.0/);
+ assert.match(prod,/equipment-settings-ui\.js\?v=200/);
  assert.equal(read('profile-core.js'),read('preview/profile-core.js'));
 });
