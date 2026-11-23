@@ -28,3 +28,19 @@ test('recovery sessions and missing RIR do not produce false strength trends',()
   assert.equal(C.exerciseSessions([recovery],'bench')[0].comparableOneRM,null);
   assert.equal(C.exerciseSessions([indicative],'bench')[0].comparableOneRM,null);
 });
+
+test('recovery remains visible in totals but cannot create a new strength PR',()=>{
+  const base=s('2026-11-01T10:00:00',[[70,10]]);
+  const deload={...s('2026-11-03T10:00:00',[[100,10]]),sessionMode:'recovery'};
+  const report=C.monthReport([base,deload],2026,11);
+  assert.equal(report.count,2);
+  assert.equal(report.prs,1);
+  assert.equal(C.records([base,deload],'bench')[10].exact.weight,70);
+});
+test('bodyweight zero-load repetitions are retained without fictitious e1RM',()=>{
+  const pushups={date:'2026-11-04T10:00:00',sets:[{exerciseId:'pushups',weight:0,reps:20,rir:2}]};
+  const row=C.exerciseSessions([pushups],'pushups')[0];
+  assert.equal(row.max,0);
+  assert.equal(row.oneRM,null);
+  assert.equal(row.sets[0].reps,20);
+});
