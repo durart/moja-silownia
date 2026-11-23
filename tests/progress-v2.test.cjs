@@ -103,3 +103,16 @@ test('relative strength reflects bodyweight changes without changing absolute lo
  assert.equal(rows[0].weightQuality,'measured');
  assert.equal(C.relativeStrengthSessions(history.slice(0,2),'bench',{} )[0].relativeOneRM,null);
 });
+
+test('recovery session does not replace standard strength comparison',()=>{
+ const recovery={...s('2026-11-06T10:00:00',[[40,10]]),sessionMode:'recovery'};
+ const result=C.compare([...history,recovery],'bench');
+ assert.equal(result.latest.max,75);
+ assert.equal(result.previous.max,72.5);
+});
+test('trend resets after a break even if new session has no comparable RIR',()=>{
+ const after={date:'2026-12-20T10:00:00',sets:[{exerciseId:'bench',weight:70,reps:8}]};
+ const result=C.trend([...history,after],'bench');
+ assert.equal(result.kind,'insufficient');
+ assert.equal(result.afterBreak,true);
+});
