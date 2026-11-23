@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'muscle-atlas-*'
+      - 'muscle-anatomy-art.js'
+      - 'preview/muscle-anatomy-art.js'
+      - 'tests/muscle-anatomy-v3.test.cjs'
       - 'preview/muscle-atlas-*'
       - 'preview/index.html'
       - 'preview/sw.js'
@@ -24,4 +27,4 @@ jobs:
         with:
           node-version: '22'
       - name: Run atlas and regression tests
-        run: node --test tests/muscle-atlas.test.cjs tests/exercise-catalog-shared.test.cjs tests/production-progression-v2.test.cjs tests/session-mode.test.cjs tests/storage-regression.test.mjs tests/service-worker.test.mjs
+        run: node --test tests/muscle-atlas.test.cjs tests/muscle-anatomy-v3.test.cjs tests/exercise-catalog-shared.test.cjs tests/production-progression-v2.test.cjs tests/session-mode.test.cjs tests/storage-regression.test.mjs tests/service-worker.test.mjs
