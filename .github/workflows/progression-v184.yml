@@ -1,4 +1,4 @@
-name: Moja Silownia v1.9.0 production and v2.0.0 staging regression
+name: Moja Silownia 1.9.0 production and 2.0.0 recovery staging regression
 
 on:
   pull_request:
@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: '22'
       - name: Verify progression, profile and existing regression tests
-        run: node --test tests/session-mode.test.cjs tests/progression-v2.test.cjs tests/progression-v2-staging.test.cjs tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
+        run: node --test tests/progression-v2.test.cjs tests/session-mode.test.cjs tests/progression-v2-staging.test.cjs tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
       - name: Verify live progression v2 staging
         if: github.event_name == 'push'
         run: |
