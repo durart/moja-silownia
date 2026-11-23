@@ -9,13 +9,26 @@ const clean=sessions=>(Array.isArray(sessions)?sessions:[]).filter(s=>s&&Array.i
 const setsFor=(session,id)=>(session.sets||[]).filter(s=>validSet(s)&&s.exerciseId===id);
 const working=s=>s?.setType!=='R'&&s?.type!=='warmup';
 const volume=sets=>sets.reduce((v,s)=>v+number(s.weight)*number(s.reps),0);
-const estimatedRM=s=>{if(!validSet(s)||!working(s)||number(s.weight)<=0)return null;const rir=finite(s.rir)?Math.max(0,Math.min(5,number(s.rir))):0;const effective=number(s.reps)+rir;return effective>=1&&effective<=12?number(s.weight)*(1+effective/30):null;};
+const isRecovery=session=>session?.sessionMode==='recovery';
+const rirStatus=set=>{
+  if(set?.rir===null||set?.rir===undefined||set?.rir==='')return 'missing';
+  return finite(set.rir)&&Number.isInteger(number(set.rir))&&number(set.rir)>=0&&number(set.rir)<=5?'valid':'invalid';
+};
+function estimateDetails(set){
+  if(!validSet(set)||!working(set)||number(set.weight)<=0)return {value:null,quality:'unavailable'};
+  const status=rirStatus(set);
+  if(status==='invalid')return {value:null,quality:'invalid_rir'};
+  const effective=number(set.reps)+(status==='valid'?number(set.rir):0);
+  if(effective<1||effective>12)return {value:null,quality:'out_of_range'};
+  return {value:number(set.weight)*(1+effective/30),quality:status==='valid'?'comparable':'indicative'};
+}
+const estimatedRM=set=>estimateDetails(set).value;
 function records(sessions,id){const all=clean(sessions).flatMap(s=>setsFor(s,id).filter(working).map(x=>({...x,date:s.date})));const result={};for(const reps of [5,8,10,12,15]){const exact=all.filter(s=>number(s.reps)===reps).sort((a,b)=>number(b.weight)-number(a.weight))[0]||null;const atLeast=all.filter(s=>number(s.reps)>=reps).sort((a,b)=>number(b.weight)-number(a.weight))[0]||null;result[reps]={exact,atLeast};}return result;}
-function exerciseSessions(sessions,id){return clean(sessions).map(s=>{const sets=setsFor(s,id);if(!sets.length)return null;const work=sets.filter(working);const rms=work.map(estimatedRM).filter(x=>x!==null);return {date:s.date,timestamp:time(s),sets:sets.map(x=>({...x})),max:work.length?Math.max(...work.map(x=>number(x.weight))):null,volume:volume(sets),oneRM:rms.length?Math.max(...rms):null};}).filter(Boolean);}
+function exerciseSessions(sessions,id){return clean(sessions).map(s=>{const sets=setsFor(s,id);if(!sets.length)return null;const work=sets.filter(working);const details=work.map(estimateDetails);const rms=details.map(x=>x.value).filter(x=>x!==null);const reliable=details.filter(x=>x.quality==='comparable').map(x=>x.value);return {date:s.date,timestamp:time(s),sessionMode:isRecovery(s)?'recovery':'standard',sets:sets.map(x=>({...x})),max:work.length?Math.max(...work.map(x=>number(x.weight))):null,volume:volume(sets),oneRM:rms.length?Math.max(...rms):null,comparableOneRM:!isRecovery(s)&&reliable.length?Math.max(...reliable):null};}).filter(Boolean);}
 function compare(sessions,id){const rows=exerciseSessions(sessions,id);if(rows.length<2)return null;const previous=rows[rows.length-2],latest=rows[rows.length-1];const delta={};for(const k of ['max','volume','oneRM']){delta[k]=previous[k]===null||latest[k]===null?null:{absolute:latest[k]-previous[k],percent:previous[k]>0?(latest[k]-previous[k])/previous[k]*100:null};}return {previous,latest,delta};}
 function median(a){const s=a.slice().sort((a,b)=>a-b),n=s.length;return n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2;}
-function trend(sessions,id){const values=exerciseSessions(sessions,id).map(r=>r.oneRM).filter(v=>v!==null).slice(-6);if(values.length<4)return {kind:'insufficient',count:values.length,percent:null};const half=Math.floor(values.length/2),a=median(values.slice(0,half)),b=median(values.slice(half));const percent=a>0?(b-a)/a*100:null;return {kind:percent===null?'insufficient':percent>3?'up':percent< -3?'down':'stable',count:values.length,percent};}
+function trend(sessions,id){const values=exerciseSessions(sessions,id).map(r=>r.comparableOneRM).filter(v=>v!==null).slice(-6);if(values.length<4)return {kind:'insufficient',count:values.length,percent:null};const half=Math.floor(values.length/2),a=median(values.slice(0,half)),b=median(values.slice(half));const percent=a>0?(b-a)/a*100:null;return {kind:percent===null?'insufficient':percent>3?'up':percent< -3?'down':'stable',count:values.length,percent};}
 function monthReport(sessions,year,month){const items=clean(sessions).filter(s=>{const d=new Date(time(s));return d.getFullYear()===year&&d.getMonth()+1===month;});const all=items.flatMap(s=>s.sets.filter(validSet));const byExercise=[...new Set(all.map(s=>s.exerciseId))];const before=clean(sessions).filter(s=>time(s)<new Date(year,month-1,1).getTime());let prs=0;for(const id of byExercise){let highest=Math.max(0,...before.flatMap(s=>setsFor(s,id).filter(working).map(x=>number(x.weight))));for(const s of items){for(const x of setsFor(s,id).filter(working)){if(number(x.weight)>highest){prs++;highest=number(x.weight);}}}}return {year,month,count:items.length,sets:all.length,volume:volume(all),durationSeconds:items.reduce((sum,s)=>sum+(finite(s.durationSeconds)?Math.max(0,number(s.durationSeconds)):0),0),prs,exercises:byExercise.length};}
 function inPeriod(sessions,days,now=Date.now()){return clean(sessions).filter(s=>!days||time(s)>=now-days*86400000);}
-return Object.freeze({clean,validSet,working,volume,estimatedRM,records,exerciseSessions,compare,trend,monthReport,inPeriod});
+return Object.freeze({clean,validSet,working,volume,rirStatus,estimateDetails,estimatedRM,isRecovery,records,exerciseSessions,compare,trend,monthReport,inPeriod});
 });
