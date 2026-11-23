@@ -247,7 +247,7 @@ let draft=[];
 let storageWarningShown=false;
 function save(){
  try{
-  if(window.MojaSilowniaModules?.stateStorage){
+  if(key==='moja-silownia-v01'&&window.MojaSilowniaModules?.stateStorage){
    window.MojaSilowniaModules.stateStorage.persist(state);
   }else{
    const next=JSON.stringify(state),previous=localStorage.getItem(key);
