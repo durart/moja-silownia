@@ -88,7 +88,7 @@ test('relative strength ignores warmups and reports best exercise-specific worki
   assert.equal(core.relativeStrength(sessions, 'squat', 100), null);
 });
 
-test('staging remains isolated and production releases profile v1.9.0', () => {
+test('staging remains isolated and production v2 retains profile v1.9', () => {
   const preview = read('preview/index.html');
   const sw = read('preview/sw.js');
   const production = read('index.html');
@@ -99,7 +99,7 @@ test('staging remains isolated and production releases profile v1.9.0', () => {
   assert.match(preview, /profile-ui\.js\?v=190/);
   assert.match(sw, /profile-core\.js\?v=190/);
   assert.match(sw, /profile-ui\.js\?v=190/);
-  assert.match(production, /v1\.9\.0/);
+  assert.match(production, /v2\.0\.0/);
   assert.match(production, /const key='moja-silownia-v01'/);
   assert.match(production, /id="profileContent"/);
   assert.match(production, /profile-core\.js\?v=190/);
@@ -108,7 +108,7 @@ test('staging remains isolated and production releases profile v1.9.0', () => {
   assert.match(production, /v\.profile=ProfileCore\.normalizeProfile\(v\.profile\)/);
   assert.match(production, /bodyWeightKg:ProfileCore\.resolveWorkoutWeight/);
   assert.match(production, /estimateCalories/);
-  assert.match(read('sw.js'), /moja-silownia-shell-v37-profile-1\.9\.0/);
+  assert.match(read('sw.js'), /moja-silownia-shell-v38-progression-2\.0\.0/);
   assert.match(read('sw.js'), /profile-core\.js\?v=190/);
   assert.match(read('sw.js'), /profile-ui\.js\?v=190/);
   assert.match(read('sw.js'), /profile\.css\?v=190/);
