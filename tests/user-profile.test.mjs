@@ -93,6 +93,7 @@ test('staging is isolated, caches profile assets and production remains v1.8.4',
   const sw = read('preview/sw.js');
   const production = read('index.html');
   assert.match(preview, /moja-silownia-preview-v01/);
+  assert.match(preview, /key==='moja-silownia-v01'&&window\.MojaSilowniaModules\?\.stateStorage/);
   assert.match(preview, /id="profileContent"/);
   assert.match(preview, /profile-core\.js\?v=190/);
   assert.match(preview, /profile-ui\.js\?v=190/);
