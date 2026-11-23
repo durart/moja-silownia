@@ -1,0 +1,34 @@
+name: Progress 3 isolated preview package
+on:
+  push:
+    branches: [feature/progress-3-foundation-20261123]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify application files and staging isolation
+        run: |
+          test -f index.html
+          test -f preview/index.html
+          test -f progress-core-v2.js
+          test -f progress-ui-v2.js
+          node --check progress-core-v2.js
+          node --check progress-ui-v2.js
+          node --test tests/progress-v2.test.cjs
+      - name: Prepare standalone test package
+        run: |
+          mkdir -p "$RUNNER_TEMP/progress3-package"
+          tar --exclude=.git --exclude=.github --exclude=tests --exclude=node_modules -cf - . | tar -xf - -C "$RUNNER_TEMP/progress3-package"
+          printf '%s\n' 'Moja Silownia - Progress 3 isolated test package' 'Run from a local HTTP server; do not open index.html using file://.' 'This package is NOT deployed to GitHub Pages or production.' 'Git commit: '${GITHUB_SHA} > "$RUNNER_TEMP/progress3-package/TEST-PACKAGE.txt"
+          cd "$RUNNER_TEMP/progress3-package"
+          zip -qr "$GITHUB_WORKSPACE/progress-3-preview.zip" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: progress-3-isolated-preview
+          path: progress-3-preview.zip
+          retention-days: 14
+          if-no-files-found: error
