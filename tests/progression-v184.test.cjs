@@ -95,7 +95,7 @@ test('isolated staging uses its own storage, script version and offline cache',(
  assert.doesNotMatch(html,/const key='moja-silownia-v01'/);
  assert.match(html,/\.\/assistant\/assistant-progression\.js\?v=202/);
  assert.match(html,/\.\/assistant\/assistant-progression-ui\.js\?v=200/);
- assert.match(sw,/moja-silownia-preview-shell-v201-recovery-/);
+ assert.match(sw,/moja-silownia-preview-shell-v202-recovery-/);
  assert.match(sw,/\.\/assistant\/assistant-progression\.js\?v=202/);
  assert.doesNotMatch(sw,/const CACHE='moja-silownia-shell-/);
 });
@@ -108,8 +108,8 @@ test('production v2 retains storage while the staging sandbox remains isolated',
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  assert.match(staging,/REPS_TREND_CONFIRMED/);
  assert.match(html,/const key='moja-silownia-v01'/);
- assert.match(html,/v2\.0\.0/);
+ assert.match(html,/v2\.1\.0/);
  assert.match(html,/assistant\/assistant-progression\.js\?v=201/);
- assert.match(sw,/moja-silownia-shell-v39-progression-2\.0\.0/);
+ assert.match(sw,/moja-silownia-shell-v40-progression-2\.1\.0/);
  assert.match(sw,/assistant\/assistant-progression\.js\?v=201/);
 });
