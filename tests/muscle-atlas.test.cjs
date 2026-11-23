@@ -46,20 +46,24 @@ test('rendering model does not modify training history',()=>{
  assert.equal(JSON.stringify(data),original);
  assert.doesNotMatch(read('muscle-atlas-ui.js'),/localStorage|indexedDB|save\(\)|state\.(sessions|plans|exercises)\s*=/);
 });
-test('SVG has front/back vector regions and keyboard interaction',()=>{
+test('atlas uses approved shared 30-region SVG with accessible controls',()=>{
  const ui=read('muscle-atlas-ui.js');
- assert.match(ui,/viewBox="25 18 645 535"/);
- assert.match(ui,/role="button" tabindex="0"/);
+ const art=require('../muscle-anatomy-art.js');
+ assert.equal(art.REGIONS.length,30);
+ assert.equal(new Set(art.REGIONS.map(area=>area.muscle)).size,9);
+ assert.match(ui,/MuscleAnatomyArt\.renderAtlas/);
+ assert.match(ui,/path\.muscle-region\[data-muscle\]/);
  assert.match(ui,/aria-pressed/);
  assert.match(ui,/keydown/);
- assert.doesNotMatch(ui,/<image |data:image|\.jpe?g/);
- for(const muscle of atlas.MUSCLES)assert.ok(ui.includes("'"+muscle+"'"),muscle);
+ assert.doesNotMatch(ui,/localStorage|indexedDB|data:image|\.jpe?g/);
+ for(const muscle of atlas.MUSCLES)assert.ok(art.REGIONS.some(area=>area.muscle===muscle),muscle);
 });
 test('production and preview code match with isolated staging cache',()=>{
- for(const name of ['muscle-atlas-core.js','muscle-atlas-ui.js','muscle-atlas.css']){
+ for(const name of ['muscle-atlas-core.js','muscle-atlas-ui.js','muscle-atlas.css','muscle-anatomy-art.js']){
+  const version=name==='muscle-atlas-core.js'?'1':'3';
   assert.equal(read(name),read('preview/'+name));
-  for(const html of ['index.html','preview/index.html'])assert.ok(read(html).includes('./'+name+'?v=1'),html+' '+name);
-  for(const sw of ['sw.js','preview/sw.js'])assert.ok(read(sw).includes('./'+name+'?v=1'),sw+' '+name);
+  for(const html of ['index.html','preview/index.html'])assert.ok(read(html).includes('./'+name+'?v='+version),html+' '+name);
+  for(const sw of ['sw.js','preview/sw.js'])assert.ok(read(sw).includes('./'+name+'?v='+version),sw+' '+name);
  }
  assert.match(read('preview/index.html'),/moja-silownia-preview-v01/);
  assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-/);
