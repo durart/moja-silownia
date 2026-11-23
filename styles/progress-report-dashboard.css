@@ -20,3 +20,21 @@
 .report-meter{height:6px;background:#27272a;border-radius:6px;margin-top:6px;overflow:hidden}.report-meter i{display:block;height:100%;background:linear-gradient(90deg,#10b981,#06b6d4)}
 .report-table-wrap{overflow-x:auto}.report-panel table{width:100%;border-collapse:collapse;font-size:.76rem}.report-panel th,.report-panel td{text-align:left;padding:10px 8px;border-bottom:1px solid #3f3f4666}.report-panel th{color:#a1a1aa}.report-panel td{color:#e4e4e7}
 @media(max-width:700px){.report-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.report-grid{grid-template-columns:1fr}.report-panel.wide,.report-panel.full{grid-column:auto}.report-kpi,.report-panel{padding:13px}.report-heading{align-items:flex-start}}
+
+/* Accessible mobile report details and explicit chart values. */
+.report-chart-values{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#a1a1aa;font-size:.78rem;margin-top:4px}
+.report-chart-values strong{color:#f4f4f5}
+.report-mobile-exercises{display:none}
+@media(max-width:700px){
+ .report-mobile-exercises{display:grid;gap:9px}
+ .report-panel.full .report-table-wrap{display:none}
+ .report-exercise-card{border:1px solid #3f3f46;border-radius:11px;background:#202024;overflow:hidden}
+ .report-exercise-card summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px;cursor:pointer;list-style:none}
+ .report-exercise-card summary::-webkit-details-marker{display:none}
+ .report-exercise-card summary strong{font-size:.86rem;min-width:0}
+ .report-exercise-card summary span{font-size:.77rem;color:#a1a1aa;white-space:nowrap}
+ .report-exercise-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0;padding:12px 14px 15px;border-top:1px solid #3f3f46}
+ .report-exercise-card dt{font-size:.71rem;color:#a1a1aa}
+ .report-exercise-card dd{margin:4px 0 0;font-size:.9rem;color:#f4f4f5;font-weight:600}
+ .report-chart-values{font-size:.72rem}
+}
