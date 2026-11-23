@@ -30,15 +30,18 @@ function calculateNextWeight(weight, equipmentType, equipmentStepKg) {
   if (!Number.isFinite(weight) || weight <= 0) return null;
   const resolvedType = resolveEquipmentType(equipmentType, weight);
   const config = EQUIPMENT_CONFIG[resolvedType];
-  const customStep = numeric(equipmentStepKg) ? Number(equipmentStepKg) : null;
-  const step = customStep > 0 && customStep <= config.maxStep ? customStep : config.step;
-  const rawIncrement = weight * config.targetPct;
-  const roundedIncrement = Math.round(rawIncrement / step) * step;
-  const increment = Math.min(config.maxStep, Math.max(step, roundedIncrement));
+  const configuredStep = numeric(equipmentStepKg) ? Number(equipmentStepKg) : null;
+  const step = configuredStep > 0 && configuredStep <= 20
+    && Number((configuredStep * 100).toFixed(6)) === configuredStep * 100
+    ? configuredStep : config.step;
+  const increment = Math.min(Math.max(config.maxStep, step),
+    Math.max(step, Math.round(weight * config.targetPct / step) * step));
+  const exceedsSafeIncrease = increment / weight > 0.1;
   return {
-    suggestedWeight: Number((weight + increment).toFixed(2)),
+    suggestedWeight: exceedsSafeIncrease ? null : Number((weight + increment).toFixed(2)),
     increment: Number(increment.toFixed(2)),
-    equipmentType: resolvedType
+    equipmentType: resolvedType,
+    ...(exceedsSafeIncrease ? { blockedByStep: true } : {})
   };
 }
 
@@ -102,10 +105,15 @@ function suggest(sessions, exerciseId, options = {}) {
     bestWeight, sessionCount: history.length, lastDate: latest.session.date
   };
   const result = (action, reason, extra = {}) => ({ action, reason, ...base, ...extra });
-  const increase = (path, reason, extra = {}) => result('consider_increase', reason, {
-    path, ...calculateNextWeight(weight, options.equipmentType || options.equipment,
-      options.equipmentStepKg), ...extra
-  });
+  const increase = (path, reason, extra = {}) => {
+    const loading = calculateNextWeight(weight, options.equipmentType || options.equipment,
+      options.equipmentStepKg);
+    const warning = loading?.blockedByStep
+      ? ' Dostępny krok sprzętu przekracza 10% ciężaru roboczego — progresuj powtórzeniami lub wybierz mniejszy krok.' : '';
+    return result('consider_increase', reason + warning, {
+      path, ...loading, ...extra
+    });
+  };
 
   if (weight === 0)
     return result('maintain', 'Ćwiczenie bez dodatkowego ciężaru. Porównuj powtórzenia i RIR, zamiast dodawać kilogramy.');
@@ -143,10 +151,26 @@ function suggest(sessions, exerciseId, options = {}) {
     const previousAvgReps = mean(previous.map(row => row.reps));
     const olderAvgReps = mean(older.map(row => row.reps));
     const trendPct = previousMean > 0 ? (currentE1rm / previousMean - 1) * 100 : 0;
-    if (minRir(primary.rows) >= 2 && olderAvgReps <= previousAvgReps
-      && previousAvgReps < currentAvgReps && trendPct >= 3)
+    const comparableSetCounts = primary.rows.length === previous.length
+      && previous.length === older.length;
+    const increasingReps = olderAvgReps < previousAvgReps
+      && previousAvgReps < currentAvgReps;
+    const stableEffort = [primary.rows, previous, older].every(rows => minRir(rows) >= 2);
+    if (comparableSetCounts && stableEffort && increasingReps && trendPct >= 3)
       return increase('E1RM_TREND_CONFIRMED',
-        'Wzrost szacowanego e1RM o co najmniej 3% przy rosnącej liczbie powtórzeń.', {
+        'Szacowane e1RM wzrosło o co najmniej 3%, a liczba powtórzeń rośnie.', {
+          e1rmTrendPct: Number(trendPct.toFixed(2))
+        });
+    const oldestTotalReps = older.reduce((sum, row) => sum + row.reps, 0);
+    const newestTotalReps = primary.rows.reduce((sum, row) => sum + row.reps, 0);
+    const progressingNearLimit = older.some(row => row.reps < high)
+      && previous.some(row => row.reps < high) && newestTotalReps - oldestTotalReps >= 2;
+    const consistentRir = mean(primary.rows.map(row => row.rir))
+      >= mean(older.map(row => row.rir)) - 1;
+    if (comparableSetCounts && stableEffort && increasingReps
+      && progressingNearLimit && consistentRir && trendPct >= 0)
+      return increase('REPS_TREND_CONFIRMED',
+        'W trzech treningach stopniowo rosła liczba powtórzeń przy zachowanym RIR ≥ 2. Osiągnięto górny zakres, mimo wzrostu e1RM mniejszego niż 3%.', {
           e1rmTrendPct: Number(trendPct.toFixed(2))
         });
     if (allTopReps(previous, high) && allTopReps(older, high)
