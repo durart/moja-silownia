@@ -69,8 +69,8 @@ function mainLoad(rows) {
     if (!grouped.has(row.weight)) grouped.set(row.weight, []);
     grouped.get(row.weight).push(row);
   }
-  const sorted = [...grouped.entries()]
-    .sort((a, b) => b[1].length - a[1].length || b[0] - a[0]);
+  // In a pyramid, repeated lighter back-off sets must not mask the top working load.
+  const sorted = [...grouped.entries()].sort((a, b) => b[0] - a[0]);
   return { weight: sorted[0][0], rows: sorted[0][1] };
 }
 
@@ -130,9 +130,16 @@ function suggest(sessions, exerciseId, options = {}) {
   if (allHistory.slice(0, 5).some(({ session }) => flagNeedsReview(session.exerciseNotes?.[exerciseId]?.flag)))
     return result('review', 'W ostatnich treningach oznaczono ból, zmianę sprzętu lub problem z techniką. Sprawdź wykonanie przed zwiększeniem obciążenia.');
   if (primary.rows.some(row => row.reps < low))
-    return result('review', 'Seria robocza z dominującym ciężarem nie osiągnęła dolnego zakresu powtórzeń. Sprawdź technikę, przerwy i zmęczenie.');
+    return result('review', 'Najcięższa seria robocza nie osiągnęła dolnego zakresu powtórzeń. Sprawdź technikę, przerwy i zmęczenie.');
+  const recentHigherLoad = history.slice(1, 4).some(item =>
+    Date.parse(latest.session.date) - Date.parse(item.session.date) <= 42 * 86400000
+    && item.main.weight > weight * 1.1);
+  if (recentHigherLoad)
+    return result('maintain', 'Ostatni standardowy trening był wyraźnie lżejszy niż niedawne serie robocze tego ćwiczenia. Nie traktuję go jako potwierdzenia gotowości do zwiększenia ciężaru.');
   if (primary.rows.length < 2)
-    return result('maintain', 'Ostatni trening zawiera mniej niż dwie serie z tym samym ciężarem roboczym. Pokazuję obciążenie z historii, ale nie sugeruję jeszcze zwiększenia.');
+    return result('maintain', latest.rows.some(row => row.weight !== weight)
+      ? 'W piramidzie ciężaru najwyższe obciążenie wystąpiło tylko w jednej serii. Brakuje powtarzalnych serii z tym ciężarem, dlatego nie sugeruję automatycznego zwiększenia.'
+      : 'Ostatni trening zawiera mniej niż dwie serie z najwyższym ciężarem roboczym. Pokazuję obciążenie z historii, ale nie sugeruję jeszcze zwiększenia.');
   if (!allRirRecorded(primary.rows))
     return result('maintain', 'Brakuje ocen RIR w ostatnim treningu. Bez nich nie sugeruję zwiększenia ciężaru.');
   if (!allTopReps(primary.rows, high))
@@ -142,7 +149,8 @@ function suggest(sessions, exerciseId, options = {}) {
     return increase('FAST_TRACK_1_SESSION', 'Duży zapas siły w ostatnim treningu: wszystkie porównywalne serie osiągnęły górny zakres przy średnim RIR ≥ 3,5.');
 
   const comparable = count => history.length >= count && history.slice(0, count)
-    .every(item => item.main.weight === weight && allRirRecorded(item.main.rows));
+    .every(item => item.main.weight === weight && item.main.rows.length === primary.rows.length
+      && allRirRecorded(item.main.rows));
   if (comparable(2)) {
     const previous = history[1].main.rows;
     if (allTopReps(previous, high) && minRir(previous) >= 2
