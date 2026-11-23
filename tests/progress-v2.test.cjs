@@ -44,3 +44,29 @@ test('bodyweight zero-load repetitions are retained without fictitious e1RM',()=
   assert.equal(row.oneRM,null);
   assert.equal(row.sets[0].reps,20);
 });
+
+test('bodyweight summary uses repetitions and excludes recovery from best',()=>{
+  const sessions=[
+    {date:'2026-10-01T10:00:00',sets:[{exerciseId:'pushups',weight:0,reps:12},{exerciseId:'pushups',weight:0,reps:10}]},
+    {date:'2026-10-08T10:00:00',sessionMode:'recovery',sets:[{exerciseId:'pushups',weight:0,reps:30}]},
+    {date:'2026-10-15T10:00:00',sets:[{exerciseId:'pushups',weight:0,reps:14}]}
+  ];
+  const result=C.bodyweightSummary(sessions,'pushups');
+  assert.equal(result.bestReps,14);
+  assert.equal(result.sessions[0].totalReps,22);
+  assert.equal(result.sessions[1].sessionMode,'recovery');
+  assert.equal(result.lastStandard.bestReps,14);
+});
+test('training breaks use calendar elapsed days and skip recovery sessions',()=>{
+  const rows=[
+    s('2026-10-01T10:00:00',[[50,8]]),
+    {...s('2026-10-10T10:00:00',[[30,10]]),sessionMode:'recovery'},
+    s('2026-10-20T10:00:00',[[50,8]]),
+    s('2026-10-27T10:00:00',[[50,8]])
+  ];
+  const breaks=C.trainingBreaks(rows);
+  assert.equal(breaks.length,1);
+  assert.equal(breaks[0].elapsedDays,19);
+  assert.equal(C.trainingBreaks(rows,{minDays:21}).length,0);
+  assert.equal(C.trainingBreaks([]).length,0);
+});
