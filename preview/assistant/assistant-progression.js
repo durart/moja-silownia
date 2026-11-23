@@ -28,6 +28,7 @@ function resolveEquipmentType(type, weight) {
 
 function calculateNextWeight(weight, equipmentType, equipmentStepKg) {
   if (!Number.isFinite(weight) || weight <= 0) return null;
+  if (equipmentType === 'unknown') return { suggestedWeight: null, needsEquipment: true };
   const resolvedType = resolveEquipmentType(equipmentType, weight);
   const config = EQUIPMENT_CONFIG[resolvedType];
   const configuredStep = numeric(equipmentStepKg) ? Number(equipmentStepKg) : null;
