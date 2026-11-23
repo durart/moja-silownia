@@ -1,64 +1,168 @@
-/* Read-only progression advice based on completed working sets of one exercise. */
-(function(root,factory){
- const api=factory();
- if(typeof module==='object'&&module.exports)module.exports=api;
- if(root)root.MojaAdvisorProgression=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(){
+/* Deterministic, read-only progression advice for completed working sets. */
+(function(root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.MojaAdvisorProgression = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function() {
 'use strict';
-const numeric=value=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value));
-const isWarmup=row=>row?.setType==='R'||row?.type==='warmup'||row?.type==='R';
-const flagNeedsReview=flag=>['pain','equipment','technique'].includes(flag);
-function workingSets(session,exerciseId){
- return (Array.isArray(session?.sets)?session.sets:[])
-  .filter(row=>row&&String(row.exerciseId)===String(exerciseId)&&!isWarmup(row)
-   &&numeric(row.weight)&&Number(row.weight)>=0&&numeric(row.reps)&&Number.isInteger(Number(row.reps))&&Number(row.reps)>0)
-  .map(row=>({weight:Number(row.weight),reps:Number(row.reps),
-   rir:numeric(row.rir)&&Number(row.rir)>=0?Number(row.rir):null}));
+
+const EQUIPMENT_CONFIG = Object.freeze({
+  barbell: Object.freeze({ step: 2.5, targetPct: 0.035, maxStep: 5 }),
+  dumbbell: Object.freeze({ step: 2, targetPct: 0.05, maxStep: 4 }),
+  dumbbell_light: Object.freeze({ step: 1, targetPct: 0.05, maxStep: 2 }),
+  machine_stack: Object.freeze({ step: 2.5, targetPct: 0.04, maxStep: 5 }),
+  cable_micro: Object.freeze({ step: 1.25, targetPct: 0.04, maxStep: 2.5 })
+});
+const EQUIPMENT_LABELS = Object.freeze({
+  'Sztanga': 'barbell', 'Hantle': 'dumbbell',
+  'Maszyna': 'machine_stack', 'Wyciąg': 'machine_stack'
+});
+const numeric = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+const isWarmup = row => row?.setType === 'R' || row?.type === 'warmup' || row?.type === 'R';
+const flagNeedsReview = flag => ['pain', 'equipment', 'technique'].includes(flag);
+
+function resolveEquipmentType(type, weight) {
+  const mapped = EQUIPMENT_CONFIG[type] ? type : EQUIPMENT_LABELS[type] || 'barbell';
+  return mapped === 'dumbbell' && weight < 12 ? 'dumbbell_light' : mapped;
 }
-function mainLoad(rows){
- const grouped=new Map();
- for(const row of rows){
-  if(!grouped.has(row.weight))grouped.set(row.weight,[]);
-  grouped.get(row.weight).push(row);
- }
- const sorted=[...grouped.entries()].sort((a,b)=>b[1].length-a[1].length||b[0]-a[0]);
- return {weight:sorted[0][0],rows:sorted[0][1]};
+
+function calculateNextWeight(weight, equipmentType, equipmentStepKg) {
+  if (!Number.isFinite(weight) || weight <= 0) return null;
+  const resolvedType = resolveEquipmentType(equipmentType, weight);
+  const config = EQUIPMENT_CONFIG[resolvedType];
+  const customStep = numeric(equipmentStepKg) ? Number(equipmentStepKg) : null;
+  const step = customStep > 0 && customStep <= config.maxStep ? customStep : config.step;
+  const rawIncrement = weight * config.targetPct;
+  const roundedIncrement = Math.round(rawIncrement / step) * step;
+  const increment = Math.min(config.maxStep, Math.max(step, roundedIncrement));
+  return {
+    suggestedWeight: Number((weight + increment).toFixed(2)),
+    increment: Number(increment.toFixed(2)),
+    equipmentType: resolvedType
+  };
 }
-function suggest(sessions,exerciseId,options={}){
- const low=numeric(options.minReps)?Number(options.minReps):8;
- const high=numeric(options.maxReps)?Number(options.maxReps):12;
- if(!Number.isInteger(low)||!Number.isInteger(high)||low<1||high<low)
-  return {action:'insufficient_data',reason:'Nieprawidłowy zakres powtórzeń.'};
- const history=(Array.isArray(sessions)?sessions:[])
-  .filter(session=>session&&typeof session.date==='string'&&Number.isFinite(Date.parse(session.date)))
-  .map(session=>({session,rows:workingSets(session,exerciseId)}))
-  .filter(item=>item.rows.length)
-  .sort((a,b)=>Date.parse(b.session.date)-Date.parse(a.session.date));
- if(!history.length)return {action:'insufficient_data',reason:'Brak zakończonych serii roboczych tego ćwiczenia w historii aplikacji.'};
- const latest=history[0],primary=mainLoad(latest.rows);
- const top=latest.rows.reduce((best,row)=>row.weight>best.weight?row:row.weight===best.weight&&row.reps>best.reps?row:best);
- const weight=primary.weight;
- const bestWeight=Math.max(...history.flatMap(item=>item.rows.map(row=>row.weight)));
- const base={weight,lastWeight:weight,lastTopWeight:top.weight,lastTopReps:top.reps,
-  bestWeight,sessionCount:history.length,lastDate:latest.session.date};
- const result=(action,reason,extra={})=>({action,reason,...base,...extra});
- if(weight===0)return result('maintain','Ćwiczenie bez dodatkowego ciężaru. Porównuj powtórzenia i RIR, zamiast dodawać kilogramy.');
- if(history.slice(0,5).some(({session})=>flagNeedsReview(session.exerciseNotes?.[exerciseId]?.flag)))
-  return result('review','W ostatnich treningach oznaczono ból, zmianę sprzętu lub problem z techniką. Sprawdź wykonanie przed zwiększeniem obciążenia.');
- if(primary.rows.some(row=>row.reps<low))
-  return result('review','Seria robocza z dominującym ciężarem nie osiągnęła dolnego zakresu powtórzeń. Sprawdź technikę, przerwy i zmęczenie.');
- if(primary.rows.length<2)
-  return result('maintain','Ostatni trening zawiera mniej niż dwie serie z tym samym ciężarem roboczym. Pokazuję obciążenie z historii, ale nie sugeruję jeszcze zwiększenia.');
- if(history.length<3)
-  return result('maintain','Historia obejmuje mniej niż trzy treningi tego ćwiczenia. Zbieraj kolejne wyniki; ciężary z poprzednich serii nie są pomijane.');
- const recent=history.slice(0,3).map(({rows})=>mainLoad(rows));
- if(!recent.every(load=>load.weight===weight&&load.rows.length>=2))
-  return result('maintain','Ostatnie trzy treningi różnią się ciężarem roboczym lub liczbą porównywalnych serii. Obecny ciężar pozostaje punktem odniesienia.');
- if(recent.some(load=>load.rows.some(row=>row.rir===null)))
-  return result('maintain','Brakuje części ocen RIR w trzech ostatnich treningach. Historia ciężarów jest zachowana, ale nie potwierdza bezpiecznej progresji.');
- if(recent.every(load=>load.rows.every(row=>row.reps>=high&&row.rir>=2)))
-  return result('consider_increase','W trzech ostatnich treningach co najmniej dwie serie na obecnym ciężarze osiągnęły górny zakres przy RIR ≥ 2. Możesz rozważyć +2,5 kg.',{suggestedWeight:Math.round((weight+2.5)*2)/2});
- return result('maintain','Kontynuuj progresję powtórzeń przy obecnym ciężarze. Zwiększaj obciążenie po stabilnych wynikach z odpowiednią rezerwą RIR.');
+
+function workingSets(session, exerciseId) {
+  return (Array.isArray(session?.sets) ? session.sets : [])
+    .filter(row => row && String(row.exerciseId) === String(exerciseId) && !isWarmup(row)
+      && numeric(row.weight) && Number(row.weight) >= 0
+      && numeric(row.reps) && Number.isInteger(Number(row.reps)) && Number(row.reps) > 0)
+    .map(row => ({
+      weight: Number(row.weight),
+      reps: Number(row.reps),
+      rir: numeric(row.rir) && Number(row.rir) >= 0 && Number(row.rir) <= 5
+        ? Number(row.rir) : null
+    }));
 }
-return Object.freeze({suggest});
+
+function mainLoad(rows) {
+  const grouped = new Map();
+  for (const row of rows) {
+    if (!grouped.has(row.weight)) grouped.set(row.weight, []);
+    grouped.get(row.weight).push(row);
+  }
+  const sorted = [...grouped.entries()]
+    .sort((a, b) => b[1].length - a[1].length || b[0] - a[0]);
+  return { weight: sorted[0][0], rows: sorted[0][1] };
+}
+
+const allRirRecorded = rows => rows.length >= 2 && rows.every(row => row.rir !== null);
+const minRir = rows => Math.min(...rows.map(row => row.rir));
+const mean = values => values.reduce((sum, value) => sum + value, 0) / values.length;
+const allTopReps = (rows, high) => rows.length >= 2 && rows.every(row => row.reps >= high);
+
+function calcSessionE1RM(rows) {
+  if (!allRirRecorded(rows) || rows.some(row => row.weight <= 0)) return null;
+  return mean(rows.map(row => row.weight * (1 + (row.reps + row.rir) / 30)));
+}
+
+function suggest(sessions, exerciseId, options = {}) {
+  const low = numeric(options.minReps) ? Number(options.minReps) : 8;
+  const high = numeric(options.maxReps) ? Number(options.maxReps) : 12;
+  if (!Number.isInteger(low) || !Number.isInteger(high) || low < 1 || high < low)
+    return { action: 'insufficient_data', reason: 'Nieprawidłowy zakres powtórzeń.' };
+
+  const history = (Array.isArray(sessions) ? sessions : [])
+    .filter(session => session && typeof session.date === 'string' && Number.isFinite(Date.parse(session.date)))
+    .map(session => ({ session, rows: workingSets(session, exerciseId) }))
+    .filter(item => item.rows.length)
+    .sort((a, b) => Date.parse(b.session.date) - Date.parse(a.session.date))
+    .map(item => ({ ...item, main: mainLoad(item.rows) }));
+
+  if (!history.length)
+    return { action: 'insufficient_data', reason: 'Brak zakończonych serii roboczych tego ćwiczenia w historii aplikacji.' };
+
+  const latest = history[0], primary = latest.main;
+  const top = latest.rows.reduce((best, row) =>
+    row.weight > best.weight || (row.weight === best.weight && row.reps > best.reps) ? row : best);
+  const weight = primary.weight;
+  const bestWeight = Math.max(...history.flatMap(item => item.rows.map(row => row.weight)));
+  const base = {
+    weight, lastWeight: weight, lastTopWeight: top.weight, lastTopReps: top.reps,
+    bestWeight, sessionCount: history.length, lastDate: latest.session.date
+  };
+  const result = (action, reason, extra = {}) => ({ action, reason, ...base, ...extra });
+  const increase = (path, reason, extra = {}) => result('consider_increase', reason, {
+    path, ...calculateNextWeight(weight, options.equipmentType || options.equipment,
+      options.equipmentStepKg), ...extra
+  });
+
+  if (weight === 0)
+    return result('maintain', 'Ćwiczenie bez dodatkowego ciężaru. Porównuj powtórzenia i RIR, zamiast dodawać kilogramy.');
+  if (history.slice(0, 5).some(({ session }) => flagNeedsReview(session.exerciseNotes?.[exerciseId]?.flag)))
+    return result('review', 'W ostatnich treningach oznaczono ból, zmianę sprzętu lub problem z techniką. Sprawdź wykonanie przed zwiększeniem obciążenia.');
+  if (primary.rows.some(row => row.reps < low))
+    return result('review', 'Seria robocza z dominującym ciężarem nie osiągnęła dolnego zakresu powtórzeń. Sprawdź technikę, przerwy i zmęczenie.');
+  if (primary.rows.length < 2)
+    return result('maintain', 'Ostatni trening zawiera mniej niż dwie serie z tym samym ciężarem roboczym. Pokazuję obciążenie z historii, ale nie sugeruję jeszcze zwiększenia.');
+  if (!allRirRecorded(primary.rows))
+    return result('maintain', 'Brakuje ocen RIR w ostatnim treningu. Bez nich nie sugeruję zwiększenia ciężaru.');
+  if (!allTopReps(primary.rows, high))
+    return result('maintain', 'Nie wszystkie serie robocze z dominującym ciężarem osiągnęły górny zakres powtórzeń.');
+
+  if (minRir(primary.rows) >= 2 && mean(primary.rows.map(row => row.rir)) >= 3.5)
+    return increase('FAST_TRACK_1_SESSION', 'Duży zapas siły w ostatnim treningu: wszystkie porównywalne serie osiągnęły górny zakres przy średnim RIR ≥ 3,5.');
+
+  const comparable = count => history.length >= count && history.slice(0, count)
+    .every(item => item.main.weight === weight && allRirRecorded(item.main.rows));
+  if (comparable(2)) {
+    const previous = history[1].main.rows;
+    if (allTopReps(previous, high) && minRir(previous) >= 2
+      && minRir(primary.rows) >= 2 && mean(primary.rows.map(row => row.rir)) >= 2.5)
+      return increase('ACCELERATED_2_SESSIONS', 'Dwa kolejne treningi osiągnęły górny zakres; ostatni ma średni RIR ≥ 2,5 i minimalny RIR ≥ 2.');
+  }
+
+  if (comparable(3)) {
+    const previous = history[1].main.rows;
+    const older = history[2].main.rows;
+    const currentE1rm = calcSessionE1RM(primary.rows);
+    const previousE1rm = calcSessionE1RM(previous);
+    const olderE1rm = calcSessionE1RM(older);
+    const previousMean = mean([previousE1rm, olderE1rm]);
+    const currentAvgReps = mean(primary.rows.map(row => row.reps));
+    const previousAvgReps = mean(previous.map(row => row.reps));
+    const olderAvgReps = mean(older.map(row => row.reps));
+    const trendPct = previousMean > 0 ? (currentE1rm / previousMean - 1) * 100 : 0;
+    if (minRir(primary.rows) >= 2 && olderAvgReps <= previousAvgReps
+      && previousAvgReps < currentAvgReps && trendPct >= 3)
+      return increase('E1RM_TREND_CONFIRMED',
+        'Wzrost szacowanego e1RM o co najmniej 3% przy rosnącej liczbie powtórzeń.', {
+          e1rmTrendPct: Number(trendPct.toFixed(2))
+        });
+    if (allTopReps(previous, high) && allTopReps(older, high)
+      && [primary.rows, previous, older].every(rows => minRir(rows) >= 2))
+      return increase('STANDARD_3_SESSIONS', 'Trzy porównywalne treningi osiągnęły górny zakres przy RIR ≥ 2.');
+  }
+
+  if (history.length < 2)
+    return result('maintain', 'Zapisz kolejne wykonanie ćwiczenia, aby potwierdzić stabilną progresję.');
+  if (!comparable(2))
+    return result('maintain', 'Ostatnie treningi różnią się ciężarem roboczym lub brakuje porównywalnych serii i RIR.');
+  return result('maintain', 'Kontynuuj progresję powtórzeń przy obecnym ciężarze. Do zwiększenia potrzebna jest większa stabilność wyników.');
+}
+
+return Object.freeze({
+  suggest, workingSets, mainLoad, calculateNextWeight, calcSessionE1RM,
+  resolveEquipmentType, EQUIPMENT_CONFIG
+});
 });
