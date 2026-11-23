@@ -87,3 +87,19 @@ test('long exercise gap resets strength trend without erasing historical session
   assert.equal(enough.count,4);
   assert.equal(enough.afterBreak,true);
 });
+
+test('historical weight never uses future measurements or default legacy weight',()=>{
+ const profile={weightHistory:[{date:'2026-10-01',weightKg:100},{date:'2026-11-01',weightKg:95}]};
+ assert.equal(C.weightAtDate(profile,'2026-10-15T10:00:00').weightKg,100);
+ assert.equal(C.weightAtDate(profile,'2026-09-20T10:00:00').quality,'missing');
+ assert.equal(C.weightAtDate(profile,'2026-12-15T10:00:00').quality,'stale');
+ assert.equal(C.weightAtDate({},'2026-10-15T10:00:00').weightKg,null);
+});
+test('relative strength reflects bodyweight changes without changing absolute load',()=>{
+ const profile={weightHistory:[{date:'2026-10-01',weightKg:100},{date:'2026-10-08',weightKg:95}]};
+ const rows=C.relativeStrengthSessions(history.slice(0,2),'bench',profile);
+ assert.equal(rows.length,2);
+ assert.ok(rows[1].relativeOneRM>rows[0].relativeOneRM);
+ assert.equal(rows[0].weightQuality,'measured');
+ assert.equal(C.relativeStrengthSessions(history.slice(0,2),'bench',{} )[0].relativeOneRM,null);
+});
