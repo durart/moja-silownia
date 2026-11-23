@@ -1,0 +1,15 @@
+/* Isolated staging user profile UI (v1.9.0). */
+.profile-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.profile-metric{background:#102b3b;border:1px solid #28536a;border-radius:14px;padding:16px;min-width:0}
+.profile-metric small{color:#a7cad7;display:block;margin-bottom:7px}
+.profile-metric strong{font-size:1.5rem;color:#eefcff}
+.profile-form-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.profile-form-row label{min-width:0}
+.profile-measurements{display:grid;gap:9px;margin-top:14px}
+.profile-measurement{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;border:1px solid #28536a;border-radius:12px;background:#102330}
+.profile-measurement-actions{display:flex;flex-wrap:wrap;gap:7px}
+.profile-measurement-actions button{margin:0}
+.profile-small{color:#aac7d4;font-size:.85rem}
+#profileContent .card{margin-bottom:14px}
+#profileContent button:focus-visible{outline:3px solid #22d3ee;outline-offset:3px}
+@media(max-width:430px){.profile-form-row{grid-template-columns:1fr}.profile-measurement{align-items:flex-start;flex-direction:column}.profile-metric{padding:12px}.profile-metric strong{font-size:1.25rem}}

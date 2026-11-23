@@ -93,7 +93,7 @@ test('isolated staging uses its own storage, script version and offline cache',(
  assert.doesNotMatch(html,/const key='moja-silownia-v01'/);
  assert.match(html,/\.\/assistant\/assistant-progression\.js\?v=184/);
  assert.match(html,/\.\/assistant\/assistant-progression-ui\.js\?v=184/);
- assert.match(sw,/moja-silownia-preview-shell-v184/);
+ assert.match(sw,/moja-silownia-preview-shell-v190-profile-/);
  assert.match(sw,/\.\/assistant\/assistant-progression\.js\?v=184/);
  assert.doesNotMatch(sw,/const CACHE='moja-silownia-shell-/);
 });
