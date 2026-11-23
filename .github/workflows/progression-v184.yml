@@ -1,7 +1,9 @@
-name: Progression and profile v1.9.0 regression
+name: Moja Silownia 1.9.0 regression and release smoke
 
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,7 +19,7 @@ jobs:
           node-version: '22'
       - name: Verify progression, profile and existing regression tests
         run: node --test tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
-      - name: Verify live profile staging and unchanged production
+      - name: Verify live profile staging
         run: |
           set -euo pipefail
           PREVIEW='https://durart.github.io/moja-silownia/preview/'
@@ -42,10 +44,29 @@ jobs:
           grep -q 'relativeStrength' /tmp/profile-core.js
           grep -q 'profileWeightDate' /tmp/profile-ui.js
           grep -q 'v190-profile' /tmp/sw.js
+      - name: Verify production release after merge
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          PROD='https://durart.github.io/moja-silownia/'
+          for attempt in $(seq 1 24); do
+            curl -fsSL --max-time 25 "$PROD" -o /tmp/production.html || true
+            if grep -q 'Moja Siłownia v1.9.0' /tmp/production.html 2>/dev/null; then
+              break
+            fi
+            sleep 6
+          done
+          grep -q 'Moja Siłownia v1.9.0' /tmp/production.html
+          grep -q 'id="profileContent"' /tmp/production.html
+          grep -q "const key='moja-silownia-v01'" /tmp/production.html
+          for asset in profile-core.js profile-ui.js sw.js; do
+            curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
+              "$PROD$asset" -o "/tmp/prod-$asset"
+            node --check "/tmp/prod-$asset"
+          done
           curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
-            "$PROD" -o /tmp/production.html
-          grep -q 'v1.8.4' /tmp/production.html
-          if grep -q 'id="profileContent"' /tmp/production.html; then
-            echo 'Unexpected profile in production' >&2
-            exit 1
-          fi
+            "$PROD""profile.css" -o /tmp/prod-profile.css
+          grep -q 'moja-silownia-shell-v37-profile-1.9.0' /tmp/prod-sw.js
+          grep -q 'profile-core.js?v=190' /tmp/prod-sw.js
+          grep -q 'profile-ui.js?v=190' /tmp/prod-sw.js
+          grep -q 'profile.css?v=190' /tmp/prod-sw.js

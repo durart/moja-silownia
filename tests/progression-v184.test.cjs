@@ -106,8 +106,8 @@ test('release engine matches validated staging and keeps the existing storage ke
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  assert.equal(production,staging);
  assert.match(html,/const key='moja-silownia-v01'/);
- assert.match(html,/v1\.8\.4/);
+ assert.match(html,/v1\.9\.0/);
  assert.match(html,/assistant\/assistant-progression\.js\?v=184/);
- assert.match(sw,/moja-silownia-shell-v36-progression-1\.8\.4/);
+ assert.match(sw,/moja-silownia-shell-v37-profile-1\.9\.0/);
  assert.match(sw,/assistant\/assistant-progression\.js\?v=184/);
 });
