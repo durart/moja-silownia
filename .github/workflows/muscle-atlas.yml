@@ -1,0 +1,27 @@
+name: Interactive muscle atlas
+on:
+  pull_request:
+    paths:
+      - 'muscle-atlas-*'
+      - 'preview/muscle-atlas-*'
+      - 'preview/index.html'
+      - 'preview/sw.js'
+      - 'index.html'
+      - 'sw.js'
+      - 'tests/muscle-atlas.test.cjs'
+      - '.github/workflows/muscle-atlas.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run atlas and regression tests
+        run: node --test tests/muscle-atlas.test.cjs tests/exercise-catalog-shared.test.cjs tests/unified-fatigue-e1rm-warmup.test.cjs tests/storage-regression.test.mjs tests/service-worker.test.mjs
