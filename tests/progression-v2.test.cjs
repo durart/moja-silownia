@@ -121,3 +121,76 @@ test('source history remains immutable and the preview engine matches', () => {
   const preview = fs.readFileSync(path.join(__dirname, '..', 'preview/assistant/assistant-progression.js'), 'utf8');
   assert.equal(preview, prod);
 });
+
+test('three sessions 12/11/10 -> 12/12/11 -> 12/12/12 progress with less than 3% e1RM', () => {
+  const result = evaluate([
+    session(dates[0], [row(60,12,2),row(60,12,2),row(60,12,2)]),
+    session(dates[1], [row(60,12,2),row(60,12,2),row(60,11,2)]),
+    session(dates[2], [row(60,12,2),row(60,11,2),row(60,10,2)])
+  ]);
+  assert.equal(result.path,'REPS_TREND_CONFIRMED');
+  assert.ok(result.e1rmTrendPct < 3);
+  assert.ok(result.e1rmTrendPct >= 0);
+});
+
+test('declining RIR or inconsistent set counts prevent a reps-trend shortcut', () => {
+  const fatigue = evaluate([
+    session(dates[0], sets(60,12,[2,2,2])),
+    session(dates[1], sets(60,11,[4,4,4])),
+    session(dates[2], sets(60,10,[4,4,4]))
+  ]);
+  assert.equal(fatigue.action,'maintain');
+  const unequal = evaluate([
+    session(dates[0], sets(60,12,[2,2,2])),
+    session(dates[1], sets(60,11,[2,2])),
+    session(dates[2], sets(60,10,[2,2,2]))
+  ]);
+  assert.equal(unequal.action,'maintain');
+});
+
+test('large physical stack step blocks applying excessive weight', () => {
+  const result = advisor.calculateNextWeight(45,'machine_stack',6);
+  assert.equal(result.blockedByStep,true);
+  assert.equal(result.suggestedWeight,null);
+  assert.equal(result.increment,6);
+  const stable = advisor.calculateNextWeight(75,'machine_stack',6);
+  assert.equal(stable.suggestedWeight,81);
+  assert.equal(stable.increment,6);
+});
+
+test('exercise with unknown equipment does not assume barbell load', () => {
+  const result = advisor.suggest([
+    session(dates[0], sets(60,12,[4,4,4]))
+  ],exerciseId,{minReps:8,maxReps:12,equipmentType:'unknown'});
+  assert.equal(result.action,'consider_increase');
+  assert.equal(result.needsEquipment,true);
+  assert.equal(result.suggestedWeight,null);
+});
+
+test('settings are exercise-scoped, with backup-friendly fields and no workout mutation', () => {
+  const settingsFile = fs.readFileSync(path.join(__dirname,'../assistant/equipment-settings-ui.js'),'utf8');
+  const stageSettingsFile = fs.readFileSync(path.join(__dirname,'../preview/assistant/equipment-settings-ui.js'),'utf8');
+  assert.equal(settingsFile,stageSettingsFile);
+  assert.match(settingsFile,/equipmentType/);
+  assert.match(settingsFile,/equipmentStepKg/);
+  assert.match(settingsFile,/state\.exercises = original\.map/);
+  assert.doesNotMatch(settingsFile,/state\.sessions\s*=/);
+  assert.doesNotMatch(settingsFile,/state\.plans\s*=/);
+  assert.match(settingsFile,/if \(save\(\) !== true\)/);
+  const staging = fs.readFileSync(path.join(__dirname,'../preview/index.html'),'utf8');
+  const sw = fs.readFileSync(path.join(__dirname,'../preview/sw.js'),'utf8');
+  assert.match(staging,/v2\.0\.0 TEST/);
+  assert.match(staging,/equipment-settings-ui\.js\?v=200/);
+  assert.match(sw,/equipment-settings-ui\.js\?v=200/);
+  assert.match(staging,/profile-core\.js\?v=190/);
+  assert.match(staging,/moja-silownia-preview-v01/);
+  const prod = fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+  assert.match(prod,/v1\.9\.0/);
+  assert.doesNotMatch(prod,/equipment-settings-ui\.js/);
+});
+
+test('invalid step inputs are rejected by the equipment UI', () => {
+  const settingsFile = fs.readFileSync(path.join(__dirname,'../assistant/equipment-settings-ui.js'),'utf8');
+  assert.match(settingsFile,/validStep/);
+  assert.match(settingsFile,/step !== null && !validStep\(step\)/);
+});
