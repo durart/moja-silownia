@@ -1,7 +1,13 @@
 name: Progress 2.0 tests
 on:
   push:
-    branches: [feature/progress-v2-isolated-20261121]
+    branches: [feature/progress-v2-isolated-20261121, feature/progress-3-foundation-20261123]
+  pull_request:
+    paths:
+      - 'progress-core-v2.js'
+      - 'progress-ui-v2.js'
+      - 'tests/progress-v2.test.cjs'
+      - '.github/workflows/progress-v2-tests.yml'
   workflow_dispatch:
 jobs:
   test:
