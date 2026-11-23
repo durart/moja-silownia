@@ -1,4 +1,4 @@
-name: Moja Silownia 1.9.0 regression and release smoke
+name: Moja Silownia v1.9.0 production and v2.0.0 staging regression
 
 on:
   pull_request:
@@ -18,20 +18,21 @@ jobs:
         with:
           node-version: '22'
       - name: Verify progression, profile and existing regression tests
-        run: node --test tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
-      - name: Verify live profile staging
+        run: node --test tests/progression-v2-staging.test.cjs tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
+      - name: Verify live progression v2 staging
+        if: github.event_name == 'push'
         run: |
           set -euo pipefail
           PREVIEW='https://durart.github.io/moja-silownia/preview/'
           PROD='https://durart.github.io/moja-silownia/'
           for attempt in $(seq 1 10); do
             curl -fsSL --max-time 25 "$PREVIEW" -o /tmp/staging.html || true
-            if grep -q 'TEST v1.9.0' /tmp/staging.html 2>/dev/null; then
+            if grep -q 'TEST v2.0.0' /tmp/staging.html 2>/dev/null; then
               break
             fi
             sleep 8
           done
-          grep -q 'Moja Siłownia TEST v1.9.0' /tmp/staging.html
+          grep -q 'Moja Siłownia TEST v2.0.0' /tmp/staging.html
           grep -q 'moja-silownia-preview-v01' /tmp/staging.html
           grep -q 'id="profileContent"' /tmp/staging.html
           for asset in profile-core.js profile-ui.js sw.js; do
@@ -43,7 +44,15 @@ jobs:
             "$PREVIEW""profile.css" -o /tmp/profile.css
           grep -q 'relativeStrength' /tmp/profile-core.js
           grep -q 'profileWeightDate' /tmp/profile-ui.js
-          grep -q 'v190-profile' /tmp/sw.js
+          grep -q 'REPS_TREND_CONFIRMED' /tmp/sw.js || true
+          for asset in assistant-progression.js assistant-progression-ui.js equipment-settings-ui.js; do
+            curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
+              "$PREVIEW""assistant/$asset" -o "/tmp/stage-$asset"
+            node --check "/tmp/stage-$asset"
+          done
+          grep -q 'REPS_TREND_CONFIRMED' /tmp/stage-assistant-progression.js
+          grep -q 'equipmentStepKg' /tmp/stage-equipment-settings-ui.js
+          grep -q 'v200-progression' /tmp/sw.js
       - name: Verify production release after merge
         if: github.event_name == 'push'
         run: |
