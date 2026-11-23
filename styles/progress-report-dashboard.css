@@ -1,0 +1,22 @@
+/* Read-only training report dashboard; scoped to avoid affecting workout screens. */
+.report-dashboard{color:#f4f4f5;font-family:Inter,system-ui,sans-serif;display:grid;gap:16px}
+.report-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:8px 0}
+.report-heading h2{margin:0;font-size:1.25rem;color:#fafafa}.report-heading p,.report-hint{color:#a1a1aa;font-size:.78rem;margin:6px 0 12px}
+.report-range{display:flex;gap:4px;flex-wrap:wrap;background:#18181b;padding:4px;border:1px solid #3f3f46;border-radius:10px}
+.report-range button{background:transparent;border:0;color:#a1a1aa;font-size:.75rem;padding:8px;border-radius:7px;cursor:pointer}
+.report-range button.active{background:#3f3f46;color:white}
+.report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.report-kpi,.report-panel{min-width:0;background:#18181bcf;border:1px solid #3f3f4666;border-radius:16px;padding:18px}
+.report-kpi{display:flex;flex-direction:column;gap:9px}
+.report-kpi small{color:#a1a1aa;text-transform:uppercase;letter-spacing:.06em;font-size:.68rem}
+.report-kpi strong{font-size:clamp(1.15rem,2.3vw,1.9rem);color:#fafafa}
+.report-kpi span{color:#34d399;font-size:.73rem}
+.report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.report-panel h3{margin:0 0 12px;color:#f4f4f5;font-size:1rem}
+.report-panel.wide,.report-panel.full{grid-column:1/-1}
+.report-chart{display:block;width:100%;max-height:240px}
+.report-empty{font-size:.83rem;color:#a1a1aa}
+.report-muscle{margin:12px 0}.report-muscle>div:first-child{display:flex;justify-content:space-between;gap:8px;font-size:.78rem}.report-muscle span{color:#a1a1aa}
+.report-meter{height:6px;background:#27272a;border-radius:6px;margin-top:6px;overflow:hidden}.report-meter i{display:block;height:100%;background:linear-gradient(90deg,#10b981,#06b6d4)}
+.report-table-wrap{overflow-x:auto}.report-panel table{width:100%;border-collapse:collapse;font-size:.76rem}.report-panel th,.report-panel td{text-align:left;padding:10px 8px;border-bottom:1px solid #3f3f4666}.report-panel th{color:#a1a1aa}.report-panel td{color:#e4e4e7}
+@media(max-width:700px){.report-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.report-grid{grid-template-columns:1fr}.report-panel.wide,.report-panel.full{grid-column:auto}.report-kpi,.report-panel{padding:13px}.report-heading{align-items:flex-start}}
