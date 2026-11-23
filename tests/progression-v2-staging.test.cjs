@@ -32,7 +32,7 @@ test('v2 staging keeps RIR, pain and real-world load guards',()=>{
 });
 test('preview retains profile and isolated PWA cache; production 2.0 preserves data',()=>{
  const index=read('preview/index.html'),sw=read('preview/sw.js'),prod=read('index.html');
- assert.match(index,/TEST v3\.0\.0/);
+ assert.match(index,/TEST v2\.1\.0/);
  assert.match(index,/moja-silownia-preview-v01/);
  assert.match(index,/profile-core\.js\?v=190/);
  assert.match(index,/equipment-settings-ui\.js\?v=200/);
