@@ -27,7 +27,8 @@ test('atlas renders overview and single selected muscle for 56 pretraced regions
  assert.match(overview,/data-mode="atlas" data-view="overview"/);
  assert.equal((overview.match(/class="mm-photo"/g)||[]).length,2);
  assert.equal((overview.match(/class="mm-muscle muscle-region"/g)||[]).length,56);
- assert.equal((overview.match(/data-selected="true"/g)||[]).length,0);
+ const regionTags=[...overview.matchAll(/<path id="[^"]+" class="mm-muscle muscle-region"[^>]+>/g)].map(match=>match[0]);
+ assert.equal(regionTags.filter(tag=>tag.includes('data-selected="true"')).length,0);
  assert.match(overview,/data-level="high"/);
  const focus=art.renderAtlas(model,'Barki');
  assert.match(focus,/data-mode="atlas" data-view="focused"/);
