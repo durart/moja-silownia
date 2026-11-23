@@ -68,14 +68,13 @@ function relativeStrengthSessions(sessions,id,profile){
       relativeOneRM:eligible?row.comparableOneRM/weight.weightKg:null};
   });
 }
-function compare(sessions,id){const rows=exerciseSessions(sessions,id);if(rows.length<2)return null;const previous=rows[rows.length-2],latest=rows[rows.length-1];const delta={};for(const k of ['max','volume','oneRM']){delta[k]=previous[k]===null||latest[k]===null?null:{absolute:latest[k]-previous[k],percent:previous[k]>0?(latest[k]-previous[k])/previous[k]*100:null};}return {previous,latest,delta};}
+function compare(sessions,id){const rows=exerciseSessions(sessions,id).filter(row=>row.sessionMode==='standard');if(rows.length<2)return null;const previous=rows[rows.length-2],latest=rows[rows.length-1];const delta={};for(const k of ['max','volume','oneRM']){delta[k]=previous[k]===null||latest[k]===null?null:{absolute:latest[k]-previous[k],percent:previous[k]>0?(latest[k]-previous[k])/previous[k]*100:null};}return {previous,latest,delta};}
 function median(a){const s=a.slice().sort((a,b)=>a-b),n=s.length;return n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2;}
 function trend(sessions,id){
   const comparable=exerciseSessions(sessions,id).filter(row=>row.comparableOneRM!==null);
   if(!comparable.length)return {kind:'insufficient',count:0,percent:null};
-  const latest=comparable.at(-1);
   const allSessions=exerciseSessions(sessions,id).filter(row=>row.sessionMode!=='recovery');
-  const latestIndex=allSessions.findIndex(row=>row.timestamp===latest.timestamp);
+  const latestIndex=allSessions.length-1;
   let segmentStart=0;
   for(let i=1;i<=latestIndex;i++){
     if((allSessions[i].timestamp-allSessions[i-1].timestamp)/86400000>=28)segmentStart=i;
