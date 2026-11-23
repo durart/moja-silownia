@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: '22'
       - name: Verify progression, profile and existing regression tests
-        run: node --test tests/progression-v2.test.cjs tests/progression-v2-staging.test.cjs tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
+        run: node --test tests/session-mode.test.cjs tests/progression-v2.test.cjs tests/progression-v2-staging.test.cjs tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
       - name: Verify live progression v2 staging
         if: github.event_name == 'push'
         run: |
@@ -52,7 +52,16 @@ jobs:
           done
           grep -q 'REPS_TREND_CONFIRMED' /tmp/stage-assistant-progression.js
           grep -q 'equipmentStepKg' /tmp/stage-equipment-settings-ui.js
-          grep -q 'v200-progression' /tmp/sw.js
+          for asset in session-mode.js assistant-core.js; do
+            curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
+              "$PREVIEW""assistant/$asset" -o "/tmp/stage-$asset"
+            node --check "/tmp/stage-$asset"
+          done
+          grep -q 'progressionHistory' /tmp/stage-session-mode.js
+          grep -q 'referenceSessions' /tmp/stage-assistant-core.js
+          grep -q 'id="preRecoveryMode"' /tmp/staging.html
+          grep -q 'id="activeRecoveryMode"' /tmp/staging.html
+          grep -q 'v201-recovery' /tmp/sw.js
       - name: Verify production release after merge
         if: github.event_name == 'push'
         run: |
