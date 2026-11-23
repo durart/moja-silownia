@@ -49,7 +49,7 @@ test('rendering model does not modify training history',()=>{
 test('atlas uses approved shared 30-region SVG with accessible controls',()=>{
  const ui=read('muscle-atlas-ui.js');
  const art=require('../muscle-anatomy-art.js');
- assert.equal(art.REGIONS.length,30);
+ assert.equal(art.REGIONS.length,56);
  assert.equal(new Set(art.REGIONS.map(area=>area.muscle)).size,9);
  assert.match(ui,/MuscleAnatomyArt\.renderAtlas/);
  assert.match(ui,/path\.muscle-region\[data-muscle\]/);
@@ -63,7 +63,7 @@ test('atlas uses approved shared 30-region SVG with accessible controls',()=>{
 });
 test('production and preview code match with isolated staging cache',()=>{
  for(const name of ['muscle-atlas-core.js','muscle-atlas-ui.js','muscle-atlas.css','muscle-anatomy-art.js']){
-  const version=name==='muscle-atlas-core.js'?'1':'32';
+  const version=name==='muscle-atlas-core.js'?'1':name==='muscle-atlas.css'?'32':'40';
   assert.equal(read(name),read('preview/'+name));
   for(const html of ['index.html','preview/index.html'])assert.ok(read(html).includes('./'+name+'?v='+version),html+' '+name);
   for(const sw of ['sw.js','preview/sw.js'])assert.ok(read(sw).includes('./'+name+'?v='+version),sw+' '+name);

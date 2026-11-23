@@ -14,21 +14,14 @@
   const svg=host.querySelector('svg[data-mode="atlas"]');
   if(svg){
    svg.setAttribute('data-view',focused?'focused':'overview');
-   const selectedPaths=[];
    svg.querySelectorAll('path.muscle-region[data-muscle]').forEach(path=>{
     const pressed=focused&&path.getAttribute('data-muscle')===selectedMuscle;
     path.setAttribute('data-selected',String(pressed));
     path.setAttribute('aria-pressed',String(pressed));
-    if(pressed)selectedPaths.push(path);
    });
-   // Restore anatomical path order, then paint chosen contours over overlapping regions.
-   const caption=svg.querySelector('.anatomy-caption');
-   const pathsById=new Map(Array.from(svg.querySelectorAll('path.muscle-region')).map(path=>[path.id,path]));
-   for(const region of window.MuscleAnatomyArt.REGIONS){
-    const path=pathsById.get(region.id);
-    if(path)svg.insertBefore(path,caption);
-   }
-   for(const path of selectedPaths)svg.insertBefore(path,caption);
+   // Leave each path in its original figure: moving it to the outer SVG
+   // would discard the transform aligning the back-view geometry.
+
   }
   host.querySelectorAll('.ma-chip[data-muscle]').forEach(button=>{
    button.setAttribute('aria-pressed',String(focused&&button.getAttribute('data-muscle')===selectedMuscle));
