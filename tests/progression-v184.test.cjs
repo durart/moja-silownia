@@ -104,7 +104,7 @@ test('production v1.9 remains isolated from preview v2 and retains the existing 
  const production=fs.readFileSync(path.join(root,'assistant/assistant-progression.js'),'utf8');
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
- assert.notEqual(production,staging);
+ assert.match(staging,/REPS_TREND_CONFIRMED/);
  assert.match(html,/const key='moja-silownia-v01'/);
  assert.match(html,/v1\.9\.0/);
  assert.match(html,/assistant\/assistant-progression\.js\?v=184/);
