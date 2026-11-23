@@ -37,7 +37,7 @@ async function run(){
     const rootBox=svg.getBoundingClientRect();
     const frontBox=svg.querySelectorAll('.mm-figure')[0].getBoundingClientRect();
     const backBox=svg.querySelectorAll('.mm-figure')[1].getBoundingClientRect();
-    const images=await Promise.all(photoPaths.map(image=>{
+    const images=await Promise.all(photoPaths.map(async image=>{
      const href=image.getAttribute('href');
      const probe=new Image();
      probe.src=href;
