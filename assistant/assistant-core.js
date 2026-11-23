@@ -8,6 +8,10 @@
   if(root)root.MojaAdvisorCore=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
+const sessionMode=typeof MojaSessionMode!=='undefined'
+  ?MojaSessionMode
+  :(typeof module==='object'&&module.exports&&typeof require==='function'
+    ?require('./session-mode.js'):globalThis.MojaSessionMode);
 const DEFAULTS=Object.freeze({rotation:30,load:30,recency:20,regularity:10,evidence:10});
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -23,6 +27,7 @@ function evaluate(state,options={}){
  const now=finite(options.now)?options.now:Date.now();
  const plans=arr(state?.plans).filter(p=>p&&p.id!=null&&arr(p.exerciseIds).length);
  const sessions=arr(state?.sessions).filter(s=>{const t=validTime(s?.date);return t!=null&&t<=now}).slice().sort((a,b)=>validTime(b.date)-validTime(a.date));
+ const referenceSessions=sessionMode.progressionHistory(sessions);
  const running=Boolean(state?.startedAt&&(state?.manualStarted||state?.activePlan!=null||arr(state?.active).length));
  if(running)return {status:'in_progress',recommended:null,candidates:[],reasons:['Masz rozpoczęty trening. Wróć do niego zamiast rozpoczynać nowy.'],confidence:'high'};
  if(!plans.length)return {status:'no_plans',recommended:null,candidates:[],reasons:['Brak zapisanych planów. Możesz rozpocząć trening dowolny.'],confidence:'none'};
@@ -30,9 +35,9 @@ function evaluate(state,options={}){
  const goal=clamp(Math.round(number(options.weeklyGoal)||3),1,7);
  const weeklyCount=sessions.filter(s=>validTime(s.date)>=weekStart(now)).length;
  const candidate=plans.map(p=>{
-  const matching=sessions.filter(s=>s.planName===p.name);
+  const matching=referenceSessions.filter(s=>s.planName===p.name);
   const last=matching[0]||null,days=last?(now-validTime(last.date))/86400000:null;
-  const rotation=sessions.length?(sessions[0].planName===p.name?0:1):.5;
+  const rotation=referenceSessions.length?(referenceSessions[0].planName===p.name?0:1):.5;
   const muscles=planMuscles(p,state?.exercises);
   const load=muscles?Object.entries(muscles).reduce((a,[m,w])=>a+number(fatigue[m])*w,0)/Object.values(muscles).reduce((a,b)=>a+b,0):null;
   const loadScore=load==null?.5:1-clamp(load/100,0,1);
@@ -41,7 +46,7 @@ function evaluate(state,options={}){
   const evidence=clamp(matching.length/3,0,1);
   const score=Math.round(DEFAULTS.rotation*rotation+DEFAULTS.load*loadScore+DEFAULTS.recency*recency+DEFAULTS.regularity*regularity+DEFAULTS.evidence*evidence);
   const reasons=[];
-  if(sessions.length)reasons.push(sessions[0].planName===p.name?'Ten plan był wykonywany ostatnio.':'Ostatnia sesja dotyczyła innego planu.');
+  if(referenceSessions.length)reasons.push(referenceSessions[0].planName===p.name?'Ten plan był wykonywany ostatnio jako standardowy.':'Ostatni trening standardowy dotyczył innego planu.');
   if(load!=null)reasons.push('Szacowane obciążenie mięśni tego planu: '+Math.round(load)+'/100.');
   if(days!=null)reasons.push('Od ostatniego wykonania planu minęło '+days.toFixed(1)+' dnia.');
   if(!matching.length)reasons.push('Brak wcześniejszej sesji tego planu — ograniczona pewność.');
