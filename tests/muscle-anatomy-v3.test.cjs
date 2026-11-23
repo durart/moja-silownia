@@ -19,7 +19,7 @@ test('both feature surfaces depend on the same anatomical artwork module',()=>{
   assert.match(src,/window\.MuscleAnatomyArt/);
   assert.match(src,/art\.renderSession\(muscleRoles\(s\),width\)/);
   assert.match(src,/art\.drawSession\(ctx,muscleRoles\(s\),x,y,width\)/);
-  assert.ok(src.indexOf('muscle-anatomy-art.js?v=3')<src.indexOf('summary-core.js?v=1'));
+  assert.ok(src.indexOf('muscle-anatomy-art.js?v=31')<src.indexOf('summary-core.js?v=1'));
  }
 });
 test('PNG export preserves portrait proportions and offers fallback',()=>{
@@ -30,7 +30,7 @@ test('PNG export preserves portrait proportions and offers fallback',()=>{
 test('all v3 PWA assets are precached in both scopes without touching local storage',()=>{
  for(const path of ['sw.js','preview/sw.js']){
   const src=read(path);
-  assert.ok(src.includes('muscle-anatomy-art.js?v=3'));
+  assert.ok(src.includes('muscle-anatomy-art.js?v=31'));
   assert.ok(src.includes('muscle-atlas-ui.js?v=3'));
   assert.ok(src.includes('muscle-atlas.css?v=3'));
   assert.ok(src.includes('anatomy-v3'));
