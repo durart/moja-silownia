@@ -185,7 +185,7 @@ test('settings are exercise-scoped, with backup-friendly fields and no workout m
   assert.match(staging,/profile-core\.js\?v=190/);
   assert.match(staging,/moja-silownia-preview-v01/);
   const prod = fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-  assert.match(prod,/v1\.9\.0/);
+  assert.match(prod,/v2\.0\.0/);
   assert.doesNotMatch(prod,/equipment-settings-ui\.js/);
 });
 
