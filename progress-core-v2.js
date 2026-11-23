@@ -48,6 +48,26 @@ function trainingBreaks(sessions,options={}){
   }
   return result;
 }
+function weightAtDate(profile,date,maxAgeDays=30){
+  const target=Date.parse(date);
+  if(!Number.isFinite(target))return {weightKg:null,quality:'invalid_date'};
+  const rows=Array.isArray(profile?.weightHistory)?profile.weightHistory:[];
+  const candidates=rows.filter(row=>typeof row?.date==='string'&&Number.isFinite(Date.parse(row.date))&&
+    typeof row.weightKg==='number'&&Number.isFinite(row.weightKg)&&row.weightKg>=20&&row.weightKg<=350&&
+    Date.parse(row.date)<=target).sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
+  if(!candidates.length)return {weightKg:null,quality:'missing'};
+  const ageDays=(target-Date.parse(candidates[0].date))/86400000;
+  if(ageDays>maxAgeDays)return {weightKg:null,quality:'stale',measurementDate:candidates[0].date};
+  return {weightKg:candidates[0].weightKg,quality:'measured',measurementDate:candidates[0].date};
+}
+function relativeStrengthSessions(sessions,id,profile){
+  return exerciseSessions(sessions,id).map(row=>{
+    const weight=weightAtDate(profile,row.date);
+    const eligible=row.comparableOneRM!==null&&weight.weightKg!==null;
+    return {...row,bodyWeightKg:weight.weightKg,weightQuality:weight.quality,
+      relativeOneRM:eligible?row.comparableOneRM/weight.weightKg:null};
+  });
+}
 function compare(sessions,id){const rows=exerciseSessions(sessions,id);if(rows.length<2)return null;const previous=rows[rows.length-2],latest=rows[rows.length-1];const delta={};for(const k of ['max','volume','oneRM']){delta[k]=previous[k]===null||latest[k]===null?null:{absolute:latest[k]-previous[k],percent:previous[k]>0?(latest[k]-previous[k])/previous[k]*100:null};}return {previous,latest,delta};}
 function median(a){const s=a.slice().sort((a,b)=>a-b),n=s.length;return n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2;}
 function trend(sessions,id){
@@ -70,5 +90,5 @@ function trend(sessions,id){
 }
 function monthReport(sessions,year,month){const items=clean(sessions).filter(s=>{const d=new Date(time(s));return d.getFullYear()===year&&d.getMonth()+1===month;});const all=items.flatMap(s=>s.sets.filter(validSet));const byExercise=[...new Set(all.map(s=>s.exerciseId))];const before=clean(sessions).filter(s=>!isRecovery(s)&&time(s)<new Date(year,month-1,1).getTime());let prs=0;for(const id of byExercise){let highest=Math.max(0,...before.flatMap(s=>setsFor(s,id).filter(working).map(x=>number(x.weight))));for(const s of items.filter(s=>!isRecovery(s))){for(const x of setsFor(s,id).filter(working)){if(number(x.weight)>highest){prs++;highest=number(x.weight);}}}}return {year,month,count:items.length,sets:all.length,volume:volume(all),durationSeconds:items.reduce((sum,s)=>sum+(finite(s.durationSeconds)?Math.max(0,number(s.durationSeconds)):0),0),prs,exercises:byExercise.length};}
 function inPeriod(sessions,days,now=Date.now()){return clean(sessions).filter(s=>!days||time(s)>=now-days*86400000);}
-return Object.freeze({clean,validSet,working,volume,rirStatus,estimateDetails,estimatedRM,isRecovery,records,exerciseSessions,bodyweightSummary,trainingBreaks,compare,trend,monthReport,inPeriod});
+return Object.freeze({clean,validSet,working,volume,rirStatus,estimateDetails,estimatedRM,isRecovery,records,exerciseSessions,bodyweightSummary,trainingBreaks,weightAtDate,relativeStrengthSessions,compare,trend,monthReport,inPeriod});
 });
