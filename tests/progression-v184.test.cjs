@@ -17,10 +17,12 @@ test('mixed working weights never take the first light set as the working load',
  assert.equal(result.sessionCount,1);
 });
 
-test('most common working load and the heaviest completed set are reported separately',()=>{
+test('highest working load prevents back-off sets from hiding the pyramid peak',()=>{
  const result=advisor.suggest([session(days[0],rows([29,55,55,63]))],'row-v');
- assert.equal(result.weight,55);
+ assert.equal(result.weight,63);
  assert.equal(result.lastTopWeight,63);
+ assert.equal(result.action,'maintain');
+ assert.match(result.reason,/piramidzie/);
 });
 
 test('historical personal best remains visible after a lighter training day',()=>{
@@ -91,10 +93,10 @@ test('isolated staging uses its own storage, script version and offline cache',(
  const sw=fs.readFileSync(path.join(root,'preview/sw.js'),'utf8');
  assert.match(html,/const key='moja-silownia-preview-v01'/);
  assert.doesNotMatch(html,/const key='moja-silownia-v01'/);
- assert.match(html,/\.\/assistant\/assistant-progression\.js\?v=201/);
+ assert.match(html,/\.\/assistant\/assistant-progression\.js\?v=202/);
  assert.match(html,/\.\/assistant\/assistant-progression-ui\.js\?v=200/);
  assert.match(sw,/moja-silownia-preview-shell-v201-recovery-/);
- assert.match(sw,/\.\/assistant\/assistant-progression\.js\?v=201/);
+ assert.match(sw,/\.\/assistant\/assistant-progression\.js\?v=202/);
  assert.doesNotMatch(sw,/const CACHE='moja-silownia-shell-/);
 });
 
