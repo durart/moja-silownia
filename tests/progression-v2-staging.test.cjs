@@ -36,7 +36,7 @@ test('preview retains profile and isolated PWA cache; production 1.9 stays uncha
  assert.match(index,/moja-silownia-preview-v01/);
  assert.match(index,/profile-core\.js\?v=190/);
  assert.match(index,/equipment-settings-ui\.js\?v=200/);
- assert.match(sw,/moja-silownia-preview-shell-v200-progression-/);
+ assert.match(sw,/moja-silownia-preview-shell-v201-recovery-/);
  assert.match(sw,/equipment-settings-ui\.js\?v=200/);
  assert.match(prod,/Moja Siłownia v1\.9\.0/);
  assert.doesNotMatch(prod,/equipment-settings-ui\.js/);

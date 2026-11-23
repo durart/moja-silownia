@@ -20,6 +20,10 @@ const EQUIPMENT_LABELS = Object.freeze({
 const numeric = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 const isWarmup = row => row?.setType === 'R' || row?.type === 'warmup' || row?.type === 'R';
 const flagNeedsReview = flag => ['pain', 'equipment', 'technique'].includes(flag);
+const sessionMode = typeof MojaSessionMode !== 'undefined'
+  ? MojaSessionMode
+  : (typeof module === 'object' && module.exports && typeof require === 'function'
+    ? require('./session-mode.js') : globalThis.MojaSessionMode);
 
 function resolveEquipmentType(type, weight) {
   const mapped = EQUIPMENT_CONFIG[type] ? type : EQUIPMENT_LABELS[type] || 'barbell';
@@ -86,24 +90,29 @@ function suggest(sessions, exerciseId, options = {}) {
   if (!Number.isInteger(low) || !Number.isInteger(high) || low < 1 || high < low)
     return { action: 'insufficient_data', reason: 'Nieprawidłowy zakres powtórzeń.' };
 
-  const history = (Array.isArray(sessions) ? sessions : [])
+  const allHistory = (Array.isArray(sessions) ? sessions : [])
     .filter(session => session && typeof session.date === 'string' && Number.isFinite(Date.parse(session.date)))
     .map(session => ({ session, rows: workingSets(session, exerciseId) }))
     .filter(item => item.rows.length)
     .sort((a, b) => Date.parse(b.session.date) - Date.parse(a.session.date))
     .map(item => ({ ...item, main: mainLoad(item.rows) }));
+  const history = allHistory.filter(item => sessionMode.isProgressionEligible(item.session));
 
   if (!history.length)
-    return { action: 'insufficient_data', reason: 'Brak zakończonych serii roboczych tego ćwiczenia w historii aplikacji.' };
+    return { action: 'insufficient_data',
+      reason: allHistory.length
+        ? 'Historia zawiera tylko treningi regeneracyjne. Wykonaj trening standardowy, aby ocenić progresję.'
+        : 'Brak zakończonych serii roboczych tego ćwiczenia w historii aplikacji.' };
 
   const latest = history[0], primary = latest.main;
   const top = latest.rows.reduce((best, row) =>
     row.weight > best.weight || (row.weight === best.weight && row.reps > best.reps) ? row : best);
   const weight = primary.weight;
-  const bestWeight = Math.max(...history.flatMap(item => item.rows.map(row => row.weight)));
+  const bestWeight = Math.max(...allHistory.flatMap(item => item.rows.map(row => row.weight)));
   const base = {
     weight, lastWeight: weight, lastTopWeight: top.weight, lastTopReps: top.reps,
-    bestWeight, sessionCount: history.length, lastDate: latest.session.date
+    bestWeight, sessionCount: allHistory.length, progressionSessionCount: history.length,
+    skippedRecoveryCount: allHistory.length - history.length, lastDate: latest.session.date
   };
   const result = (action, reason, extra = {}) => ({ action, reason, ...base, ...extra });
   const increase = (path, reason, extra = {}) => {
@@ -118,7 +127,7 @@ function suggest(sessions, exerciseId, options = {}) {
 
   if (weight === 0)
     return result('maintain', 'Ćwiczenie bez dodatkowego ciężaru. Porównuj powtórzenia i RIR, zamiast dodawać kilogramy.');
-  if (history.slice(0, 5).some(({ session }) => flagNeedsReview(session.exerciseNotes?.[exerciseId]?.flag)))
+  if (allHistory.slice(0, 5).some(({ session }) => flagNeedsReview(session.exerciseNotes?.[exerciseId]?.flag)))
     return result('review', 'W ostatnich treningach oznaczono ból, zmianę sprzętu lub problem z techniką. Sprawdź wykonanie przed zwiększeniem obciążenia.');
   if (primary.rows.some(row => row.reps < low))
     return result('review', 'Seria robocza z dominującym ciężarem nie osiągnęła dolnego zakresu powtórzeń. Sprawdź technikę, przerwy i zmęczenie.');
