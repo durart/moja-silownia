@@ -23,9 +23,11 @@ function guidance(result){
 }
 function makeCard(exerciseId,options={}){
  const exercise=state.exercises?.find(item=>String(item.id)===String(exerciseId));
+ const equipmentLabel=exercise?.equipmentType||exercise?.equipment;
+ const supported=['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg'];
  const result=window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,{
   ...options,
-  equipmentType:exercise?.equipmentType||exercise?.equipment,
+  equipmentType:supported.includes(equipmentLabel)?equipmentLabel:'unknown',
   equipmentStepKg:exercise?.equipmentStepKg
  });
  const pre=state.preWorkout||{};
@@ -42,7 +44,7 @@ function makeCard(exerciseId,options={}){
  box.append(eyebrow,title,reason);
  if(result.action==='consider_increase'&&Number.isFinite(result.increment)){
   const detail=document.createElement('small');
-  detail.textContent='Ścieżka: '+({FAST_TRACK_1_SESSION:'szybka',ACCELERATED_2_SESSIONS:'przyspieszona',E1RM_TREND_CONFIRMED:'trend e1RM',STANDARD_3_SESSIONS:'standardowa'}[result.path]||'standardowa')+' • sugerowany skok: +'+result.increment+' kg';
+  detail.textContent='Ścieżka: '+({FAST_TRACK_1_SESSION:'szybka',ACCELERATED_2_SESSIONS:'przyspieszona',E1RM_TREND_CONFIRMED:'trend e1RM',REPS_TREND_CONFIRMED:'trend powtórzeń',STANDARD_3_SESSIONS:'standardowa'}[result.path]||'standardowa')+' • sugerowany skok: +'+result.increment+' kg';
   box.append(detail);
  }
  const ongoing=currentSession(exerciseId).filter(x=>x.setType!=='R').length;
@@ -61,6 +63,15 @@ function makeCard(exerciseId,options={}){
     apply.textContent='Ustawiono '+result.suggestedWeight+' kg';apply.disabled=true;
    });box.append(apply);
   }
+ }
+ if(result.needsEquipment){
+  const info=document.createElement('small');info.textContent='Wybierz rodzaj sprzętu, aby otrzymać poprawną propozycję ciężaru.';box.append(info);
+ }
+ if(result.blockedByStep){
+  const info=document.createElement('small');info.textContent='Dostępny skok jest zbyt duży dla bezpiecznej rekomendacji automatycznej.';box.append(info);
+ }
+ if(window.MojaAdvisorEquipmentUI?.decorate){
+  window.MojaAdvisorEquipmentUI.decorate(box,exercise,()=>box.replaceWith(makeCard(exerciseId,options)));
  }
  if(Number.isFinite(result.weight)){
   const info=document.createElement('span');info.className='advisor-progression-weight';info.textContent='Ciężar roboczy (ostatni trening): '+result.weight+' kg';box.append(info);
