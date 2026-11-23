@@ -49,6 +49,7 @@ function setup(){
  vm.createContext(ctx);
  // Browser loads profile-core.js before the inline workout logic; mirror that dependency in VM tests.
  vm.runInContext(readFileSync(new URL('../profile-core.js',import.meta.url),'utf8'),ctx);
+ vm.runInContext(readFileSync(new URL('../assistant/session-mode.js',import.meta.url),'utf8'),ctx);
  vm.runInContext(code+'\nthis.api={normalizePlanExtraIds,planExtraStatus,addPlanExtraExercise,removePlanExtraExercise,renderPlanExtraExercises,saveManualRow,removeManualRow,detachPlanExtrasToManual,finishWorkout,togglePlanRow,savePlanRow,planSets,manualSetRows,toggleManualRow};',ctx);
  return {state,store,calls,elements,api:ctx.api};
 }
@@ -175,6 +176,7 @@ test('finish produces one session with plan name and completed extra sets',()=>{
  assert.equal(state.sessions.length,1);
  assert.equal(state.sessions[0].planName,'Trening A');
  assert.equal(state.sessions[0].bodyWeightKg,100,'Workout retains body weight snapshot');
+ assert.equal(state.sessions[0].sessionMode,'standard','Legacy workouts stay standard by default');
  assert.deepEqual(Array.from(state.sessions[0].sets,x=>x.exerciseId),['seed-1','seed-3']);
  assert.equal(state.planExtraExerciseIds.length,0);
  assert.equal(calls.history,1);
