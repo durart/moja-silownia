@@ -12,7 +12,7 @@ const root=path.resolve(__dirname,'..');
    await page.setContent('<!doctype html><html lang="pl"><head><meta charset="utf-8"></head><body><main id="progressContent"></main></body></html>');
    await page.evaluate(()=>{
     const now=Date.now();
-    window.state={profile:{weightHistory:[{date:new Date(now-86400000*20).toISOString().slice(0,10),weightKg:100}]},exercises:[{id:'bench',name:'Wyciskanie'}],sessions:[0,7,14,21].map((offset,i)=>({date:new Date(now-86400000*(21-offset)).toISOString(),sets:[{exerciseId:'bench',weight:60+i*2,reps:8,rir:1}]}))};
+    window.state={profile:{weightHistory:[{date:new Date(now-86400000*25).toISOString().slice(0,10),weightKg:100}]},exercises:[{id:'bench',name:'Wyciskanie'}],sessions:[0,7,14,21].map((offset,i)=>({date:new Date(now-86400000*(21-offset)).toISOString(),sets:[{exerciseId:'bench',weight:60+i*2,reps:8,rir:1}]}))};
    });
    await page.addScriptTag({path:path.join(root,'assistant/session-mode.js')});
    await page.addScriptTag({path:path.join(root,'progress-core-v2.js')});
