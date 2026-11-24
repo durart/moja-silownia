@@ -16,9 +16,11 @@ export function validateMock(payload) {
 }
 
 /** Token is supplied for each request and never persisted by this module. */
-export async function syncMock(token, fetcher = globalThis.fetch) {
+export async function syncMock(token, fetcher = globalThis.fetch, endpoint = ENDPOINT) {
+  const url = new URL(endpoint);
+  if (url.protocol !== "https:" || !url.hostname.endsWith(".workers.dev") || url.username || url.password || url.search || url.hash || url.pathname !== "/health" || url.port) throw new Error("Nieprawidłowy adres Workera.");
   if (typeof token !== "string" || !token.trim()) throw new Error("Wprowadź token synchronizacji.");
-  const response = await fetcher(ENDPOINT, {
+  const response = await fetcher(url.href, {
     method: "GET", headers: {Authorization: "Bearer " + token.trim()},
     cache: "no-store", credentials: "omit", redirect: "error",
     signal: AbortSignal.timeout(20000)
