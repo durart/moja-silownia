@@ -38,7 +38,7 @@ test('preview retains profile and isolated PWA cache; production 2.0 preserves d
  assert.match(index,/equipment-settings-ui\.js\?v=200/);
  assert.match(sw,/moja-silownia-preview-shell-v202-recovery-/);
  assert.match(sw,/equipment-settings-ui\.js\?v=200/);
- assert.match(prod,/Moja Siłownia v2\.1\.0/);
+ assert.match(prod,/Moja Siłownia v3\.0\.0/);
  assert.match(prod,/equipment-settings-ui\.js\?v=200/);
  assert.equal(read('profile-core.js'),read('preview/profile-core.js'));
 });

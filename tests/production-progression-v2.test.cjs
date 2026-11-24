@@ -11,8 +11,8 @@ const sessionMode = require('../assistant/session-mode.js');
 const activeAdvisor = require('../assistant/assistant-core.js');
 
 test('release 2.1 retains progression assets in executable order', () => {
-  assert.match(index, /<title>Moja Siłownia v2\.1\.0/);
-  assert.match(index, /<span class="badge">v2\.1\.0<\/span>/);
+  assert.match(index, /<title>Moja Siłownia v3\.0\.0/);
+  assert.match(index, /<span class="badge">v3\.0\.0<\/span>/);
   const scripts = [
     'assistant/session-mode.js?v=200',
     'assistant/assistant-core.js?v=200',
@@ -35,7 +35,7 @@ test('data key and profile 1.9 remain unchanged while 2.0 gets a new PWA shell',
   assert.match(index, /id="profileContent"/);
   assert.match(index, /profile-core\.js\?v=190/);
   assert.match(index, /profile-ui\.js\?v=190/);
-  assert.match(sw, /moja-silownia-shell-v40-progression-2\.1\.0-guardrails-20261123/);
+  assert.match(sw, /moja-silownia-shell-v42-progress-3\.0\.0/);
   assert.match(sw, /profile-core\.js\?v=190/);
   assert.match(sw, /modules\/state-storage\.js/);
   assert.match(index, /state\.profile/);
