@@ -25,5 +25,30 @@ const root=path.resolve(__dirname,'..');
    assert.equal(errors.length,0,errors.join('; '));
    await page.close();
   }
+  const http=require('node:http'),fs=require('node:fs');
+  const server=http.createServer((req,res)=>{
+   const pathname=new URL(req.url,'http://localhost').pathname;
+   const file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
+   if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}
+   const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png'};
+   res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');fs.createReadStream(file).pipe(res);
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const context=await browser.newContext({viewport:{width:390,height:844}});
+  try{
+   const page=await context.newPage(),url='http://127.0.0.1:'+server.address().port+'/';
+   await page.goto(url);
+   await page.evaluate(async()=>{await caches.open('moja-silownia-shell-test-old');await navigator.serviceWorker.ready;});
+   await page.reload();
+   await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
+   const before=await page.evaluate(()=>{const key='moja-silownia-v01';const raw=localStorage.getItem(key);return {raw,cacheNames:null};});
+   await context.setOffline(true);
+   await page.reload({waitUntil:'domcontentloaded'});
+   await page.waitForFunction(()=>!!window.ProgressReportDashboard);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before.raw,'offline reload preserves local state');
+   assert.match(await page.title(),/3\\.0\\.0/);
+   const names=await page.evaluate(()=>caches.keys());
+   assert.ok(names.some(n=>n.includes('v42-progress-3.0.0')));
+  }finally{await context.close();await new Promise(resolve=>server.close(resolve));}
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
