@@ -108,9 +108,9 @@ test('Staging has one start toggle and one active session toggle, without per-ex
  assert.match(html,/moja-silownia-preview-v01/);
  assert.match(html,/session-mode\.js\?v=200/);
  assert.match(html,/assistant-core\.js\?v=200/);
- assert.match(sw,/moja-silownia-preview-shell-v43-trainer-3\.1\.0/);
+ assert.match(sw,/moja-silownia-preview-shell-v44-progress-3\.1\.1/);
  assert.match(sw,/session-mode\.js\?v=200/);
  assert.match(sw,/assistant-core\.js\?v=200/);
- assert.match(read('index.html'),/Moja Siłownia v3\.1\.0/);
+ assert.match(read('index.html'),/Moja Siłownia v3\.1\.1/);
  assert.match(read('index.html'),/id="preRecoveryMode"/);
 });

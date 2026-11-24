@@ -41,14 +41,38 @@ const root=path.resolve(__dirname,'..');
    await page.evaluate(async()=>{await caches.open('moja-silownia-shell-test-old');await navigator.serviceWorker.ready;});
    await page.reload();
    await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
+   // Store synthetic training history, then verify real navigation on the full PWA.
+   await page.evaluate(()=>{
+    const exercise=state.exercises[0];
+    state.sessions=[{id:901,date:new Date(Date.now()-86400000).toISOString(),durationSeconds:1800,sets:[{exerciseId:exercise.id,name:exercise.name,weight:65,reps:9,rir:2,setType:'W'}]}];
+    save();
+   });
+   await page.getByRole('button',{name:'Postępy',exact:true}).click();
+   await page.getByRole('heading',{name:'Podsumowanie',exact:true}).waitFor();
+   await page.getByRole('button',{name:'Raporty',exact:true}).click();
+   await page.getByRole('heading',{name:'Raport postępów treningowych',exact:true}).waitFor();
+   assert.match(await page.locator('#progressContent').innerText(),/585 kg/);
+   // Inject the former asset URL with a deliberately stale API into the active cache.
+   // A new version must not request this legacy URL, even offline.
+   await page.evaluate(async()=>{
+    const name=(await caches.keys()).find(n=>n.includes('v44-progress-3.1.1'));
+    const cache=await caches.open(name);
+    await cache.put(new Request(new URL('progress-core-v2.js?v=3',location.href)),new Response('window.ProgressCore={inPeriod:()=>[]};',{headers:{'Content-Type':'text/javascript'}}));
+   });
    const before=await page.evaluate(()=>{const key='moja-silownia-v01';const raw=localStorage.getItem(key);return {raw,cacheNames:null};});
    await context.setOffline(true);
    await page.reload({waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>!!window.ProgressReportDashboard);
    assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before.raw,'offline reload preserves local state');
-   assert.ok((await page.title()).includes('3.1.0'));
+   await page.getByRole('button',{name:'Postępy',exact:true}).click();
+   await page.getByRole('heading',{name:'Podsumowanie',exact:true}).waitFor();
+   await page.getByRole('button',{name:'Raporty',exact:true}).click();
+   await page.getByRole('heading',{name:'Raport postępów treningowych',exact:true}).waitFor();
+   assert.match(await page.locator('#progressContent').innerText(),/585 kg/);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before.raw,'reports are read-only offline');
+   assert.ok((await page.title()).includes('3.1.1'));
    const names=await page.evaluate(()=>caches.keys());
-   assert.ok(names.some(n=>n.includes('v43-trainer-3.1.0')));
+   assert.ok(names.some(n=>n.includes('v44-progress-3.1.1')));
   }finally{await context.close();await new Promise(resolve=>server.close(resolve));}
  }finally{await browser.close();}
 })().then(()=>require('./trainer-browser-smoke.cjs')()).catch(error=>{console.error(error);process.exitCode=1;});
