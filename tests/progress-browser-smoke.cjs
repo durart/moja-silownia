@@ -48,14 +48,14 @@ const root=path.resolve(__dirname,'..');
     save();
    });
    await page.getByRole('button',{name:'Postępy',exact:true}).click();
-   await page.getByRole('heading',{name:'Podsumowanie',exact:true}).waitFor();
-   await page.getByRole('button',{name:'Raporty',exact:true}).click();
-   await page.getByRole('heading',{name:'Raport postępów treningowych',exact:true}).waitFor();
+   await page.getByRole('heading',{name:'Ćwiczenie',exact:true}).waitFor();
+   await page.getByRole('button',{name:'Podsumowanie',exact:true}).click();
+   await page.getByRole('heading',{name:'Podsumowanie okresowe',exact:true}).waitFor();
    assert.match(await page.locator('#progressContent').innerText(),/585 kg/);
    // Inject the former asset URL with a deliberately stale API into the active cache.
    // A new version must not request this legacy URL, even offline.
    await page.evaluate(async()=>{
-    const name=(await caches.keys()).find(n=>n.includes('v44-progress-3.1.1'));
+    const name=(await caches.keys()).find(n=>n.includes('v45-progress-3.1.2'));
     const cache=await caches.open(name);
     await cache.put(new Request(new URL('progress-core-v2.js?v=3',location.href)),new Response('window.ProgressCore={inPeriod:()=>[]};',{headers:{'Content-Type':'text/javascript'}}));
    });
@@ -65,14 +65,14 @@ const root=path.resolve(__dirname,'..');
    await page.waitForFunction(()=>!!window.ProgressReportDashboard);
    assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before.raw,'offline reload preserves local state');
    await page.getByRole('button',{name:'Postępy',exact:true}).click();
-   await page.getByRole('heading',{name:'Podsumowanie',exact:true}).waitFor();
-   await page.getByRole('button',{name:'Raporty',exact:true}).click();
-   await page.getByRole('heading',{name:'Raport postępów treningowych',exact:true}).waitFor();
+   await page.getByRole('heading',{name:'Ćwiczenie',exact:true}).waitFor();
+   await page.getByRole('button',{name:'Podsumowanie',exact:true}).click();
+   await page.getByRole('heading',{name:'Podsumowanie okresowe',exact:true}).waitFor();
    assert.match(await page.locator('#progressContent').innerText(),/585 kg/);
    assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before.raw,'reports are read-only offline');
-   assert.ok((await page.title()).includes('3.1.1'));
+   assert.ok((await page.title()).includes('3.1.2'));
    const names=await page.evaluate(()=>caches.keys());
-   assert.ok(names.some(n=>n.includes('v44-progress-3.1.1')));
+   assert.ok(names.some(n=>n.includes('v45-progress-3.1.2')));
   }finally{await context.close();await new Promise(resolve=>server.close(resolve));}
  }finally{await browser.close();}
 })().then(()=>require('./trainer-browser-smoke.cjs')()).catch(error=>{console.error(error);process.exitCode=1;});
