@@ -110,6 +110,6 @@ test('production v2 retains storage while the staging sandbox remains isolated',
  assert.match(html,/const key='moja-silownia-v01'/);
  assert.match(html,/v3\.0\.0/);
  assert.match(html,/assistant\/assistant-progression\.js\?v=201/);
- assert.match(sw,/moja-silownia-shell-v41-progress-3\.0\.0/);
+ assert.match(sw,/moja-silownia-shell-v42-progress-3\.0\.0/);
  assert.match(sw,/assistant\/assistant-progression\.js\?v=201/);
 });
