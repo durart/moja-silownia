@@ -1,4 +1,4 @@
-name: Moja Silownia 2.0.0 production and recovery staging regression
+name: Moja Silownia production and recovery staging regression
 
 on:
   pull_request:
@@ -27,12 +27,12 @@ jobs:
           PROD='https://durart.github.io/moja-silownia/'
           for attempt in $(seq 1 10); do
             curl -fsSL --max-time 25 "$PREVIEW" -o /tmp/staging.html || true
-            if grep -q 'TEST v2.0.0' /tmp/staging.html 2>/dev/null; then
+            if cmp -s preview/index.html /tmp/staging.html; then
               break
             fi
             sleep 8
           done
-          grep -q 'Moja Siłownia TEST v2.0.0' /tmp/staging.html
+          cmp preview/index.html /tmp/staging.html
           grep -q 'moja-silownia-preview-v01' /tmp/staging.html
           grep -q 'id="profileContent"' /tmp/staging.html
           for asset in profile-core.js profile-ui.js sw.js; do
@@ -61,7 +61,7 @@ jobs:
           grep -q 'referenceSessions' /tmp/stage-assistant-core.js
           grep -q 'id="preRecoveryMode"' /tmp/staging.html
           grep -q 'id="activeRecoveryMode"' /tmp/staging.html
-          grep -q 'v201-recovery' /tmp/sw.js
+          cmp preview/sw.js /tmp/sw.js
       - name: Verify production release after merge
         if: github.event_name == 'push'
         run: |
@@ -69,12 +69,12 @@ jobs:
           PROD='https://durart.github.io/moja-silownia/'
           for attempt in $(seq 1 24); do
             curl -fsSL --max-time 25 "$PROD" -o /tmp/production.html || true
-            if grep -q 'assistant/assistant-progression.js?v=201' /tmp/production.html 2>/dev/null; then
+            if cmp -s index.html /tmp/production.html; then
               break
             fi
             sleep 6
           done
-          grep -q 'Moja Siłownia v2.0.0' /tmp/production.html
+          cmp index.html /tmp/production.html
           grep -q 'id="profileContent"' /tmp/production.html
           grep -q "const key='moja-silownia-v01'" /tmp/production.html
           for asset in profile-core.js profile-ui.js sw.js; do
@@ -84,9 +84,9 @@ jobs:
           done
           curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
             "$PROD""profile.css" -o /tmp/prod-profile.css
-          grep -q 'moja-silownia-shell-v39-progression-2.0.0-guardrails-20261123' /tmp/prod-sw.js
+          cmp sw.js /tmp/prod-sw.js
           grep -q 'profile-core.js?v=190' /tmp/prod-sw.js
-          grep -q 'profile-ui.js?v=190' /tmp/prod-sw.js
+          grep -q 'profile-ui.js?v=310' /tmp/prod-sw.js
           grep -q 'profile.css?v=190' /tmp/prod-sw.js
           grep -q 'id="preRecoveryMode"' /tmp/production.html
           grep -q 'id="activeRecoveryMode"' /tmp/production.html
@@ -94,7 +94,7 @@ jobs:
           grep -q 'assistant/assistant-core.js?v=200' /tmp/production.html
           grep -q 'assistant/assistant-progression.js?v=201' /tmp/production.html
           grep -q 'assistant/equipment-settings-ui.js?v=200' /tmp/production.html
-          grep -q 'assistant/assistant-progression-ui.js?v=200' /tmp/production.html
+          grep -q 'assistant/assistant-progression-ui.js?v=310' /tmp/production.html
           for asset in session-mode.js assistant-core.js assistant-progression.js equipment-settings-ui.js assistant-progression-ui.js; do
             curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
               "$PROD""assistant/$asset" -o "/tmp/prod-$asset"
@@ -107,4 +107,4 @@ jobs:
           grep -q 'assistant/assistant-core.js?v=200' /tmp/prod-sw.js
           grep -q 'assistant/assistant-progression.js?v=201' /tmp/prod-sw.js
           grep -q 'assistant/equipment-settings-ui.js?v=200' /tmp/prod-sw.js
-          grep -q 'assistant/assistant-progression-ui.js?v=200' /tmp/prod-sw.js
+          grep -q 'assistant/assistant-progression-ui.js?v=310' /tmp/prod-sw.js
