@@ -55,6 +55,7 @@ function onNoteChange(event) {
   });
   state.activeExerciseNotes = next;
   save();
+  if(event.target.classList.contains('exercise-note-flag'))window.MojaTrainerWorkoutUI?.caution(id,panel.closest('.exercise-card'));
   updateProgressionWarning(panel.closest('.exercise-card'), id);
 
 }

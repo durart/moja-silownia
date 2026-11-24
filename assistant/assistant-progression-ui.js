@@ -52,7 +52,7 @@ function makeCard(exerciseId,options={}){
  if(result.action==='consider_increase'&&cautionToday){const info=document.createElement('small');info.className='advisor-readiness-caution';info.textContent='Wyniki serii pozwalają rozważyć progresję, ale dzisiejszy sen lub samopoczucie sugerują ostrożność. Możesz utrzymać obecny ciężar albo zmniejszyć objętość. To nie jest medyczna ocena regeneracji.';box.append(info);}
  if(result.action==='consider_increase'&&!cautionToday&&!['pain','equipment','technique'].includes(state.activeExerciseNotes?.[exerciseId]?.flag)){
   const caution=document.createElement('small');caution.textContent='Nie zwiększaj ciężaru przy bólu, pogorszeniu techniki lub dużym zmęczeniu. Ostateczna decyzja należy do Ciebie.';box.append(caution);
-  if(Number.isFinite(result.suggestedWeight)){
+  if(Number.isFinite(result.suggestedWeight)&&!window.MojaTrainerDrafts?.active(state)){
    const apply=document.createElement('button');apply.type='button';apply.className='secondary';apply.textContent='Ustaw '+result.suggestedWeight+' kg w tym treningu';
    apply.addEventListener('click',()=>{
     if(['pain','equipment','technique'].includes(state.activeExerciseNotes?.[exerciseId]?.flag)){alert('Najpierw wyjaśnij problem oznaczony w notatce. Zwiększenie ciężaru jest zablokowane.');return;}
@@ -104,6 +104,10 @@ function decorate(root,mode){
    return slot?plan?.targets?.[Number(slot[1])]:null;
   })():null;
   const cardNode=makeCard(id,numberRange(target));
+  if(window.MojaTrainerDrafts?.active(state)){
+   if(!window.MojaTrainerDrafts.settings(state).explanation)continue;
+   const label=document.createElement('small');label.textContent='Asystent przygotował edytowalne serie. RIR wpisz po wykonaniu.';cardNode.prepend(label);
+  }
   const heading=card.querySelector('.sport-exercise-title-row');
   if(heading)heading.insertAdjacentElement('afterend',cardNode);
  }
