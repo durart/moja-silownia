@@ -47,6 +47,7 @@ window.progressSelect=v=>{selected=v;picked=-1;render()};
 window.progressMetric=v=>{metric=v;picked=-1;render()};
 window.progressPick=v=>{picked=v;render()};
 window.progressRecordMode=v=>{recordMode=v;render()};
+window.progressReportExport=()=>window.ProgressReportDashboard.download(all(),state.exercises,reportDays);
 window.progressReportDays=v=>{reportDays=Number(v);render()};
 window.progressMonth=v=>{reportMonth=v;render()};
 })();
