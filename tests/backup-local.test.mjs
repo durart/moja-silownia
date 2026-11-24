@@ -1,0 +1,11 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {createBackup,parseBackup,backupFilename} from "../backup/backup-core.mjs";
+import {makeBackupFile,saveBackupWithPicker} from "../backup/backup-local.mjs";
+const state={exercises:[{id:"a",name:"Bench"}],active:[],sessions:[]};
+test("versioned and legacy backups round trip",()=>{assert.deepEqual(parseBackup(JSON.stringify(createBackup(state))),state);assert.deepEqual(parseBackup(JSON.stringify(state)),state);});
+test("reject corrupt or foreign backup",()=>{for(const value of ["{",JSON.stringify({...createBackup(state),app:"other"}),JSON.stringify({...state,sessions:[null]})])assert.throws(()=>parseBackup(value));});
+test("local filename",()=>assert.equal(backupFilename(new Date(2026,10,24,17,5)),"backup_2026-11-24_17-05.json"));
+test("picker writes and closes",async()=>{const file=makeBackupFile(state);let written,closed=false;assert.equal(await saveBackupWithPicker(file,async()=>({createWritable:async()=>({write:async f=>{written=f},close:async()=>{closed=true}})})),true);assert.equal(written,file);assert.equal(closed,true);});
+test("picker cancellation",async()=>assert.equal(await saveBackupWithPicker(makeBackupFile(state),async()=>{throw Object.assign(new Error(),{name:"AbortError"})}),false));
+test("failed write aborts",async()=>{let aborted=false;await assert.rejects(saveBackupWithPicker(makeBackupFile(state),async()=>({createWritable:async()=>({write:async()=>{throw Error("disk")},abort:async()=>{aborted=true}})})));assert.equal(aborted,true);});

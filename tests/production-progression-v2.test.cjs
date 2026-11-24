@@ -11,8 +11,8 @@ const sessionMode = require('../assistant/session-mode.js');
 const activeAdvisor = require('../assistant/assistant-core.js');
 
 test('release 2.1 retains progression assets in executable order', () => {
-  assert.match(index, /<title>Moja Siłownia v3\.1\.2/);
-  assert.match(index, /<span class="badge">v3\.1\.2<\/span>/);
+  assert.match(index, /<title>Moja Siłownia v3\.2\.0/);
+  assert.match(index, /<span class="badge">v3\.2\.0<\/span>/);
   const scripts = [
     'assistant/session-mode.js?v=200',
     'assistant/assistant-core.js?v=200',
