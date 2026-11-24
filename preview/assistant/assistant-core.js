@@ -18,7 +18,7 @@ const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const number=x=>finite(Number(x))?Number(x):0;
 const validTime=x=>{if(typeof x!=='string'||!x.trim())return null;const t=Date.parse(x);return Number.isFinite(t)?t:null};
 const arr=x=>Array.isArray(x)?x:[];
-const shared=()=>typeof MuscleFatigueCore!=='undefined'?MuscleFatigueCore:(typeof module==='object'&&module.exports&&typeof require==='function'?require('../../muscle-fatigue-core.js'):globalThis.MuscleFatigueCore);
+const shared=()=>typeof MuscleFatigueCore!=='undefined'?MuscleFatigueCore:(typeof module==='object'&&module.exports&&typeof require==='function'?require('../muscle-fatigue-core.js'):globalThis.MuscleFatigueCore);
 const planMuscles=(plan,exercises)=>shared().planMuscles(plan,exercises);
 const sessionImpulse=(s,exercises)=>shared().sessionImpulse(s,exercises);
 const fatigueByMuscle=(sessions,exercises,now)=>shared().fatigue(sessions,exercises,now);

@@ -1,0 +1,38 @@
+/* Mobile Sport Performance theme harmonization. Presentation only. */
+:root{background-color:#07121b;color-scheme:dark}
+html{min-height:100%;background:#07121b}
+body.sport-performance{min-height:100vh;min-height:100dvh;background-color:#07121b!important}
+body.sport-performance main{min-height:100vh;min-height:100dvh}
+@supports(padding-bottom:env(safe-area-inset-bottom)){
+ body.sport-performance main{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+}
+/* Uniform cyan primary action for the legacy free-workout entry point. */
+body.sport-performance #manualStart button:not(.secondary),
+body.sport-performance #preWorkout button:not(.secondary){
+ background:#23def4!important;color:#06212b!important;border:1px solid #42e5f5!important;
+ box-shadow:none!important;font-weight:800;
+}
+body.sport-performance #manualStart button:not(.secondary):active,
+body.sport-performance #preWorkout button:not(.secondary):active{background:#16bfd7!important}
+/* Five navigation destinations: balanced rows instead of an orphan fifth button. */
+body.sport-performance .top-start-nav{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:8px!important;
+}
+body.sport-performance .top-start-nav button{min-height:52px!important}
+@media(min-width:640px){
+ body.sport-performance .top-start-nav{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+}
+/* Do not show Start as selected while another section is visible. */
+body.sport-performance:has(#plans:not(.hidden)) .top-start-nav button:first-child,
+body.sport-performance:has(#catalog:not(.hidden)) .top-start-nav button:first-child,
+body.sport-performance:has(#history:not(.hidden)) .top-start-nav button:first-child,
+body.sport-performance:has(#progress:not(.hidden)) .top-start-nav button:first-child,
+body.sport-performance:has(#workout:not(.hidden)) .top-start-nav button:first-child{
+ background:#111f2a!important;color:#b9c9d5!important;border-color:#2a4050!important;box-shadow:none!important;
+}
+body.sport-performance:has(#progress:not(.hidden)) .top-start-nav button:nth-child(5){
+ background:#103441!important;color:#23def4!important;border-color:#12a5c0!important;
+ box-shadow:inset 0 -3px 0 #23def4!important;
+}
+/* Respect the atlas picker background: its image assets were authored for that canvas. */
