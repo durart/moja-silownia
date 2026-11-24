@@ -38,8 +38,8 @@ function build(sessions,exercises,profile,days=84){
  const weightChange=weightRows.length>1?Number(weightRows.at(-1).weightKg)-Number(weightRows[0].weightKg):null;
  const standard=period.filter(s=>!core.isRecovery(s));
  const exerciseRows=ids.map(id=>{const rows=core.exerciseSessions(period,id).filter(r=>r.sessionMode==='standard');const first=rows.find(r=>r.comparableOneRM!==null),last=rows.filter(r=>r.comparableOneRM!==null).at(-1);const delta=first&&last&&first!==last&&first.comparableOneRM>0?(last.comparableOneRM/first.comparableOneRM-1)*100:null;return {id,name:names.get(id)||id,volume:core.volume(work.filter(s=>s.exerciseId===id)),first,last,delta,rows}}).sort((a,b)=>b.volume-a.volume);
- const top=exerciseRows.slice(0,3);
- const best=top[0];const values=best?best.rows.map(r=>r.comparableOneRM):[];
+ const top=exerciseRows.filter(x=>x.rows.some(r=>Number.isFinite(r.comparableOneRM))).slice(0,3);
+ const comparison=top.map((x,i)=>'<div class="report-comparison"><h4>'+esc(x.name)+'</h4>'+chart(x.rows.map(r=>r.comparableOneRM),['#10b981','#06b6d4','#a78bfa'][i],x.rows.map(r=>dateLabel(r.date||r.timestamp)))+'</div>').join('');
  const group=new Map();for(const s of work){const g=(exercises||[]).find(e=>e.id===s.exerciseId)?.group||'Inne';const v=group.get(g)||{sets:0,volume:0};v.sets++;v.volume+=Number(s.weight)*Number(s.reps);group.set(g,v)}
  const maxGroup=Math.max(1,...[...group.values()].map(v=>v.sets));
  const muscle=[...group].sort((a,b)=>b[1].sets-a[1].sets).map(([g,v])=>'<div class="report-muscle"><div><b>'+esc(g)+'</b><span>'+v.sets+' serii · '+fmt(v.volume)+' kg</span></div><div class="report-meter"><i style="width:'+Math.round(v.sets/maxGroup*100)+'%"></i></div></div>').join('')||'<p class="report-empty">Brak serii roboczych.</p>';
@@ -48,12 +48,25 @@ function build(sessions,exercises,profile,days=84){
  const atlas=group.size&&root.MuscleAnatomyArt&&atlasModel.length?'<div class="report-atlas">'+root.MuscleAnatomyArt.renderAtlas(atlasModel)+'</div><p class="report-hint">Kolory pokazują względną liczbę serii w wybranym okresie, nie zmęczenie ani normy treningowe.</p>':'';
  const rows=exerciseRows.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+fmt(x.first?.comparableOneRM,1)+'</td><td>'+fmt(x.last?.comparableOneRM,1)+'</td><td>'+ (x.delta===null?'—':(x.delta>0?'+':'')+fmt(x.delta,1)+'%')+'</td><td>'+fmt(x.volume)+' kg</td></tr>').join('');
  return '<div class="report-dashboard"><div class="report-heading"><div><h2>Raport postępów treningowych</h2><p>Ostatnie '+days+' dni · dane z historii treningów</p></div><div class="report-range">'+[[28,'4 tygodnie'],[84,'12 tygodni'],[168,'6 miesięcy']].map(([n,l])=>'<button type="button" class="'+(n===days?'active':'')+'" onclick="progressReportDays('+n+')">'+l+'</button>').join('')+'</div></div>'+
- '<div class="report-kpis">'+kpi('Łączny tonaż',fmt(volume)+' kg',diff===null?'Brak okresu porównawczego':(diff>0?'+':'')+fmt(diff,1)+'% vs poprzedni okres')+kpi('Treningi',fmt(period.length),fmt(standard.length)+' standardowych')+kpi('Serie robocze',fmt(work.length),fmt(ids.length)+' ćwiczeń')+kpi('Czas treningów',fmt(duration/3600,1)+' h','Z zapisanych czasów sesji')+'</div>'+
- '<div class="report-grid">'+panel('Progresja siłowa — e1RM',best?'<p class="report-hint">'+esc(best.name)+' · tylko wiarygodne serie standardowe</p>'+chart(values,'#10b981',best.rows.map(r=>dateLabel(r.date||r.timestamp))):'<p class="report-empty">Brak danych e1RM.</p>','wide')+
+ '<div class="report-export"><button type="button" onclick="progressReportExport()">Eksport CSV</button><button type="button" onclick="window.print()">Drukuj / zapisz PDF</button></div><div class="report-kpis">'+kpi('Łączny tonaż',fmt(volume)+' kg',diff===null?'Brak okresu porównawczego':(diff>0?'+':'')+fmt(diff,1)+'% vs poprzedni okres')+kpi('Treningi',fmt(period.length),fmt(standard.length)+' standardowych')+kpi('Serie robocze',fmt(work.length),fmt(ids.length)+' ćwiczeń')+kpi('Czas treningów',fmt(duration/3600,1)+' h','Z zapisanych czasów sesji')+'</div>'+
+ '<div class="report-grid">'+panel('Progresja siłowa — e1RM',top.length?'<p class="report-hint">Do trzech ćwiczeń o największym tonażu z wiarygodnym e1RM. Każdy wykres ma własną skalę.</p>'+comparison:'<p class="report-empty">Brak danych e1RM.</p>','wide')+
  panel('Obciążenie partii mięśniowych','<p class="report-hint">Serie robocze według głównej partii ćwiczenia; bez sztucznych norm MAV.</p>'+atlas+muscle)+
  panel('Tonaż tygodniowy','<p class="report-hint">Objętość z zapisanych serii, łącznie z rozgrzewką.</p>'+chart(volumes,'#8b5cf6',wk.map(x=>dateLabel(x[0]))))+
  panel('Masa ciała',weightRows.length?'<p class="report-hint">Zmiana: '+(weightChange===null?'za mało pomiarów':(weightChange>0?'+':'')+fmt(weightChange,1)+' kg')+'</p>'+chart(weightRows.map(x=>Number(x.weightKg)),'#06b6d4',weightRows.map(x=>dateLabel(x.date))):'<p class="report-empty">Brak pomiarów masy ciała w tym okresie.</p>')+
  panel('Dziennik ćwiczeń','<div class="report-mobile-exercises">'+mobileRows+'</div><div class="report-table-wrap"><table><thead><tr><th>Ćwiczenie</th><th>e1RM start</th><th>e1RM koniec</th><th>Zmiana</th><th>Tonaż</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="report-hint">e1RM wyliczane z porównywalnych serii. Brak danych oznaczono kreską.</p>','full')+'</div></div>';
 }
-root.ProgressReportDashboard=Object.freeze({build});
+function csvCell(value){let v=String(value??'');if(/^[\s]*[=+@-]/.test(v)&&typeof value!=='number')v="'"+v;return '"'+v.replace(/"/g,'""')+'"';}
+function csv(sessions,exercises,days=84){
+ const core=root.ProgressCore,now=Date.now(),names=new Map((exercises||[]).map(e=>[e.id,e.name]));
+ const rows=[['Data','Ćwiczenie','Ciężar (kg)','Powtórzenia','RIR','Typ serii']];
+ for(const session of core.clean(sessions).filter(s=>date(s)>=now-days*86400000&&date(s)<=now)){
+  for(const set of session.sets.filter(core.validSet))rows.push([session.date,names.get(set.exerciseId)||set.exerciseId,Number(set.weight),Number(set.reps),set.rir??'',core.working(set)?'Robocza':'Rozgrzewka']);
+ }
+ return '\uFEFF'+rows.map(row=>row.map(csvCell).join(';')).join('\r\n');
+}
+function download(sessions,exercises,days){
+ const url=URL.createObjectURL(new Blob([csv(sessions,exercises,days)],{type:'text/csv;charset=utf-8'}));
+ const a=document.createElement('a');a.href=url;a.download='raport-treningowy-'+days+'-dni.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+root.ProgressReportDashboard=Object.freeze({build,csv,download});
 })(typeof window!=='undefined'?window:globalThis);
