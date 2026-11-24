@@ -19,7 +19,8 @@ const code=[
  fragment('function focusPlanExercise(id){','let extraRows={};'),
  fragment('let planUndoDrafts={};','function startManualWorkoutNow(){'),
  fragment('function saveManualRow(id,j){','function renderToday(){'),
- fragment('function finishWorkout(){','function addFromCatalog(id){')
+ fragment('function finishWorkout(){','function addFromCatalog(id){'),
+ fragment('function setTypePicker(row,type){','function readRir(id){')
 ].join('\n');
 const exercise=id=>({id,name:id,group:'Plecy',equipment:'Maszyna'});
 function setup(){

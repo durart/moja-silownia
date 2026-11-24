@@ -22,7 +22,7 @@ module.exports=async function trainerBrowserSmoke(){
    try{
     const page=await context.newPage(),url='http://127.0.0.1:'+server.address().port+'/';
     const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',dialog=>dialog.accept());
-    const seed={exercises:[{id:'bench',name:'Wyciskanie testowe',equipment:'Sztanga',group:'Klatka piersiowa'},{id:'new-exercise',name:'Nowe ćwiczenie',equipment:'Maszyna',group:'Plecy'}],plans:[{id:17,name:'Plan testowy',exerciseIds:['bench'],targets:[{sets:4,reps:'8–12'}]}],active:[],sessions:[{id:1,date:'2026-11-23T12:00:00Z',sets:[{exerciseId:'bench',weight:20,reps:10,rir:5,setType:'R'},{exerciseId:'bench',weight:60,reps:12,rir:4},{exerciseId:'bench',weight:70,reps:12,rir:4},{exerciseId:'bench',weight:70,reps:12,rir:4}]}]};
+    const seed={exercises:[{id:'bench',name:'Wyciskanie testowe',equipment:'Sztanga',group:'Klatka piersiowa'},{id:'new-exercise',name:'Nowe ćwiczenie',equipment:'Maszyna',group:'Plecy'}],plans:[{id:17,name:'Plan testowy',exerciseIds:['bench'],targets:[{sets:4,reps:'8–12'}]}],active:[],sessions:[{id:1,date:new Date(Date.now()-86400000).toISOString(),sets:[{exerciseId:'bench',weight:20,reps:10,rir:5,setType:'R'},{exerciseId:'bench',weight:60,reps:12,rir:4},{exerciseId:'bench',weight:70,reps:12,rir:4},{exerciseId:'bench',weight:70,reps:12,rir:4}]}]};
     await page.addInitScript(seed=>{if(!localStorage.getItem('moja-silownia-v01'))localStorage.setItem('moja-silownia-v01',JSON.stringify(seed));},seed);
     await page.goto(url);
     await page.waitForFunction(()=>!!window.MojaTrainerWorkoutUI&&!!window.MojaSilowniaModules);
