@@ -98,6 +98,7 @@
       '<p class="profile-small">Profil oraz pełna historia pomiarów są dołączane do standardowej kopii JSON razem z treningami, planami i ustawieniami.</p>' +
       '<button type="button" class="secondary" onclick="tab(\'history\')">Przejdź do eksportu / importu JSON</button></div>';
     renderStrength(weight);
+    window.MojaTrainerWorkoutUI?.renderSettings(root);
   }
 
   function persistProfile(next, confirmation) {
