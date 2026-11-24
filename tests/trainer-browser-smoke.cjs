@@ -64,7 +64,7 @@ module.exports=async function trainerBrowserSmoke(){
     await page.evaluate(()=>{startManualWorkout();confirmWorkoutStart();});
     assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before,'staging does not touch production state');
     assert.ok(await page.evaluate(()=>localStorage.getItem('moja-silownia-preview-v01')));
-    assert.match(await page.title(),/TEST v3.1.0/);
+    assert.match(await page.title(),/TEST v3\.1\.1/);
     assert.deepEqual(errors,[]);
    }finally{await context.close();}
   }
