@@ -68,3 +68,7 @@ test('history, plan and exercise are not mutated',()=>{
 test('set count bounded for malformed import',()=>{
   assert.equal(prepare({exercise,target:{sets:1000000,reps:'10'}}).rows.length,30);
 });
+
+test('plan with no explicit targets defaults to three rows when there is no history',()=>{assert.equal(prepare({exercise,slotIndex:0}).rows.length,3);});
+test('pain note without a completed set still blocks automatic loading',()=>{const sessions=[session([],{exerciseNotes:{bench:{flag:'pain'}}}),session([row(70),row(70)],{date:'2026-11-20T12:00:00Z'})];assert.equal(prepare({exercise,target,sessions}).rows[0].weight,null);});
+test('completed out-of-order plan rows retain their intended pyramid order',()=>{const rows=[{...row(70),planSetIndex:2,planSlotIndex:0,planId:17},{...row(20,15,5,'R'),planSetIndex:0,planSlotIndex:0,planId:17},{...row(60),planSetIndex:1,planSlotIndex:0,planId:17}];const result=prepare({exercise,target,sessions:[session(rows)],planId:17,slotIndex:0});assert.deepEqual(result.rows.slice(0,3).map(r=>r.weight),[20,60,70]);assert.equal(result.rows[0].reps,15);});

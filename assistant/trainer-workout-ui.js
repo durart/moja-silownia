@@ -21,11 +21,15 @@
   function capture(id,slot,index,actual){return drafts.capture(state,id,slot,index,actual);}
   function append(id,slot,previous){return drafts.append(state,id,slot,previous);}
   function removeRow(id,slot,index,completed) {
-    if(!drafts.removeRow(state,id,slot,index))return false;
+    const record=drafts.get(state,id,slot);
+    if(!record||!drafts.row(state,id,slot,index))return null;
+    const previousRows=structuredClone(record.rows),previousActive=structuredClone(state.active);
+    if(!drafts.removeRow(state,id,slot,index))return null;
     const item=completed[index];
     if(item)state.active=state.active.filter(x=>x!==item);
     const key=Number.isInteger(slot)?'planSetIndex':'manualSetIndex';
     completed.forEach((set,i)=>{if(set&&i>index)set[key]=i-1;});
+    if(!save()){record.rows=previousRows;state.active=previousActive;return false;}
     return true;
   }
   function removeExercise(id,slot){return drafts.removeExercise(state,id,slot);}

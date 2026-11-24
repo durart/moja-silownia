@@ -36,13 +36,15 @@ function makeCard(exerciseId,options={}){
  const lowBattery=pre.battery!=null&&pre.battery!==''&&Number(pre.battery)<30;
  const lowSleepScore=pre.sleepScore!=null&&pre.sleepScore!==''&&Number(pre.sleepScore)<50;
  const cautionToday=lowFeeling||shortSleep||lowBattery||lowSleepScore;
- const meta=guidance(result),box=document.createElement('section');
+ const prepared=options.prepared;
+ const reasons={recovery:'Trening regeneracyjny: nie zwiększam obciążenia. Gdy nie ma porównywalnej sesji regeneracyjnej, wybierz lekki ciężar samodzielnie.',review:'Ból, technika lub zmiana sprzętu wymagają ręcznej weryfikacji obciążenia.',readiness:'Dzisiejsze samopoczucie lub sen ograniczają progresję.',plan:'Brak porównywalnej historii. Uzupełniam tylko znane parametry planu.',history:'Wykorzystuję porównywalne, zakończone serie. Zachowuję układ ciężarów.'};
+ const meta=prepared&&reasons[prepared.reason]?{label:prepared.reason==='recovery'?'Trening regeneracyjny':prepared.reason==='review'?'Sprawdź obciążenie':'Przygotowanie serii',tone:prepared.reason==='review'||prepared.reason==='readiness'?'caution':'steady'}:guidance(result),box=document.createElement('section');
  box.className='advisor-progression advisor-'+meta.tone;box.setAttribute('aria-label','Wskazówka progresji treningowej');
  const eyebrow=document.createElement('span');eyebrow.className='advisor-progression-overline';eyebrow.textContent='ASYSTENT · PROGRESJA';
  const title=document.createElement('strong');title.textContent=meta.label;
- const reason=document.createElement('p');reason.textContent=result.reason;
+ const reason=document.createElement('p');reason.textContent=prepared&&reasons[prepared.reason]?reasons[prepared.reason]+' '+result.reason:result.reason;
  box.append(eyebrow,title,reason);
- if(result.action==='consider_increase'&&Number.isFinite(result.increment)){
+ if(result.action==='consider_increase'&&Number.isFinite(result.increment)&&(!prepared||prepared.reason==='progression')){
   const detail=document.createElement('small');
   detail.textContent='Ścieżka: '+({FAST_TRACK_1_SESSION:'szybka',ACCELERATED_2_SESSIONS:'przyspieszona',E1RM_TREND_CONFIRMED:'trend e1RM',REPS_TREND_CONFIRMED:'trend powtórzeń',STANDARD_3_SESSIONS:'standardowa'}[result.path]||'standardowa')+' • sugerowany skok: +'+result.increment+' kg';
   box.append(detail);
@@ -103,7 +105,10 @@ function decorate(root,mode){
    const plan=state.plans.find(p=>p.id===state.activePlan);
    return slot?plan?.targets?.[Number(slot[1])]:null;
   })():null;
-  const cardNode=makeCard(id,numberRange(target));
+  const planInput=card.querySelector('input[id^="r_"][id$="_w"]');
+  const slotMatch=planInput?.id.match(/^r_(\d+)_\d+_w$/);
+  const prepared=window.MojaTrainerDrafts?.get(state,id,slotMatch?Number(slotMatch[1]):null);
+  const cardNode=makeCard(id,{...numberRange(target),prepared});
   if(window.MojaTrainerDrafts?.active(state)){
    if(!window.MojaTrainerDrafts.settings(state).explanation)continue;
    const label=document.createElement('small');label.textContent='Asystent przygotował edytowalne serie. RIR wpisz po wykonaniu.';cardNode.prepend(label);

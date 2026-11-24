@@ -41,6 +41,8 @@
           const samePlan = sets.filter(row => row.planId === context.planId);
           if (samePlan.length) sets = samePlan.filter(row => row.planSlotIndex === context.slotIndex);
         }
+        if (sets.length && sets.every(row => Number.isInteger(row.planSetIndex)) && new Set(sets.map(row=>row.planSetIndex)).size===sets.length) sets.sort((a,b)=>a.planSetIndex-b.planSetIndex);
+        else if (sets.length && sets.every(row => Number.isInteger(row.manualSetIndex)) && new Set(sets.map(row=>row.manualSetIndex)).size===sets.length) sets.sort((a,b)=>a.manualSetIndex-b.manualSetIndex);
         return { ...s, sets };
       })
       .filter(s => s.sets.some(row => !warmup(row)))
@@ -63,7 +65,7 @@
     const bodyweight = /^(?:masa ciała|ciężar własny|bodyweight|bez obciążenia)$/i.test(String(exercise.equipmentType ?? exercise.equipment ?? ''));
     const equipment = exercise.equipmentType ?? exercise.equipment;
     const equipmentType = supportedEquipment.has(equipment) ? equipment : 'unknown';
-    const count = clamp(integer(target?.sets) ?? (Array.isArray(target?.setDetails) && target.setDetails.length ? target.setDetails.length : null) ?? (prior.length || (target ? 3 : 1)), 1, MAX_SETS);
+    const count = clamp(integer(target?.sets) ?? (Array.isArray(target?.setDetails) && target.setDetails.length ? target.setDetails.length : null) ?? (prior.length || (target || Number.isInteger(slotIndex) ? 3 : 1)), 1, MAX_SETS);
     const overall = repRange(target?.reps);
     // A free workout uses the last demonstrated rep range, not a universal 8–12 goal.
     const topRows = standardRows.filter(row => !warmup(row));
@@ -72,7 +74,7 @@
     const inferred = topReps.length ? { min: Math.min(...topReps), max: Math.max(...topReps) } : { min: 8, max: 12 };
     const range = overall ?? inferred;
     const advice = progression.suggest(history, exercise.id, { minReps: range.min, maxReps: range.max, equipmentType, equipmentStepKg: exercise.equipmentStepKg });
-    const recentFlag = history.slice(0,5).some(s => flags.has(s.exerciseNotes?.[exercise.id]?.flag));
+    const recentFlag = (Array.isArray(sessions) ? sessions : []).filter(s => typeof s?.date === 'string' && Number.isFinite(Date.parse(s.date)) && (s.exerciseNotes?.[exercise.id] || validRows(s,exercise.id).length)).sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,5).some(s => flags.has(s.exerciseNotes?.[exercise.id]?.flag));
     const caution = recentFlag || flags.has(activeFlag) || readinessCaution(preWorkout);
     const hasTimedTarget = /\b(?:s|sek\.?|sekund|min\.?|maks\.?)\s*$/i.test(String(target?.reps ?? ''));
     const mayIncrease = !isRecovery && !caution && !hasTimedTarget && advice.action === 'consider_increase' && Number.isFinite(advice.suggestedWeight) && (overall !== null || target?.reps == null || target?.reps === '');
@@ -82,7 +84,7 @@
       const isWarmup = detail?.setType === 'R' || detail?.type === 'warmup' || (detail?.setType !== 'W' && detail?.type !== 'working' && warmup(previous));
       const range = targetRange(target, i);
       let kg = weight(previous?.weight) ?? weight(detail?.weight) ?? weight(target?.weight);
-      let reps = range ? (previous ? clamp(Number(previous.reps),range.min,range.max) : range.min) : integer(previous?.reps);
+      let reps = isWarmup && previous && !detail?.reps ? integer(previous.reps) : range ? (previous ? clamp(Number(previous.reps),range.min,range.max) : range.min) : integer(previous?.reps);
       if (hasTimedTarget || (detail?.reps != null && !range)) reps = null;
       if (bodyweight && kg === null) kg = 0;
       if (recentFlag || flags.has(activeFlag)) { if (!bodyweight) kg = null; }
