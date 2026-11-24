@@ -35,7 +35,7 @@ test('data key and profile 1.9 remain unchanged while 2.0 gets a new PWA shell',
   assert.match(index, /id="profileContent"/);
   assert.match(index, /profile-core\.js\?v=190/);
   assert.match(index, /profile-ui\.js\?v=190/);
-  assert.match(sw, /moja-silownia-shell-v41-progress-3\.0\.0/);
+  assert.match(sw, /moja-silownia-shell-v42-progress-3\.0\.0/);
   assert.match(sw, /profile-core\.js\?v=190/);
   assert.match(sw, /modules\/state-storage\.js/);
   assert.match(index, /state\.profile/);
