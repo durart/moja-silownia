@@ -40,3 +40,6 @@
 }
 
 .report-atlas{max-width:560px;margin:0 auto 12px}.report-atlas svg{display:block;width:100%;height:auto}.report-atlas .mm-muscle{pointer-events:none}
+
+.report-export{display:flex;gap:8px;flex-wrap:wrap}.report-comparison{margin:12px 0 20px}.report-comparison h4{margin:0;color:#e4e4e7;font-size:.85rem}
+@media print{body *{visibility:hidden} .report-dashboard,.report-dashboard *{visibility:visible} .report-dashboard{position:absolute;left:0;top:0;width:100%;color:#111;background:white;display:block} .report-dashboard .report-export,.report-dashboard .report-range{display:none} .report-dashboard .report-panel,.report-dashboard .report-kpi{break-inside:avoid;print-color-adjust:exact;background:#18181b;margin:8px 0} .report-dashboard .report-table-wrap{display:block!important} .report-dashboard .report-mobile-exercises{display:none!important} .report-dashboard .report-grid{display:block}}
