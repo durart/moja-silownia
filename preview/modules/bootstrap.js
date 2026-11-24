@@ -1,8 +1,8 @@
 // Progressive ES module entry point. Classic inline UI remains compatible during migration.
-import {detectRecords,isWorkingSet} from '../../modules/records.js';
-import {serializeBackup,parseBackup,isValidBackup,chooseBackup} from '../../modules/storage.js';
-import {validState,readState,selectInitialState,normalizeBaseState,recoverActiveState} from '../../modules/state-core.js';
-import {createStateStorage} from '../../modules/state-storage.js';
+import {detectRecords,isWorkingSet} from './records.js';
+import {serializeBackup,parseBackup,isValidBackup,chooseBackup} from './storage.js';
+import {validState,readState,selectInitialState,normalizeBaseState,recoverActiveState} from './state-core.js';
+import {createStateStorage} from './state-storage.js';
 const stateStorage=createStateStorage(window.localStorage,{key:'moja-silownia-preview-v01'});
 const modules=Object.freeze({
  state:Object.freeze({validState,readState,selectInitialState,normalizeBaseState,recoverActiveState}),

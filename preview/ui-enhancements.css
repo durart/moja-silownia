@@ -1,0 +1,109 @@
+/* Moja Siłownia v1.6.0 — a consistent purple theme and unified anatomical exercise selector. */
+:root{--ui-bg:#332d45;--ui-surface:#413952;--ui-surface-2:#4d415f;--ui-border:#736581;--ui-fg:#faf8ff;--ui-sub:#d4ccdc;--ui-list:#e8e8eb;--ui-list-fg:#303139}
+html,body{background:var(--ui-bg)!important;color:var(--ui-fg)!important}
+main{background:transparent!important}
+.card,.exercise-card,.completed-exercise,.swap-sheet,.tech-sheet{background:var(--ui-surface)!important;border-color:var(--ui-border)!important;color:var(--ui-fg)}
+.card p,.exercise-card p, .card small,.exercise-card small,.hint,.muted{color:var(--ui-sub)}
+input:not([type="checkbox"]),select,textarea,#plans #importText,#plans #importFile{background:#2b263b!important;border-color:#877990!important;color:#fff!important}
+input::placeholder,textarea::placeholder{color:#c2b8d0}
+button.secondary,.swap-option{background:#574a69!important;color:#fff!important}
+#dashboard .dashboard-hero{background:linear-gradient(115deg,#57496b,#44394f)!important;border-color:#7e6a93}
+.dashboard-stats>div,#dashboard .dashboard-stats>div,#dashboard .metric-tabs button{background:var(--ui-surface-2)!important}
+#plans .imp-row,#plans .imp-plan,#manualToday .hevy-card{background:var(--ui-surface)!important;border-color:var(--ui-border)!important}
+#manualToday .hevy-add,#dashboard .dash-details{background:#534763!important}
+#manualWorkout,.pick-search{border-color:#877990!important}
+#exercisePicker{background:var(--ui-bg)!important}
+#exercisePicker .pick-tile .pick-source-image{background-image:var(--anatomy-art)!important;background-color:var(--ui-bg)!important}
+#exercisePicker .pick-results{background:var(--ui-list)!important;color:var(--ui-list-fg)!important}
+/* The thumbnails are cropped from user-provided exercise screenshots. Exactly 8 x 13 cells. */
+.ui-thumb-sprite{width:102px;height:95px;display:block;flex:none;background:url('./assets/all-exercise-thumbnails.webp?v=160') no-repeat;background-size:800% 1300%;background-color:var(--ui-list)}
+.ui-thumb-fallback{width:98px;height:95px;display:block;flex:none;background-image:var(--anatomy-art)!important;background-size:300% 400%;background-repeat:no-repeat;background-color:var(--ui-list)}
+#exercisePicker .pick-thumb:has(.ui-thumb-sprite),#exercisePicker .pick-thumb:has(.ui-thumb-fallback){flex:0 0 103px;height:97px}
+#exercisePicker .pick-row:has(.ui-thumb-sprite){min-height:100px}
+#exercisePicker .pick-exercise-name{font-weight:600;font-size:.98rem;color:var(--ui-list-fg)}
+#exercisePicker .pick-exercise-name small{font-weight:400;color:#646578}
+/* Catalog has the same 3 x 4 layout, sizing and color as the training picker. */
+#catalog{color:var(--ui-fg)}
+#catalog .catalog-explorer{max-width:780px;margin:0 auto;padding:9px 4px 15px;background:transparent}
+#catalog .catalog-header{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;margin:10px 0 20px;min-height:48px}
+#catalog .catalog-header h2{font-weight:500;font-size:clamp(1.22rem,3.4vw,1.65rem);color:#fff;margin:0;text-align:center}
+#catalog .catalog-header button{font-size:1.65rem;color:#fff;border:0;background:transparent;padding:7px 2px}
+#catalog .catalog-header button[hidden]{visibility:hidden!important;display:block!important}
+#catalog .catalog-search{display:flex;align-items:center;gap:9px;border-bottom:1px solid #8e849d;padding:0 4px;margin-bottom:18px}
+#catalog .catalog-search .catalog-search-icon{font-size:1.45rem;color:#fff}
+#catalog .catalog-search input{border:0!important;background:transparent!important;min-width:0;flex:1;padding:12px 3px;margin:0;font-size:1rem;box-shadow:none;color:#fff!important}
+#catalog .catalog-search button{font-size:1.3rem;min-width:42px;background:transparent;padding:10px 3px;color:#efeaf5}
+#catalog #muscleTiles.catalog-muscle-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px 7px;margin:10px 0 18px}
+#catalog #muscleTiles[hidden],#catalog #catalogList[hidden]{display:none!important}
+#catalog .catalog-muscle-button{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;min-height:168px;padding:2px 3px 11px;background:transparent!important;border:0;border-bottom:1px solid #aca2ba!important;border-radius:0!important;color:#faf7ff;font-weight:500}
+#catalog .catalog-full-icon{display:block;width:min(100%,170px);aspect-ratio:1/1;flex:none;background:var(--anatomy-art) no-repeat;background-size:300% 400%;background-color:var(--ui-bg)}
+#catalog .catalog-full-icon.catalog-source-0{background-position:0% 0%}
+#catalog .catalog-full-icon.catalog-source-1{background-position:50% 0%}
+#catalog .catalog-full-icon.catalog-source-2{background-position:100% 0%}
+#catalog .catalog-full-icon.catalog-source-3{background-position:0% 33.3333%}
+#catalog .catalog-full-icon.catalog-source-4{background-position:50% 33.3333%}
+#catalog .catalog-full-icon.catalog-source-5{background-position:100% 33.3333%}
+#catalog .catalog-full-icon.catalog-source-6{background-position:0% 66.6667%}
+#catalog .catalog-full-icon.catalog-source-7{background-position:50% 66.6667%}
+#catalog .catalog-full-icon.catalog-source-8{background-position:100% 66.6667%}
+#catalog .catalog-full-icon.catalog-source-9{background-position:0% 100%}
+#catalog .catalog-full-icon.catalog-source-10{background-position:50% 100%}
+#catalog .catalog-full-icon.catalog-source-11{background-position:100% 100%}
+#catalog .catalog-muscle-button strong{font-size:.92rem;line-height:1.22;font-weight:600;text-align:center;overflow-wrap:anywhere}
+#catalog .catalog-muscle-button small{font-size:.73rem;color:#e2dbe9}
+#catalog .catalog-exercise-list{background:var(--ui-list);border-radius:17px;padding:4px 12px;color:var(--ui-list-fg);overflow:hidden}
+#catalog .catalog-count{font-size:.76rem;color:#676779;margin:7px 6px 9px}
+#catalog .catalog-exercise-row{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:stretch;gap:3px;border-bottom:1px solid #bbb9c0;min-height:98px}
+#catalog .catalog-exercise-row:last-child{border-bottom:0}
+#catalog .catalog-exercise-main{display:flex;align-items:center;gap:10px;text-align:left;width:100%;min-width:0;padding:3px;border:0;background:transparent;color:var(--ui-list-fg);font-weight:600}
+#catalog .catalog-thumb{flex:0 0 102px;min-width:0;height:96px;display:flex;align-items:center;justify-content:center}
+#catalog .catalog-exercise-label{font-size:.98rem;line-height:1.3;overflow-wrap:anywhere;min-width:0}
+#catalog .catalog-exercise-label small{display:block;font-size:.71rem;font-weight:400;color:#6d6976;margin-top:5px;line-height:1.35}
+#catalog .catalog-technique{background:transparent;color:#34363c;border:0;font-size:1.5rem;padding:5px 1px;min-width:37px}
+#catalog .catalog-empty{padding:30px 10px;text-align:center;color:#666475}
+#catalog .catalog-exercise-main:focus-visible,#catalog .catalog-muscle-button:focus-visible{outline:3px solid #7daaf4;outline-offset:2px}
+#catalog details.catalog-add-custom{border:1px solid #75687f;border-radius:14px;background:var(--ui-surface);padding:14px 16px;margin-top:18px}
+#catalog details.catalog-add-custom>summary{font-weight:650;cursor:pointer}
+#catalog details.catalog-add-custom[open]>summary{margin-bottom:14px}
+@media(max-width:440px){
+ #catalog .catalog-explorer{padding:5px 0 13px}
+ #catalog #muscleTiles.catalog-muscle-grid{gap:9px 5px}
+ #catalog .catalog-muscle-button{min-height:126px;padding:0 2px 9px}
+ #catalog .catalog-full-icon{width:min(100%,138px)}
+ #catalog .catalog-muscle-button strong{font-size:.79rem}
+ #catalog .catalog-muscle-button small{font-size:.67rem}
+ #catalog .catalog-exercise-list{padding:3px 8px}
+ #catalog .catalog-thumb{flex-basis:78px;height:78px}
+ #catalog .ui-thumb-sprite,#catalog .ui-thumb-fallback{width:76px;height:73px}
+ #catalog .catalog-exercise-main{gap:6px}
+ #catalog .catalog-exercise-label{font-size:.89rem}
+ #catalog .catalog-exercise-label small{font-size:.68rem}
+ #exercisePicker .ui-thumb-sprite,#exercisePicker .ui-thumb-fallback{width:76px;height:73px}
+ #exercisePicker .pick-thumb:has(.ui-thumb-sprite),#exercisePicker .pick-thumb:has(.ui-thumb-fallback){flex:0 0 78px;height:76px}
+}
+/* v1.6.1 — tylko Start w górnym menu; dostęp do funkcji w dolnych skrótach oraz na ekranie głównym */
+.top-start-nav{display:flex;justify-content:flex-start;margin:12px 0 18px;gap:0}
+.top-start-nav button{flex:0 0 auto;min-width:118px;max-width:180px;padding:12px 22px}
+
+/* Wiersze z osobnymi celami dla każdej serii po imporcie */
+.imp-set-details{margin:12px 0 16px;padding:12px;border:1px solid #8a779e;border-radius:12px;background:#322a41}
+.imp-set-summary{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.imp-set-summary label{flex:0 0 96px}
+.imp-set-summary span{font-size:.87rem;color:#d9cbe8}
+.imp-set-line{display:grid;grid-template-columns:58px minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:end;padding:9px 0;border-top:1px solid #6d617f}
+.imp-set-line b{font-size:.82rem;align-self:center}
+.imp-set-line input{width:100%;min-width:0}
+.plan-targets-preview{margin:5px 0 12px 12px;padding:8px 10px;border-left:3px solid #9481b1;font-size:.85rem;color:#ded6e9}
+.plan-targets-preview>div{margin:3px 0}
+.plan-set-caption{font-size:.77rem;margin:1px 0 13px;color:#dfd3f1}
+@media(max-width:380px){.imp-set-line{grid-template-columns:48px minmax(0,1fr) minmax(0,1fr);gap:5px}.imp-set-line input{padding:8px 6px}}
+
+/* v1.6.3 — jedna nawigacja na górze, bez dublowania skrótów na dole Start */
+.top-start-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:14px 0 20px;overflow:visible}
+.top-start-nav button{width:100%;min-width:0;max-width:none;min-height:48px;flex:initial;margin:0;padding:10px 6px;border-radius:11px;font-size:clamp(.73rem,2.8vw,.9rem);line-height:1.17;white-space:normal;overflow-wrap:normal}
+.top-start-nav button:not(:first-child){background:#554968;color:#fff}
+.top-start-nav button:first-child{background:#2c84ef;color:#fff}
+@media(max-width:370px){.top-start-nav{gap:5px}.top-start-nav button{padding:9px 3px;font-size:.73rem}}
+
+/* Original anatomical thumbnails in Atlas (same assets as workout picker). */
+#catalog .catalog-thumb img{display:block;width:100%;height:100%;object-fit:contain;border-radius:8px}

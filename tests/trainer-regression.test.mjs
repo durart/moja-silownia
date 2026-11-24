@@ -1,0 +1,18 @@
+// Register the trainer unit suites in the existing Node regression workflow.
+import './trainer-preparation.test.cjs';
+import './trainer-drafts.test.cjs';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+test('the preparation modules load in order and are all cached',()=>{
+ const html=read('index.html'),sw=read('sw.js'),preview=read('preview/index.html'),psw=read('preview/sw.js');
+ const scripts=['assistant/assistant-progression.js?v=201','assistant/trainer-preparation.js?v=310','assistant/trainer-drafts.js?v=310','assistant/trainer-workout-ui.js?v=310'];
+ for(const [page,worker] of [[html,sw],[preview,psw]]){
+  let pos=-1;for(const script of scripts){const next=page.indexOf(script);assert.ok(next>pos,script);assert.ok(worker.includes(script));pos=next;}
+ }
+ assert.match(read('preview/modules/bootstrap.js'),/key:'moja-silownia-preview-v01'/);
+ assert.match(preview,/const key='moja-silownia-preview-v01'/);
+ assert.match(psw,/moja-silownia-preview-shell-v43-trainer-3\.1\.0/);
+ assert.match(html,/const key='moja-silownia-v01'/);
+});

@@ -54,3 +54,5 @@ test('activation removes only outdated application caches', async () => {
   await promise;
   assert.deepEqual(deleted, ['moja-silownia-shell-old']);
 });
+
+test('production worker never intercepts preview navigation',()=>{const {handlers}=setup();let responded=false;handlers.get('fetch')({request:{method:'GET',url:'https://example.test/moja-silownia/preview/',mode:'navigate'},respondWith(){responded=true;}});assert.equal(responded,false);});
