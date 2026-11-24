@@ -84,7 +84,7 @@
       const isWarmup = detail?.setType === 'R' || detail?.type === 'warmup' || (detail?.setType !== 'W' && detail?.type !== 'working' && warmup(previous));
       const range = targetRange(target, i);
       let kg = weight(previous?.weight) ?? weight(detail?.weight) ?? weight(target?.weight);
-      let reps = isWarmup && previous && !detail?.reps ? integer(previous.reps) : range ? (previous ? clamp(Number(previous.reps),range.min,range.max) : range.min) : integer(previous?.reps);
+      let reps = isWarmup && previous && !detail?.reps ? integer(previous.reps) : range ? (previous ? Math.min(Number(previous.reps),range.max) : range.min) : integer(previous?.reps);
       if (hasTimedTarget || (detail?.reps != null && !range)) reps = null;
       if (bodyweight && kg === null) kg = 0;
       if (recentFlag || flags.has(activeFlag)) { if (!bodyweight) kg = null; }
@@ -96,8 +96,9 @@
         kg = advice.suggestedWeight;
         if (range) reps = range.min;
         else reps = Math.min(Number(previous.reps), inferred.min);
-      } else if (!caution && !isRecovery && !isWarmup && range && previous && number(previous.rir) >= 2 && Number(previous.reps) < range.max) {
-        reps = Math.min(range.max, Math.max(range.min, Number(previous.reps) + 1));
+      } else if (!caution && !isRecovery && !isWarmup && previous && number(previous.rir) >= 2 && advice.action !== 'review' && (range ? Number(previous.reps) < range.max : !target && Number(previous.reps) < 30)) {
+        // Progress repetitions from actual performance; never force a missed lower goal.
+        reps = Math.min(range?.max ?? 30, Number(previous.reps) + 1);
       }
       if (!previous && !range && !hasTimedTarget) reps = null;
       return { weight: kg, reps, setType: isWarmup ? 'R' : 'W', targetRir: isWarmup || isRecovery ? 4 : 2 };
