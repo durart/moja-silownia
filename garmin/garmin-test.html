@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Garmin — test synchronizacji</title>
+<style>body{font:16px system-ui;background:#111827;color:#f3f4f6;margin:0}main{max-width:480px;margin:auto;padding:20px}section{background:#1f2937;padding:18px;border-radius:16px;margin:16px 0}input,button{box-sizing:border-box;width:100%;padding:12px;margin:8px 0;border-radius:8px;font:inherit}button{background:#67e8f9;color:#111827;border:0}dt{color:#a5b4fc}dd{margin:0 0 12px;font-size:22px}</style></head>
+<body><main><h1>Garmin Sync</h1><p>Środowisko testowe — wyłącznie dane fikcyjne.</p><section><form id="sync"><label for="token">Prywatny token synchronizacji</label><input id="token" type="password" autocomplete="off" required><button id="submit">Synchronizuj Garmin</button></form><p id="status" role="status"></p></section><section><h2>Regeneracja przed treningiem</h2><p id="timestamp"></p><dl id="metrics"></dl><button id="clear" type="button">Usuń dane testowe</button></section></main>
+<script type="module">
+import {syncMock} from "./garmin-sync.mjs";
+import {saveSnapshot,loadSnapshot,clearSnapshot} from "./garmin-storage.mjs";
+const byId = id => document.getElementById(id);
+function render(snapshot){
+  byId("metrics").replaceChildren();
+  byId("timestamp").textContent = snapshot ? "Ostatnia synchronizacja: "+new Date(snapshot.syncedAt).toLocaleString("pl-PL") : "Brak danych";
+  if(!snapshot)return;
+  const d=snapshot.data;
+  const metrics=[["Sen",Math.floor(d.sleepSeconds/3600)+" h "+Math.floor(d.sleepSeconds%3600/60)+" min"],["HRV",d.hrvMs+" ms"],["Body Battery",d.bodyBattery+"/100"],["Kroki",d.steps],["Masa ciała",d.weightKg+" kg"]];
+  for(const [label,value] of metrics){const dt=document.createElement("dt"),dd=document.createElement("dd");dt.textContent=label;dd.textContent=value;byId("metrics").append(dt,dd);}
+}
+byId("sync").addEventListener("submit",async event=>{
+  event.preventDefault();
+  const token=byId("token").value;byId("token").value="";
+  byId("submit").disabled=true;byId("clear").disabled=true;byId("status").textContent="Synchronizacja…";
+  try{const snapshot=await syncMock(token);saveSnapshot(snapshot);render(snapshot);byId("status").textContent="Zapisano dane testowe.";}
+  catch{byId("status").textContent="Synchronizacja nieudana. Sprawdź token, połączenie lub dostępność pamięci.";}
+  finally{byId("submit").disabled=false;byId("clear").disabled=false;}
+});
+byId("clear").addEventListener("click",()=>{try{clearSnapshot();render(null);byId("status").textContent="Usunięto dane testowe.";}catch{byId("status").textContent="Nie udało się usunąć danych.";}});
+render(loadSnapshot());
+</script></body></html>
