@@ -38,3 +38,5 @@
  .report-exercise-card dd{margin:4px 0 0;font-size:.9rem;color:#f4f4f5;font-weight:600}
  .report-chart-values{font-size:.72rem}
 }
+
+.report-atlas{max-width:560px;margin:0 auto 12px}.report-atlas svg{display:block;width:100%;height:auto}.report-atlas .mm-muscle{pointer-events:none}
