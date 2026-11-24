@@ -46,7 +46,7 @@ const root=path.resolve(__dirname,'..');
    await page.reload({waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>!!window.ProgressReportDashboard);
    assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before.raw,'offline reload preserves local state');
-   assert.match(await page.title(),/3\\.0\\.0/);
+   assert.ok((await page.title()).includes('3.0.0'));
    const names=await page.evaluate(()=>caches.keys());
    assert.ok(names.some(n=>n.includes('v42-progress-3.0.0')));
   }finally{await context.close();await new Promise(resolve=>server.close(resolve));}
