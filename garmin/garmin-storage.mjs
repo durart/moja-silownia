@@ -1,6 +1,6 @@
 import { validateMock } from "./garmin-sync.mjs";
 
-const KEY = "moja-silownia-garmin-mock-v1";
+const KEY = "moja-silownia-garmin-mock-v1" + (globalThis.location?.pathname.includes("/preview/") ? "-preview" : "-app");
 
 export function saveSnapshot(snapshot, storage = globalThis.localStorage) {
   const clean = validateMock({...snapshot, status: "ok", authenticated: true});
