@@ -8,3 +8,5 @@ test('report does not mutate session state',()=>{const s=[{date:new Date().toISO
 test('report time selector offers three ranges',()=>{const html=render();for(const label of ['4 tygodnie','12 tygodni','6 miesięcy'])assert.match(html,new RegExp(label))});
 
 test('report shows actual relative muscle distribution and mobile cards',()=>{const html=render([{date:new Date().toISOString(),sets:[{exerciseId:'x',weight:50,reps:10,rir:2,setType:'W'}]}],[{id:'x',name:'Test',group:'Klatka piersiowa'}]);assert.match(html,/class="report-atlas"/);assert.match(html,/nie zmęczenie/);assert.match(html,/<details class="report-exercise-card"/);});
+
+test('CSV export uses real rows and neutralizes spreadsheet formulas',()=>{const window={ProgressCore:core};vm.runInNewContext(source,{window,globalThis:window});const csv=window.ProgressReportDashboard.csv([{date:new Date().toISOString(),sets:[{exerciseId:'x',weight:50,reps:10}]}],[{id:'x',name:'=1+1'}]);assert.ok(csv.includes("'=1+1"));assert.ok(csv.includes('"50";"10"'));});
