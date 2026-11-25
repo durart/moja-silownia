@@ -23,4 +23,4 @@ Licencja deklarowana przez źródło: [CC0 1.0 Universal](https://creativecommon
 
 ## User-supplied illustrations
 - seed-11, seed-30, seed-47, seed-65: supplied AI-generated montage crops; illustrative only. Seed-11 and seed-30 have visible technique discrepancies.
-- seed-62: supplied image; original rights/source not confirmed. Public release requires provenance confirmation.
+- seed-62: replacement AI-generated illustration supplied by the user; illustrative only.
