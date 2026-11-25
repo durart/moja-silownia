@@ -10,7 +10,7 @@ module.exports=async function trainerBrowserSmoke(){
   const pathname=new URL(req.url,'http://localhost').pathname;
   const file=path.resolve(root,'.'+(pathname.endsWith('/')?pathname+'index.html':pathname));
   if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}
-  const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.svg':'image/svg+xml'};
+  const types={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.svg':'image/svg+xml'};
   res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');
   fs.createReadStream(file).pipe(res);
  });
@@ -64,7 +64,7 @@ module.exports=async function trainerBrowserSmoke(){
     await page.evaluate(()=>{startManualWorkout();confirmWorkoutStart();});
     assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before,'staging does not touch production state');
     assert.ok(await page.evaluate(()=>localStorage.getItem('moja-silownia-preview-v01')));
-    assert.match(await page.title(),/TEST v3\.1\.2/);
+    assert.match(await page.title(),/TEST v3\.3\.0/);
     assert.deepEqual(errors,[]);
    }finally{await context.close();}
   }

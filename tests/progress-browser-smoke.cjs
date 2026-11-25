@@ -30,7 +30,7 @@ const root=path.resolve(__dirname,'..');
    const pathname=new URL(req.url,'http://localhost').pathname;
    const file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
    if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}
-   const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png'};
+   const types={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png'};
    res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');fs.createReadStream(file).pipe(res);
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -55,7 +55,7 @@ const root=path.resolve(__dirname,'..');
    // Inject the former asset URL with a deliberately stale API into the active cache.
    // A new version must not request this legacy URL, even offline.
    await page.evaluate(async()=>{
-    const name=(await caches.keys()).find(n=>n.includes('v45-progress-3.1.2'));
+    const name=(await caches.keys()).find(n=>n.includes('v47-compact-workout-3.3.0'));
     const cache=await caches.open(name);
     await cache.put(new Request(new URL('progress-core-v2.js?v=3',location.href)),new Response('window.ProgressCore={inPeriod:()=>[]};',{headers:{'Content-Type':'text/javascript'}}));
    });
@@ -70,9 +70,9 @@ const root=path.resolve(__dirname,'..');
    await page.getByRole('heading',{name:'Podsumowanie okresowe',exact:true}).waitFor();
    assert.match(await page.locator('#progressContent').innerText(),/585 kg/);
    assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before.raw,'reports are read-only offline');
-   assert.ok((await page.title()).includes('3.1.2'));
+   assert.ok((await page.title()).includes('3.3.0'));
    const names=await page.evaluate(()=>caches.keys());
-   assert.ok(names.some(n=>n.includes('v45-progress-3.1.2')));
+   assert.ok(names.some(n=>n.includes('v47-compact-workout-3.3.0')));
   }finally{await context.close();await new Promise(resolve=>server.close(resolve));}
  }finally{await browser.close();}
 })().then(()=>require('./trainer-browser-smoke.cjs')()).catch(error=>{console.error(error);process.exitCode=1;});

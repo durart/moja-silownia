@@ -1,6 +1,6 @@
 # Moja Siłownia — instrukcja użytkownika
 
-Wersja dokumentacji: 1.0 | Aplikacja: 3.2.0 | Aktualizacja: 25.11.2026
+Wersja dokumentacji: 1.1 | Aplikacja: 3.3.0 | Aktualizacja: 25.11.2026
 
 [Aplikacja](https://durart.github.io/moja-silownia/)
 
@@ -30,11 +30,15 @@ Oznacz całą sesję jako lekką/regeneracyjną, jeśli taki jest jej cel. Może
 ## 6. Rejestrowanie serii
 Wybierz ćwiczenie, wpisz rzeczywisty ciężar i powtórzenia oraz opcjonalnie RIR (liczba powtórzeń w zapasie przy poprawnej technice). Przykład: 60 kg × 12, RIR 2. Zapisuj wykonane serie. Możesz korygować podpowiedzi, usuwać serie, dodawać lub zamieniać ćwiczenia i zakończyć sesję bez wszystkich ćwiczeń. Notatka dotyczy całego ćwiczenia, np. inna maszyna lub dyskomfort. Nie zwiększaj ciężaru kosztem techniki.
 
+Dotknij nagłówka ćwiczenia lub strzałki, aby rozwinąć lub zwinąć serie. Widoczny jest licznik wykonanych serii i zielony znacznik ukończenia. Po zapisaniu ostatniej serii otwartego ćwiczenia rozwija się następne nieukończone. Możesz ponownie otworzyć dowolną kartę; zwinięcie nie usuwa serii. Wybrana karta jest zapamiętywana dla bieżącej sesji.
+
 ## 7. Czas i przerwy
-Licznik mierzy czas sesji, a timer odlicza przerwę (domyślnie 90 s według dotychczasowych ustaleń). Pomiń przerwę pozwala kontynuować wcześniej. Testuj dźwięk sprawdza sygnały zależne od urządzenia.
+Licznik mierzy czas sesji, a timer odlicza przerwę (domyślnie 90 s według dotychczasowych ustaleń). Na ekranie aktywnego treningu licznik jest stale widoczny nad przyciskiem zakończenia. +15 s wydłuża aktywną przerwę, a Pomiń pozwala kontynuować wcześniej. Testuj dźwięk sprawdza sygnały zależne od urządzenia.
 
 ## 8. Asystent Progresji
 Analizuje historię, ciężary, powtórzenia, zakres docelowy, RIR i charakter sesji. Przykład: przy zakresie 8–12 wykonanie 60 kg × 12 może uzasadniać propozycję zwiększenia ciężaru, zależnie od pozostałych danych. Trening regeneracyjny nie powinien zastępować standardowego odniesienia. Podpowiedź nie jest obowiązkiem ani oceną techniki.
+
+Skrócona rekomendacja pozostaje widoczna; wybierz Pokaż uzasadnienie, aby zobaczyć szczegóły i ustawienia sprzętu.
 
 ## 9. Asystent Trenera
 Przygotowuje wartości startowe kolejnego treningu na podstawie wcześniejszych zapisów. Po wykonaniu i zapisaniu treningu A kolejna sesja może otrzymać zaktualizowane propozycje. Zawsze koryguj je do rzeczywistego wykonania.
@@ -58,7 +62,7 @@ Zapisuj masę ciała z datą i wzrost. Masa wspiera szacowanie kalorii i analizy
 Panel Start szacuje obciążenie grup na podstawie historii. Ćwiczenia wielostawowe angażują kilka partii (np. wyciskanie: klatka, triceps, przednie barki). Wskaźnik zmienia się z czasem. Zestawiaj go z samopoczuciem i snem; nie jest oceną medyczną.
 
 ## 16. Garmin
-Dane Garmin Connect można wpisywać ręcznie przed sesją: Body Battery, sen, ocena snu i masa. Automatyczna integracja Garmin LIVE jest rozwijana osobno; nie jest potwierdzoną funkcją produkcji 3.2.0.
+Dane Garmin Connect można wpisywać ręcznie przed sesją: Body Battery, sen, ocena snu i masa. Automatyczna integracja Garmin LIVE jest rozwijana osobno; nie jest potwierdzoną funkcją produkcji 3.3.0.
 
 ## 17. Kopie zapasowe
 Dane pozostają w pamięci przeglądarki. Historia → Kopia danych → Pobierz kopię na telefon (JSON) lub Wybierz miejsce zapisu kopii. System może udostępniać lokalny folder, Dysk Google lub Dropbox.
@@ -82,4 +86,4 @@ Przed treningiem sprawdź obciążenie mięśni, wybierz plan i opcjonalnie wpis
 Zapisuj rzeczywiste wyniki, wiarygodny RIR, sesje regeneracyjne i notatki. Analizuj trendy. Traktuj asystenta jako wsparcie. Regularnie twórz kopie.
 
 ## Zakres weryfikacji
-Instrukcja bazuje na interfejsie gałęzi main (index.html 3.2.0) i historii rozwoju. Szczegółowe zachowanie raportów, asystentów i importu nie zostało ponownie przetestowane przy sporządzaniu dokumentacji. Funkcje testowe nie są przedstawiane jako produkcyjne.
+Instrukcja uwzględnia zakres wydania 3.3.0; przed publikacją wymagana jest weryfikacja regresyjna i akceptacja użytkownika. Szczegółowe zachowanie raportów, asystentów i importu nie zostało ponownie przetestowane przy sporządzaniu dokumentacji. Funkcje testowe nie są przedstawiane jako produkcyjne.
