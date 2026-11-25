@@ -20,3 +20,7 @@ Licencja deklarowana przez źródło: [CC0 1.0 Universal](https://creativecommon
 | seed-100.webp | images/leg-press-calf-raise/end.webp |
 | seed-37.webp | images/machine-pullover/end.webp |
 | seed-18.webp | images/plate-loaded-incline-chest-press/end.webp |
+
+## User-supplied illustrations
+- seed-11, seed-30, seed-47, seed-65: supplied AI-generated montage crops; illustrative only. Seed-11 and seed-30 have visible technique discrepancies.
+- seed-62: supplied image; original rights/source not confirmed. Public release requires provenance confirmation.
