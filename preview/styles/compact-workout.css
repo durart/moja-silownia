@@ -1,0 +1,30 @@
+/* Compact layout only while registering sets. Keep existing controls in the DOM. */
+body.sport-performance #workout .compact-card-collapsed > :not(.sport-exercise-title-row) { display:none !important; }
+body.sport-performance #workout .compact-card-collapsed { padding:10px 12px; margin:8px 0; }
+body.sport-performance #workout .compact-card-collapsed .sport-exercise-title-row { margin:0; padding:0; gap:10px; }
+body.sport-performance #workout .compact-card-collapsed .sport-exercise-art { flex:0 0 44px; height:44px; }
+body.sport-performance #workout .compact-card-collapsed .sport-exercise-sprite { width:44px; height:44px; }
+body.sport-performance #workout .compact-card-collapsed .sport-exercise-title-text h2 { font-size:1rem; margin:0 0 3px; }
+body.sport-performance #workout .sport-exercise-title-row:has(.compact-card-toggle) { cursor:pointer; }
+body.sport-performance #workout .sport-exercise-title-text { flex:1; }
+body.sport-performance #workout .compact-card-toggle { flex:0 0 44px; width:44px; min-height:44px; margin:0; padding:6px; font-size:1.45rem; }
+body.sport-performance #workout .compact-card-status { display:block; margin-top:4px; color:#9eb8c7; font-variant-numeric:tabular-nums; }
+body.sport-performance #workout .compact-card-complete .compact-card-status { color:#73e3a4; font-weight:750; }
+body.sport-performance #workout .compact-card-complete { border-color:#286549; }
+body.sport-performance #workout .compact-advisor-collapsed > :not(strong):not(.advisor-progression-weight):not(.compact-advisor-toggle):not(.exercise-note-warning):not(.advisor-readiness-caution) { display:none !important; }
+body.sport-performance #workout .compact-advisor-collapsed.advisor-caution > p { display:block !important; }
+body.sport-performance #workout .compact-advisor-toggle { margin-top:6px; min-height:40px; font-size:.86rem; }
+#compactWorkoutDock[hidden] { display:none !important; }
+body.sport-performance #compactWorkoutDock { position:fixed; bottom:0; left:50%; transform:translateX(-50%); z-index:45; width:min(100%,760px); background:#0b1824; border-top:1px solid #335164; padding:8px 12px max(10px,env(safe-area-inset-bottom)); display:grid; gap:7px; box-shadow:0 -5px 20px #050b13a0; }
+#compactWorkoutDock .compact-rest-row { display:flex; align-items:center; gap:8px; }
+#compactWorkoutDock .compact-rest-row > div { flex:1; min-width:0; }
+#compactWorkoutDock .compact-rest-row small { display:block; font-size:.75rem; }
+#compactRestRemaining { display:block; font-size:1.45rem; color:#b2fa4a; font-variant-numeric:tabular-nums; }
+#compactWorkoutDock .compact-rest-row button { width:auto; min-height:44px; margin:0; padding:8px 11px; font-size:.88rem; }
+#compactWorkoutDock button:disabled { opacity:.45; cursor:default; }
+body.sport-performance #compactFinishWorkout { margin:0; width:100%; min-height:48px; background:#b2fa4a !important; color:#11230b !important; border-radius:12px; font-weight:850; }
+body.sport-performance #workout.compact-workout-active { padding-bottom:144px; }
+body.sport-performance #workout.compact-workout-active .sport-plan-finish,
+body.sport-performance #workout.compact-workout-active .finish-workout { display:none !important; }
+html.compact-workout-active { scroll-padding-bottom:150px; }
+#workout .exercise-card { scroll-margin-top:12px; }
