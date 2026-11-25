@@ -1,6 +1,6 @@
 # Moja Siłownia — instrukcja użytkownika
 
-Wersja dokumentacji: 1.1 | Aplikacja: 3.3.0 | Aktualizacja: 25.11.2026
+Wersja dokumentacji: 1.2 | Aplikacja: 3.3.1 | Aktualizacja: 25.11.2026
 
 [Aplikacja](https://durart.github.io/moja-silownia/)
 
@@ -87,3 +87,6 @@ Zapisuj rzeczywiste wyniki, wiarygodny RIR, sesje regeneracyjne i notatki. Anali
 
 ## Zakres weryfikacji
 Instrukcja uwzględnia zakres wydania 3.3.0; przed publikacją wymagana jest weryfikacja regresyjna i akceptacja użytkownika. Szczegółowe zachowanie raportów, asystentów i importu nie zostało ponownie przetestowane przy sporządzaniu dokumentacji. Funkcje testowe nie są przedstawiane jako produkcyjne.
+
+## Instrukcje techniki — aktualizacja 3.3.1
+W katalogu wybierz przycisk Technika przy ćwiczeniu. Instrukcje 103 ćwiczeń podstawowych są przypisane do identyfikatorów ćwiczeń, nie do podobieństwa nazw. Wybrane ćwiczenia mają nowe ilustracje poglądowe. Odnośniki zewnętrzne wymagają internetu. Ilustracje nie zastępują korekty techniki przez trenera.
