@@ -182,7 +182,7 @@ test('settings are exercise-scoped, with backup-friendly fields and no workout m
   assert.match(settingsFile,/if \(save\(\) !== true\)/);
   const staging = fs.readFileSync(path.join(__dirname,'../preview/index.html'),'utf8');
   const sw = fs.readFileSync(path.join(__dirname,'../preview/sw.js'),'utf8');
-  assert.match(staging,/TEST v3\.3\.0/);
+  assert.match(staging,/TEST v3\.3\.1/);
   assert.match(staging,/equipment-settings-ui\.js\?v=200/);
   assert.match(sw,/equipment-settings-ui\.js\?v=200/);
   assert.match(staging,/profile-core\.js\?v=190/);
