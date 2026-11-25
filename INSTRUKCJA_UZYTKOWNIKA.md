@@ -14,7 +14,7 @@ Otwórz aplikację w przeglądarce, uzupełnij Profil i wybierz plan lub trening
 Panel umożliwia rozpoczęcie treningu oraz przegląd obciążenia mięśni. Pokaż wszystkie rozwija zestawienie. Obciążenie jest szacunkiem, nie pomiarem regeneracji.
 
 ## 4. Plany
-W Plany → Moje plany wpisz nazwę, wybierz ćwiczenia według partii i zapisz plan. Możesz edytować zapisane plany i uruchamiać je. Plany trenera zawierają 10 gotowych propozycji, które można dodać bez usuwania własnych planów.
+W Plany → Moje plany wpisz nazwę, wybierz ćwiczenia według partii i zapisz plan. Możesz edytować zapisane plany i uruchamiać je. Plany trenera zawierają 12 gotowych propozycji. Powerbuilding A/B: dwa treningi FBW po 8 ćwiczeń i 20 serii roboczych, naprzemiennie 2–3 razy tygodniowo, przez 8–12 tygodni. Metodyka to własna adaptacja zasad [ACSM 2026](https://pubmed.ncbi.nlm.nih.gov/41843416/), [Barbell Medicine Powerbuilding](https://www.barbellmedicine.com/training-programs/powerbuilding/) i [Stronger by Science](https://www.strongerbyscience.com/program-bundle/), nie oryginalny program żadnego z autorów. Przed ćwiczeniem przeczytaj wskazówki techniczne, docelowy zakres powtórzeń, RIR i zalecaną przerwę (timer ustaw ręcznie). Rozgrzewkę dodaj osobno. Asystent automatycznie przygotowuje edytowalne ciężary i powtórzenia na podstawie faktycznych wyników; bez wiarygodnej historii nie wymyśla ciężaru. Zapisuj wykonane serie i RIR, nie wartości planowane. Skopiowane wcześniej plany pozostają bez zmian.
 Importuj PDF, DOCX, TXT lub wklej tekst, np.:
 ```
 Trening A

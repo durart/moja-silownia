@@ -37,14 +37,17 @@ function makeCard(exerciseId,options={}){
  const lowSleepScore=pre.sleepScore!=null&&pre.sleepScore!==''&&Number(pre.sleepScore)<50;
  const cautionToday=lowFeeling||shortSleep||lowBattery||lowSleepScore;
  const prepared=options.prepared;
- const reasons={recovery:'Trening regeneracyjny: nie zwiększam obciążenia. Gdy nie ma porównywalnej sesji regeneracyjnej, wybierz lekki ciężar samodzielnie.',review:'Ból, technika lub zmiana sprzętu wymagają ręcznej weryfikacji obciążenia.',readiness:'Dzisiejsze samopoczucie lub sen ograniczają progresję.',plan:'Brak porównywalnej historii. Uzupełniam tylko znane parametry planu.',history:'Wykorzystuję porównywalne, zakończone serie. Zachowuję układ ciężarów.'};
+ const reasons={recovery:'Trening regeneracyjny: nie zwiększam obciążenia. Gdy nie ma porównywalnej sesji regeneracyjnej, wybierz lekki ciężar samodzielnie.',review:'Ból, technika lub zmiana sprzętu wymagają ręcznej weryfikacji obciążenia.',readiness:'Dzisiejsze samopoczucie lub sen ograniczają progresję.',plan:'Brak porównywalnej historii. Uzupełniam tylko znane parametry planu.',history:'Wykorzystuję faktycznie zapisane ciężary, powtórzenia i RIR. Nie wymuszam realizacji nieosiągniętego celu.'};
  const meta=prepared&&reasons[prepared.reason]?{label:prepared.reason==='recovery'?'Trening regeneracyjny':prepared.reason==='review'?'Sprawdź obciążenie':'Przygotowanie serii',tone:prepared.reason==='review'||prepared.reason==='readiness'?'caution':'steady'}:guidance(result),box=document.createElement('section');
  box.className='advisor-progression advisor-'+meta.tone;box.setAttribute('aria-label','Wskazówka progresji treningowej');
  const eyebrow=document.createElement('span');eyebrow.className='advisor-progression-overline';eyebrow.textContent='ASYSTENT · PROGRESJA';
  const title=document.createElement('strong');title.textContent=meta.label;
- const reason=document.createElement('p');reason.textContent=prepared&&reasons[prepared.reason]?reasons[prepared.reason]+' '+result.reason:result.reason;
+ const reason=document.createElement('p');reason.textContent=prepared&&reasons[prepared.reason]?reasons[prepared.reason]:result.reason;
  box.append(eyebrow,title,reason);
- if(result.action==='consider_increase'&&Number.isFinite(result.increment)&&(!prepared||prepared.reason==='progression')){
+ if(prepared?.reason==='progression'){
+  const info=document.createElement('small');info.textContent='Progresję obciążenia przygotowano w edytowalnych seriach. Jeśli ciężar jest za duży, zmień go lub wykonaj mniej powtórzeń.';box.append(info);
+ }
+ if(result.action==='consider_increase'&&Number.isFinite(result.increment)&&!prepared){
   const detail=document.createElement('small');
   detail.textContent='Ścieżka: '+({FAST_TRACK_1_SESSION:'szybka',ACCELERATED_2_SESSIONS:'przyspieszona',E1RM_TREND_CONFIRMED:'trend e1RM',REPS_TREND_CONFIRMED:'trend powtórzeń',STANDARD_3_SESSIONS:'standardowa'}[result.path]||'standardowa')+' • sugerowany skok: +'+result.increment+' kg';
   box.append(detail);
