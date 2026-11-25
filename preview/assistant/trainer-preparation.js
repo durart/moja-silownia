@@ -60,8 +60,9 @@
     const recovery = history.filter(s => s.sessionMode === 'recovery');
     const isRecovery = sessionMode === 'recovery';
     const reference = isRecovery ? (recovery[0] ?? standard[0]) : standard[0];
-    const prior = reference?.sets ?? [];
-    const standardRows = standard[0]?.sets ?? [];
+    const workingOnly = target?.workingOnly === true;
+    const prior = (reference?.sets ?? []).filter(row => !workingOnly || !warmup(row));
+    const standardRows = (standard[0]?.sets ?? []).filter(row => !workingOnly || !warmup(row));
     const bodyweight = /^(?:masa ciała|ciężar własny|bodyweight|bez obciążenia)$/i.test(String(exercise.equipmentType ?? exercise.equipment ?? ''));
     const equipment = exercise.equipmentType ?? exercise.equipment;
     const equipmentType = supportedEquipment.has(equipment) ? equipment : 'unknown';
@@ -81,7 +82,7 @@
     const rows = Array.from({length: count}, (_, i) => {
       const detail = target?.setDetails?.[i];
       const previous = prior[i];
-      const isWarmup = detail?.setType === 'R' || detail?.type === 'warmup' || (detail?.setType !== 'W' && detail?.type !== 'working' && warmup(previous));
+      const isWarmup = !workingOnly && (detail?.setType === 'R' || detail?.type === 'warmup' || (detail?.setType !== 'W' && detail?.type !== 'working' && warmup(previous)));
       const range = targetRange(target, i);
       let kg = weight(previous?.weight) ?? weight(detail?.weight) ?? weight(target?.weight);
       let reps = isWarmup && previous && !detail?.reps ? integer(previous.reps) : range ? (previous ? Math.min(Number(previous.reps),range.max) : range.min) : integer(previous?.reps);
