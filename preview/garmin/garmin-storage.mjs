@@ -27,7 +27,7 @@ const LIVE_KEY = KEY.replace("-mock-", "-live-");
 export function loadLiveSnapshot(storage = globalThis.localStorage) {
   try {
     const snapshot = JSON.parse(storage.getItem(LIVE_KEY));
-    return validateLive({...snapshot, authenticated:true});
+    return {...validateLive({...snapshot, authenticated:true}), bodyBatterySyncedAt: Number.isFinite(Date.parse(snapshot?.bodyBatterySyncedAt)) ? snapshot.bodyBatterySyncedAt : null};
   } catch { return null; }
 }
 export function saveLiveSnapshot(snapshot, storage = globalThis.localStorage) {
@@ -47,6 +47,8 @@ export function saveLiveSnapshot(snapshot, storage = globalThis.localStorage) {
     }
   }
   const merged = {...clean,data};
+  // Never refresh the apparent age of a retained Body Battery measurement.
+  merged.bodyBatterySyncedAt = clean.data.bodyBattery?.value != null && (!previous?.data.bodyBattery || clean.data.bodyBattery.date >= previous.data.bodyBattery.date) ? clean.syncedAt : previous?.bodyBatterySyncedAt ?? null;
   storage.setItem(LIVE_KEY,JSON.stringify(merged));
   return merged;
 }
