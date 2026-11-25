@@ -3,10 +3,11 @@ const KEY = "moja-silownia-garmin-mock-config-v1" + (globalThis.location?.pathna
 export function validateConfig(config) {
   const url = new URL(config.endpoint);
   if (url.protocol !== "https:" || !url.hostname.endsWith(".workers.dev") ||
-      url.pathname !== "/health" || url.username || url.password ||
+      !["/health", "/garmin/gym"].includes(url.pathname) || url.username || url.password ||
       url.search || url.hash || url.port) throw new Error("Nieprawidłowy adres Workera.");
-  if (typeof config.token !== "string" || !config.token.trim() || /[\r\n]/.test(config.token))
+  if (typeof config.token !== "string" || !/^[a-f0-9]{64}$/.test(config.token.trim()))
     throw new Error("Nieprawidłowy token.");
+  url.pathname = "/garmin/gym";
   return {endpoint: url.href, token: config.token.trim()};
 }
 
