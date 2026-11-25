@@ -49,3 +49,22 @@ if(settings && recovery){
   disconnect.addEventListener("click",()=>{try{clearConfig();clearSnapshot();form.reset();status.textContent="Odłączono Garmin.";render();}catch{status.textContent="Nie udało się usunąć konfiguracji.";}});
   render();
 }
+
+
+window.fillGarminPreWorkout = function() {
+  if (!loadConfig()) return;
+  const snapshot = loadSnapshot();
+  if (!snapshot) return;
+  const today = new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Warsaw",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  const {sleep,bodyBattery} = snapshot.data;
+  const fill = (id,value) => {
+    const field = document.getElementById(id);
+    if (field && field.value === "" && value != null) field.value = String(value);
+  };
+  if (sleep?.date === today) {
+    fill("preSleep",sleep.sleepSeconds == null ? null : Math.round(sleep.sleepSeconds/360)/10);
+    fill("preSleepScore",sleep.sleepScore);
+  }
+  if (bodyBattery?.date === today && Date.now()-Date.parse(snapshot.syncedAt) <= 3600000 &&
+      Date.now() >= Date.parse(snapshot.syncedAt)) fill("preBattery",bodyBattery.value);
+};
