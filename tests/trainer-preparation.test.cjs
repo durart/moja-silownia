@@ -76,3 +76,23 @@ test('completed out-of-order plan rows retain their intended pyramid order',()=>
 test('a missed repetition goal does not force a heavier or unachieved prescription',()=>{const result=make([row(70,6,0),row(70,7,1)],{target:{sets:2,reps:'8–12'}});assert.deepEqual(result.rows.map(r=>r.weight),[70,70]);assert.deepEqual(result.rows.map(r=>r.reps),[6,7]);});
 test('free workouts can progress repetitions with reserve, even without an explicit goal',()=>{const result=make([row(70,10,2)],{target:null});assert.equal(result.rows[0].weight,70);assert.equal(result.rows[0].reps,11);});
 test('free bodyweight sets progress repetitions without inventing load',()=>{const result=make([row(0,12,3)],{target:null,exercise:{id:'bench',equipment:'Masa ciała'}});assert.equal(result.rows[0].weight,0);assert.equal(result.rows[0].reps,13);});
+
+test('Powerbuilding prepares working rows without historical warmups',()=>{
+  const plan={sets:3,reps:'4–6',workingOnly:true};
+  const result=prepare({exercise,target:plan,sessions:[session([row(20,10,5,'R'),row(70,6,4),row(70,6,4),row(70,6,4)])]});
+  assert.deepEqual(result.rows.map(r=>[r.weight,r.reps,r.setType]),[[72.5,4,'W'],[72.5,4,'W'],[72.5,4,'W']]);
+});
+test('Powerbuilding uses actual lower weight and missed reps on the next workout',()=>{
+  const plan={sets:3,reps:'4–6',workingOnly:true};
+  const sessions=[session([row(65,4,1),row(65,3,0),row(65,3,0)]),{...session([row(70,6,4),row(70,6,4),row(70,6,4)]),date:'2026-11-22T12:00:00Z'}];
+  const result=prepare({exercise,target:plan,sessions});
+  assert.deepEqual(result.rows.map(r=>r.weight),[65,65,65]);
+  assert.deepEqual(result.rows.map(r=>r.reps),[4,3,3]);
+});
+test('Powerbuilding does not invent a starting load or override pain and readiness guards',()=>{
+  const plan={sets:3,reps:'4–6',workingOnly:true};
+  assert.ok(prepare({exercise,target:plan}).rows.every(r=>r.weight===null&&r.reps===4));
+  const sessions=[session([row(70,6,4),row(70,6,4),row(70,6,4)])];
+  assert.ok(prepare({exercise,target:plan,sessions,activeFlag:'pain'}).rows.every(r=>r.weight===null));
+  assert.ok(prepare({exercise,target:plan,sessions,preWorkout:{battery:20}}).rows.every(r=>r.weight===70));
+});

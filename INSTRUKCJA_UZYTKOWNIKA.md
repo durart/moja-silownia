@@ -14,7 +14,7 @@ Otwórz aplikację w przeglądarce, uzupełnij Profil i wybierz plan lub trening
 Panel umożliwia rozpoczęcie treningu oraz przegląd obciążenia mięśni. Pokaż wszystkie rozwija zestawienie. Obciążenie jest szacunkiem, nie pomiarem regeneracji.
 
 ## 4. Plany
-W Plany → Moje plany wpisz nazwę, wybierz ćwiczenia według partii i zapisz plan. Możesz edytować zapisane plany i uruchamiać je. Plany trenera zawierają 10 gotowych propozycji, które można dodać bez usuwania własnych planów.
+W Plany → Moje plany wpisz nazwę, wybierz ćwiczenia według partii i zapisz plan. Możesz edytować zapisane plany i uruchamiać je. Plany trenera zawierają 12 gotowych propozycji, które można dodać bez usuwania własnych planów. Kategoria Powerbuilding obejmuje dwa treningi całego ciała A/B z naciskiem na siłę i hipertrofię. Wykonuj je naprzemiennie 2–3 razy w tygodniu z dniem odpoczynku pomiędzy sesjami. Rozpocznij od ciężaru pozwalającego zachować RIR 2–3. Przerwy podane w bibliotece są zaleceniami; ustaw timer ręcznie. Program 8–12 tygodni to własna adaptacja zasad ACSM (https://pubmed.ncbi.nlm.nih.gov/41843416/), Barbell Medicine (https://www.barbellmedicine.com/training-programs/powerbuilding/) i Stronger by Science (https://www.strongerbyscience.com/program-bundle/), a nie ich oryginalny program. Wspólne ćwiczenia A/B mają takie same zakresy powtórzeń. Każde ćwiczenie zawiera krótką wskazówkę techniczną, cel, RIR i przerwę. Zaplanowane serie są robocze; rozgrzewkowe dodaj osobno. Asystent automatycznie przygotowuje edytowalne ciężary i powtórzenia z rzeczywistych zapisanych serii; jeśli nie ma wiarygodnej historii, nie wymyśla ciężaru. Po zmianie ciężaru lub powtórzeń zapisz rzeczywisty wynik i RIR.
 Importuj PDF, DOCX, TXT lub wklej tekst, np.:
 ```
 Trening A
