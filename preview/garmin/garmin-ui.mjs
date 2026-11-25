@@ -65,6 +65,6 @@ window.fillGarminPreWorkout = function() {
     fill("preSleep",sleep.sleepSeconds == null ? null : Math.round(sleep.sleepSeconds/360)/10);
     fill("preSleepScore",sleep.sleepScore);
   }
-  if (bodyBattery?.date === today && Date.now()-Date.parse(snapshot.syncedAt) <= 3600000 &&
-      Date.now() >= Date.parse(snapshot.syncedAt)) fill("preBattery",bodyBattery.value);
+  if (bodyBattery?.date === today && Date.now()-Date.parse(snapshot.bodyBatterySyncedAt) <= 3600000 &&
+      Date.now() >= Date.parse(snapshot.bodyBatterySyncedAt)) fill("preBattery",bodyBattery.value);
 };
