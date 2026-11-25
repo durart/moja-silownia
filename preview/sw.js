@@ -11,7 +11,8 @@ self.addEventListener('fetch',event=>{
  const req=event.request;
  if(req.method!=='GET'||new URL(req.url).origin!==self.location.origin)return;
  const url=new URL(req.url);
- if(!url.pathname.startsWith(new URL(self.registration.scope).pathname))return;
+ const sharedTechnique=url.href===new URL('../exercise-technique-library.js?v=1',self.registration.scope).href||/^seed-(14|18|37|44|48|52|56|74|76|78|81|91|99|100)\.webp$/.test(url.pathname.split('/').pop())&&url.pathname.startsWith(new URL('../assets/exercise-guides/',self.registration.scope).pathname);
+ if(!url.pathname.startsWith(new URL(self.registration.scope).pathname)&&!sharedTechnique)return;
  if(req.mode==='navigate'){
   event.respondWith(fetch(req).then(response=>{if(response.ok){const copy=response.clone();event.waitUntil(caches.open(CACHE).then(cache=>cache.put('./index.html',copy)).catch(()=>{}));}return response}).catch(async()=>await (await caches.open(CACHE)).match('./index.html')||Response.error()));
   return;
