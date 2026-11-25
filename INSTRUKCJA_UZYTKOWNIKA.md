@@ -14,7 +14,7 @@ Otwórz aplikację w przeglądarce, uzupełnij Profil i wybierz plan lub trening
 Panel umożliwia rozpoczęcie treningu oraz przegląd obciążenia mięśni. Pokaż wszystkie rozwija zestawienie. Obciążenie jest szacunkiem, nie pomiarem regeneracji.
 
 ## 4. Plany
-W Plany → Moje plany wpisz nazwę, wybierz ćwiczenia według partii i zapisz plan. Możesz edytować zapisane plany i uruchamiać je. Plany trenera zawierają 10 gotowych propozycji, które można dodać bez usuwania własnych planów.
+W Plany → Moje plany wpisz nazwę, wybierz ćwiczenia według partii i zapisz plan. Możesz edytować zapisane plany i uruchamiać je. Plany trenera zawierają 12 gotowych propozycji, które można dodać bez usuwania własnych planów. Kategoria Powerbuilding obejmuje dwa treningi całego ciała A/B z naciskiem na siłę i hipertrofię. Wykonuj je naprzemiennie 2–3 razy w tygodniu z dniem odpoczynku pomiędzy sesjami. Rozpocznij od ciężaru pozwalającego zachować RIR 2–3. Przerwy podane w bibliotece są zaleceniami; ustaw timer ręcznie. Wyciskanie nogami ma odrębne zakresy powtórzeń w A i B – uwzględnij to przy ocenie sugestii progresji.
 Importuj PDF, DOCX, TXT lub wklej tekst, np.:
 ```
 Trening A
