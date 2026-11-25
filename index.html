@@ -586,7 +586,10 @@ function saveExtraMutation(mutate){
 /* END PLAN EXTRA CORE */
 
 /* Presentation-only thumbnail reuse from the existing 8×13 local exercise sprite. */
+const reviewedExerciseArtIds=new Set([14,18,37,44,48,52,56,74,76,78,81,91,99,100].map(i=>'seed-'+i));
+function reviewedExerciseArt(e){return reviewedExerciseArtIds.has(e?.id)?'<img src="./assets/exercise-guides/'+e.id+'.webp" alt="" style="width:100%;height:100%;object-fit:contain" loading="lazy">':'';}
 function sportExerciseArt(e){
+ const reviewed=reviewedExerciseArt(e);if(reviewed)return reviewed;
  const icon=window.CALISTHENICS_ICON_SVGS?.[e?.id];if(icon)return icon;
  const parsed=/^seed-(\d+)$/.exec(String(e?.id||''));
  let i=parsed?Number(parsed[1]):-1;
@@ -953,7 +956,7 @@ function openTechnique(id){
  const url=getTechniqueLink(e.id);
  const linkHtml=cali?`<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(cali.query+' calisthenics tutorial')}" target="_blank" rel="noopener noreferrer" style="display:block;background:#294d70;color:white;padding:15px;border-radius:12px;text-align:center">🎬 Wyszukaj film instruktażowy na YouTube ↗</a><p class="hint">Wyszukiwanie, nie zweryfikowany bezpośredni film.</p>`:url?`<a class="tech-direct-link" href="${url}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;background:#294d70;color:white;padding:15px 12px;border-radius:12px;font-weight:700;text-decoration:none;margin:12px 0">🎬 Zobacz wykonanie — MuscleWiki ↗</a><p class="hint">Otwiera konkretny pokaz ćwiczenia w nowej karcie. Wymaga Internetu.</p>`:`<a class="tech-direct-link" href="${getExerciseSearchUrl(e)}" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;background:#374151;color:white;padding:15px 12px;border-radius:12px;font-weight:700;text-decoration:none;margin:12px 0">🔎 Znajdź pokaz tego ćwiczenia w MuscleWiki ↗</a><p class="hint">Przygotowane wyszukiwanie konkretnego wariantu. To nie jest jeszcze zweryfikowany bezpośredni link do filmu.</p>`;
  document.getElementById('techTitle').textContent='🎬 '+e.name;
- document.getElementById('techContent').innerHTML=`${cali?calisthenicsArt(cali.kind,cali.id):''}${linkHtml}<h3>💪 Pracujące mięśnie</h3><p>${safe(g.muscles)}</p><h3>📖 Jak wykonać ćwiczenie</h3><ol class="tech-steps">${g.steps.map(x=>`<li>${safe(x)}</li>`).join('')}</ol><div class="tech-warning"><strong>⚠️ Najczęstsze błędy</strong><ul>${g.errors.map(x=>`<li>${safe(x)}</li>`).join('')}</ul></div><div class="tech-tip"><strong>💡 Wskazówka trenera</strong><p>${safe(g.tip)}</p></div><p class="hint">Instrukcja ma charakter edukacyjny. Jeśli ruch powoduje ból, przerwij ćwiczenie. W razie wątpliwości poproś trenera o korektę techniki.</p>`;
+ document.getElementById('techContent').innerHTML=`${cali?calisthenicsArt(cali.kind,cali.id):reviewedExerciseArtIds.has(e.id)?'<div style="max-width:240px;margin:12px auto">'+reviewedExerciseArt(e)+'</div>':''}${linkHtml}<h3>💪 Pracujące mięśnie</h3><p>${safe(g.muscles)}</p><h3>📖 Jak wykonać ćwiczenie</h3><ol class="tech-steps">${g.steps.map(x=>`<li>${safe(x)}</li>`).join('')}</ol><div class="tech-warning"><strong>⚠️ Najczęstsze błędy</strong><ul>${g.errors.map(x=>`<li>${safe(x)}</li>`).join('')}</ul></div><div class="tech-tip"><strong>💡 Wskazówka trenera</strong><p>${safe(g.tip)}</p></div><p class="hint">Instrukcja ma charakter edukacyjny. Jeśli ruch powoduje ból, przerwij ćwiczenie. W razie wątpliwości poproś trenera o korektę techniki.</p>`;
  document.getElementById('techOverlay').classList.remove('hidden');document.body.style.overflow='hidden';
 }
 function closeTechnique(){document.getElementById('techOverlay').classList.add('hidden');document.getElementById('techContent').innerHTML='';document.body.style.overflow='';}
