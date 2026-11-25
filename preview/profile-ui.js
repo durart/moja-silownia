@@ -176,5 +176,20 @@
     renderStrength(core.currentWeight(profile()));
   };
 
+  window.importGarminWeight = function(measurement) {
+    if (!measurement || !core.validDate(measurement.date) ||
+        measurement.date > today() || !core.validWeight(measurement.weightKg)) return false;
+    const current = profile();
+    if (current.weightHistory.some(row => row.date === measurement.date)) return false;
+    const next = core.upsertWeight(current, {
+      id: 'garmin-weight-' + measurement.date,
+      date: measurement.date,
+      weightKg: measurement.weightKg
+    });
+    if (!persistProfile(next, 'Dodano pomiar masy ciała z Garmin'))
+      throw new Error('Nie udało się zapisać pomiaru Garmin.');
+    return true;
+  };
+
   window.renderUserProfile = renderUserProfile;
 })();
