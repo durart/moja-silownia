@@ -586,7 +586,7 @@ function saveExtraMutation(mutate){
 /* END PLAN EXTRA CORE */
 
 /* Presentation-only thumbnail reuse from the existing 8×13 local exercise sprite. */
-const reviewedExerciseArtIds=new Set([14,18,37,44,48,52,56,74,76,78,81,91,99,100].map(i=>'seed-'+i));
+const reviewedExerciseArtIds=new Set([11,14,18,30,37,44,47,48,52,56,62,65,74,76,78,81,91,99,100].map(i=>'seed-'+i));
 function reviewedExerciseArt(e){return reviewedExerciseArtIds.has(e?.id)?'<img src="./assets/exercise-guides/'+e.id+'.webp" alt="" style="width:100%;height:100%;object-fit:contain" loading="lazy">':'';}
 function sportExerciseArt(e){
  const reviewed=reviewedExerciseArt(e);if(reviewed)return reviewed;
