@@ -76,10 +76,10 @@ test('staging mirrors feature assets without changing training storage',()=>{
   for(const index of ['index.html','preview/index.html'])assert.ok(read(index).includes('./'+asset+'?v='+v),asset+' '+index);
   for(const sw of ['sw.js','preview/sw.js'])assert.ok(read(sw).includes('./'+asset+'?v='+v),asset+' '+sw);
  }
- assert.match(read('sw.js'),/moja-silownia-shell-v55-graphics-r6-3\.7\.1/);
- assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-v55-graphics-r6-3\.7\.1/);
- assert.match(read('index.html'),/<title>Moja Siłownia v3\.7\.1/);
- assert.match(read('preview/index.html'),/<title>Moja Siłownia TEST v3\.7\.1/);
+ assert.match(read('sw.js'),/moja-silownia-shell-v55-graphics-r6-3\.8\.0/);
+ assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-v55-graphics-r6-3\.8\.0/);
+ assert.match(read('index.html'),/<title>Moja Siłownia v3\.8\.0/);
+ assert.match(read('preview/index.html'),/<title>Moja Siłownia TEST v3\.8\.0/);
  assert.match(read('preview/index.html'),/moja-silownia-preview-v01/);
  assert.doesNotMatch(read('muscle-atlas-ui.js'),/localStorage|indexedDB|sessionStorage/);
  assert.doesNotMatch(read('muscle-anatomy-art.js'),/localStorage|indexedDB|sessionStorage|fetch\(/);
