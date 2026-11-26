@@ -1,0 +1,52 @@
+name: Release Gate
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      kind: ${{ steps.classify.outputs.kind }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - id: classify
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: echo "kind=$(node scripts/release-gate.mjs "$BASE" "$HEAD")" >> "$GITHUB_OUTPUT"
+      - run: node --test tests/*.test.mjs
+  approval:
+    needs: regression
+    if: needs.regression.outputs.kind != 'staging' && vars.RELEASE_GATE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: release-approval
+    steps:
+      - run: echo "Environment approval received"
+  gate:
+    name: release-gate
+    if: always()
+    needs: [regression, approval]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - env:
+          KIND: ${{ needs.regression.outputs.kind }}
+          REGRESSION: ${{ needs.regression.result }}
+          APPROVAL: ${{ needs.approval.result }}
+          ENABLED: ${{ vars.RELEASE_GATE_ENABLED }}
+        run: node --input-type=module -e 'import {gatePassed} from "./scripts/release-gate.mjs"; if (!gatePassed({kind:process.env.KIND,regression:process.env.REGRESSION,approval:process.env.APPROVAL,enabled:process.env.ENABLED==="true"})) process.exit(1)'
