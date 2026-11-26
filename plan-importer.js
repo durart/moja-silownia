@@ -5,10 +5,13 @@ function impNotice(msg){document.getElementById('importStatus').textContent=msg}
 function impScript(url,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve(window[globalName]);let s=document.createElement('script');s.src=url;s.onload=()=>resolve(window[globalName]);s.onerror=()=>reject(Error('Nie udało się pobrać biblioteki odczytu dokumentów. Sprawdź internet.'));document.head.appendChild(s)})}
 async function impRead(file){
  let ext=file.name.split('.').pop().toLowerCase();
+ const maxBytes=ext==='txt'?1024*1024:10*1024*1024;
+ if(file.size>maxBytes)throw Error('Plik przekracza dopuszczalny rozmiar.');
  if(ext==='pdf'){
   const pdfjs=await impScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','pdfjsLib');
   pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   let doc=await pdfjs.getDocument({data:await file.arrayBuffer(),isEvalSupported:false}).promise,lines=[];
+  if(doc.numPages>100){await doc.destroy();throw Error('Dokument PDF przekracza limit 100 stron.');}
   for(let p=1;p<=doc.numPages;p++){
    const page=await doc.getPage(p),viewport=page.getViewport({scale:1});
    const items=(await page.getTextContent()).items.filter(x=>x.str&&x.str.trim()).map(x=>({str:x.str.trim(),x:x.transform[4],y:viewport.height-x.transform[5]}));
@@ -38,7 +41,9 @@ async function impRead(file){
  if(ext==='docx'){
   const mammoth=await impScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js','mammoth');
   const out=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
-  const el=document.createElement('div');el.innerHTML=out.value;
+  const template=document.createElement('template');template.innerHTML=out.value;
+  const el=template.content;
+  el.querySelectorAll('script,style,iframe,object,embed,link,meta,svg,math').forEach(node=>node.remove());
   el.querySelectorAll('tr').forEach(tr=>{let cells=[...tr.querySelectorAll('th,td')].map(c=>c.textContent.trim());tr.replaceWith(document.createTextNode('\n'+cells.join('  |  ')+'\n'))});
   el.querySelectorAll('p,h1,h2,h3,h4,li').forEach(n=>n.append(document.createTextNode('\n')));
   return el.textContent;
