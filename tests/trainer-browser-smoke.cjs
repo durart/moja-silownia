@@ -64,7 +64,9 @@ module.exports=async function trainerBrowserSmoke(){
     await page.evaluate(()=>{startManualWorkout();confirmWorkoutStart();});
     assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before,'staging does not touch production state');
     assert.ok(await page.evaluate(()=>localStorage.getItem('moja-silownia-preview-v01')));
-    assert.match(await page.title(),/TEST v3\.4\.0/);
+    const expectedTitle=fs.readFileSync(path.join(root,'preview/index.html'),'utf8').match(/<title>([^<]+)<\/title>/)[1];
+    assert.match(expectedTitle,/TEST v\d+\.\d+\.\d+/);
+    assert.equal(await page.title(),expectedTitle);
     assert.deepEqual(errors,[]);
    }finally{await context.close();}
   }
