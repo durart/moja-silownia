@@ -10,6 +10,10 @@
       esc(value) + '</strong></div>';
   }
   function exerciseRow(group) {
+    if(group.measurementType==='cardio'){
+      const details=root.MojaCardioUI.activityLabel(group.activity);
+      return '<details class="sp2-exercise"><summary><span class="sp2-exercise-name">'+esc(group.name)+'</span><span class="sp2-exercise-count">Kardio · '+esc(root.MojaCardioUI.clock(group.durationSeconds))+'</span><span class="sp2-chevron">⌄</span></summary><p class="sp2-sets">'+esc(details)+'</p></details>';
+    }
     const min = number(group.minWeight);
     const max = number(group.maxWeight);
     const weights = min === max ? min + ' kg' : min + '–' + max + ' kg';
@@ -47,13 +51,13 @@
       metric('SERIE', model.setCount) + '</div>' +
       '<div class="sp2-metrics sp2-metrics-secondary">' +
       metric('OBJĘTOŚĆ', number(model.volume) + ' kg') + (model.timedSeconds?metric('CZAS IZOMETRII',number(model.timedSeconds)+' s'):'') +
-      metric('KCAL AKTYWNE*', model.activeKcal == null ? '—' : number(model.activeKcal) + ' kcal') +
+      metric('KCAL AKTYWNE*', model.activeKcal == null ? '—' : number(model.activeKcal) + ' kcal') + (model.cardioSeconds?metric('CZAS KARDIO',root.MojaCardioUI.clock(model.cardioSeconds)):'') + (model.cardioActiveKcal!=null?metric('KCAL KARDIO*',number(model.cardioActiveKcal)+' kcal'):'') +
       '</div>' +
       (model.prCount ? '<div class="sp2-pr"><span class="sp2-pr-ico">🏆</span><span><strong>' +
         model.prCount + ' ' + (model.prCount === 1 ? 'seria z rekordem' : 'serie z rekordami') +
         '</strong><small>Rekordy osobiste zapisane w treningu</small></span></div>' : '') +
       '<div class="sp2-body">' +
-      '<section><h3 class="sp2-section-title">Zaangażowane mięśnie</h3>' +
+      '<section><h3 class="sp2-section-title">Zaangażowane mięśnie (siłowe)</h3>' +
       '<div class="sp2-map">' + anatomy + '</div>' +
       '<div class="sp2-legend"><span><i class="sp2-dot" style="background:#f25d5d"></i>Główne</span>' +
       '<span><i class="sp2-dot" style="background:#efbd50"></i>Pomocnicze</span></div></section>' +
