@@ -14,6 +14,7 @@ function fragment(from,to){
  return script.slice(a,b);
 }
 const code=[
+ fragment('function cardioExerciseId(id){','function renderPlanWorkout(){'),
  fragment('function planSets(exerciseId,slotIndex){','/* BEGIN PLAN EXTRA CORE */'),
  fragment('/* BEGIN PLAN EXTRA CORE */','/* END PLAN EXTRA CORE */'),
  fragment('function focusPlanExercise(id){','let extraRows={};'),
@@ -54,6 +55,12 @@ function setup(){
  for(const module of ['timed-exercise-core.js','timed-workout-ui.js']) vm.runInContext(readFileSync(new URL('../modules/'+module,import.meta.url),'utf8'),ctx);
  ctx.window.MojaTimedExercise=ctx.MojaTimedExercise;ctx.window.MojaTimedWorkoutUI=ctx.MojaTimedWorkoutUI;
  vm.runInContext(readFileSync(new URL('../modules/timed-workout-integration.js',import.meta.url),'utf8'),ctx);
+ // Load the real cardio dependencies in the same order as the application.
+ for(const [file,global] of [['cardio-catalog.js','MojaCardioCatalog'],['cardio-core.js','MojaCardioCore'],['cardio-energy.js','MojaCardioEnergy'],['cardio-progression.js','MojaCardioProgression'],['cardio-plans.js','MojaCardioPlans'],['cardio-ui.js','MojaCardioUI']]){
+  vm.runInContext(readFileSync(new URL('../modules/'+file,import.meta.url),'utf8'),ctx);
+  ctx.window[global]=ctx[global];
+ }
+ vm.runInContext(readFileSync(new URL('../modules/cardio-workout.js',import.meta.url),'utf8'),ctx);
  vm.runInContext(code+'\nthis.api={normalizePlanExtraIds,planExtraStatus,addPlanExtraExercise,removePlanExtraExercise,renderPlanExtraExercises,saveManualRow,removeManualRow,detachPlanExtrasToManual,finishWorkout,togglePlanRow,savePlanRow,planSets,manualSetRows,toggleManualRow};',ctx);
  return {state,store,calls,elements,api:ctx.api};
 }

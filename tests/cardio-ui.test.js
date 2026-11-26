@@ -1,0 +1,31 @@
+const assert=require('node:assert/strict');
+const catalog=require('../modules/cardio-catalog.js');
+const core=require('../modules/cardio-core.js');
+const ui=require('../modules/cardio-ui.js');
+assert.equal(ui.clock(3661),'01:01:01');
+assert.equal(ui.parseMetric('durationSeconds','30'),1800);
+assert.equal(ui.parseMetric('durationSeconds','0.0167'),1);
+assert.equal(ui.parseMetric('distanceMeters','2,75'),2750);
+assert.equal(ui.parseMetric('inclinePercent','0'),0);
+assert.equal(ui.parseMetric('rpe',''),null);
+assert.throws(()=>ui.parseMetric('rpe','11'));
+assert.throws(()=>ui.parseMetric('speedKmh','2abc'));
+assert.equal(ui.metricInputValue('distanceMeters',2750),'2.75');
+for(const e of catalog.exercises){
+ const html=ui.renderCard(e.id,1);
+ assert.ok(html.includes(e.imagePath));
+ assert.ok(html.includes('data-cardio-field="durationSeconds"'));
+ assert.ok(e.metrics.every(k=>html.includes('data-cardio-field="'+k+'"')));
+ assert.ok(!['weight','reps','rir','resistance','heartRate','calories'].some(k=>html.includes('data-cardio-field="'+k+'"')));
+}
+const timer=core.startTimer({workoutId:'workout',activityId:'activity',exerciseId:'cardio-bike'},1000);
+const active=ui.renderCard('cardio-bike',1,{timer,now:61000});
+assert.ok(active.includes('00:01:00')&&active.includes('data-cardio-action="pause"'));
+const paused=core.pauseTimer(timer,61000);
+assert.ok(ui.renderCard('cardio-bike',1,{timer:paused,now:90000}).includes('Wznów'));
+const a=core.createActivity('cardio-bike',{durationSeconds:1800,speedKmh:15},{id:'a',at:'2026-11-26T08:00:00Z'});
+assert.ok(ui.renderCard('cardio-bike',1,{activity:a}).includes('Aktywność zapisana'));
+assert.ok(ui.activityLabel(a).includes('7.5 km'));
+assert.deepEqual(ui.draftFromHistory('cardio-bike',[{cardio:[a]}]),{speedKmh:15});
+assert.deepEqual(ui.draftFromHistory('cardio-bike',[{sets:[{exerciseId:'cardio-bike',reps:12}]}]),{});
+console.log('Cardio UI assertions passed');
