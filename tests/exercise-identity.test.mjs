@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {EXERCISE_ALIASES,canonicalExerciseId,projectCatalog,projectHistorySets} from '../modules/exercise-identity.mjs';
+import {EXERCISE_ALIASES,canonicalExerciseId,projectCatalog,projectHistorySets,mergeCatalogDefinitions} from '../modules/exercise-identity.mjs';
 
 test('only approved aliases resolve',()=>{
  assert.equal(Object.keys(EXERCISE_ALIASES).length,6);
@@ -33,4 +33,13 @@ test('history retains every set and original identity without mutation',()=>{
  assert.equal(result[0].rir,2);
  assert.deepEqual(projectHistorySets(result,'cali-02'),result);
  assert.deepEqual(input,before);
+});
+
+test('calisthenics metadata survives projection and restart',()=>{
+ const definitions=[{id:'seed-13',group:'Klatka piersiowa'},{id:'cali-02',group:'Kalistenika',level:'beginner',steps:['step'],kind:'push'}];
+ const migrated=projectCatalog(definitions);
+ assert.deepEqual(migrated[0].calisthenicsMetadata,definitions[1]);
+ assert.deepEqual(mergeCatalogDefinitions(migrated,definitions,true),migrated);
+ assert.deepEqual(projectCatalog(migrated),migrated);
+ assert.equal(mergeCatalogDefinitions(migrated,definitions,false).length,2);
 });
