@@ -267,6 +267,14 @@ if(!state){
 // Aktualizacja katalogu bez utraty własnych ćwiczeń, planów ani historii.
 window.MojaCardioCatalog.normalizeState(state);state.exercises=window.MojaCardioCatalog.mergeExercises(state.exercises);
 const existingIds=new Set(state.exercises.map(e=>e.id));for(const e of [...seeds,...(window.CALISTHENICS_LIBRARY||[])]){if(!existingIds.has(e.id))state.exercises.push(e)}
+// The module loads after the synchronous state initialization.
+window.addEventListener('moja-silownia:modules-ready',()=>{
+ const identity=window.MojaSilowniaModules.exerciseIdentity;
+ if(state.exerciseIdentityVersion===1){
+  state.exercises=identity.mergeCatalogDefinitions(state.exercises.filter(e=>identity.canonicalExerciseId(e.id)===e.id||!state.exercises.some(x=>x.id===identity.canonicalExerciseId(e.id))),[...seeds,...(window.CALISTHENICS_LIBRARY||[])],true);
+  render();
+ }
+});
 // Zachowaj już rozpoczęte treningi z poprzednich wersji.
 let workoutSelectors=null;
 state.planExtraExerciseIds=normalizePlanExtraIds(state.planExtraExerciseIds);state.manualExerciseIds??=[];if(!('manualStarted' in state))state.manualStarted=!state.activePlan&&(state.active.length>0||!!state.startedAt);
@@ -1000,7 +1008,7 @@ function calisthenicsArt(kind,id){
 }
 function openTechnique(id){
  const e=state.exercises.find(x=>x.id===id);if(!e)return;
- const cali=e.group==='Kalistenika'?(window.CALISTHENICS_LIBRARY||[]).find(x=>x.id===e.id):null;
+ const cali=e.calisthenicsMetadata||(e.group==='Kalistenika'?(window.CALISTHENICS_LIBRARY||[]).find(x=>x.id===e.id):null);
  const guide=cali?{muscles:cali.muscles,steps:cali.steps,errors:[cali.errors],tip:'Poziom: '+cali.level+'. Wykonuj ruch kontrolowanie.'}:(Object.prototype.hasOwnProperty.call(window.EXERCISE_TECHNIQUE_LIBRARY||{},e.id)?window.EXERCISE_TECHNIQUE_LIBRARY[e.id]:null);
  const g=guide||{muscles:e.group||'Sprawdź opis konkretnego ćwiczenia',steps:['Ustaw sprzęt do swojego wzrostu i przyjmij stabilną pozycję.','Rozpocznij od lekkiego ciężaru i poznaj zakres ruchu bez bólu.','Wykonuj powtórzenia powoli i bez szarpania.','Jeśli nie masz pewności co do techniki, poproś trenera o demonstrację.'],errors:['Zbyt duży ciężar.','Gwałtowne ruchy i brak kontroli.','Ignorowanie bólu stawów.'],tip:'Dla tego ćwiczenia przygotowujemy jeszcze indywidualną instrukcję.'};
  const url=getTechniqueLink(e.id);
