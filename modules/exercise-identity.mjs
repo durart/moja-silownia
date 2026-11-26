@@ -16,7 +16,8 @@ export function projectCatalog(exercises) {
  }).map(exercise => {
   const aliases = exercises.filter(item => item.id !== exercise.id && canonicalExerciseId(item.id) === exercise.id);
   const groups = [...new Set([exercise.group, ...(exercise.groups || []), ...aliases.map(item => item.group)].filter(Boolean))];
-  return {...exercise, groups};
+  const metadata=aliases.find(item=>item.group==='Kalistenika');
+  return {...exercise, groups, ...(metadata?{calisthenicsMetadata:{...metadata}}:{})};
  });
 }
 // Read-only history projection retains every set and its original identity.
@@ -25,4 +26,17 @@ export function projectHistorySets(sets, exerciseId) {
  const canonical = canonicalExerciseId(exerciseId);
  return sets.filter(set => canonicalExerciseId(set.exerciseId) === canonical)
   .map(set => ({...set, originalExerciseId: set.originalExerciseId ?? set.exerciseId, exerciseId: canonical}));
+}
+
+// Do not restore retired aliases after a successful migration.
+export function mergeCatalogDefinitions(existing, definitions, migrated=false) {
+ const result=[...existing];
+ const ids=new Set(result.map(exercise=>exercise.id));
+ for(const exercise of definitions){
+  if(ids.has(exercise.id))continue;
+  const canonical=canonicalExerciseId(exercise.id);
+  if(migrated && canonical!==exercise.id && ids.has(canonical))continue;
+  result.push(exercise);ids.add(exercise.id);
+ }
+ return result;
 }
