@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const root = path.resolve(__dirname,'..');
+const deadline=setTimeout(()=>{console.error('Security browser test exceeded 180 seconds');process.exit(1);},180000);
+const log=message=>console.log('[security-browser] '+message);
 (async()=>{
  const server=http.createServer((req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
@@ -17,17 +19,29 @@ const root = path.resolve(__dirname,'..');
  try {
   for(const prefix of ['', 'preview/']){
    const page=await browser.newPage();
+   log('Starting '+(prefix||'candidate'));
+   page.setDefaultTimeout(30000);
+   page.on('console',message=>log(message.text()));
+   page.on('pageerror',error=>console.error('Page error:',error.message));
+   page.on('requestfailed',request=>console.error('Request failed:',request.url(),request.failure()?.errorText));
    page.on('dialog',dialog=>dialog.accept());
    await page.goto('http://127.0.0.1:'+server.address().port+'/'+prefix+'index.html');
-   await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js');await navigator.serviceWorker.ready;});
+   log('Registering service worker');
+   await page.evaluate(async()=>{await navigator.serviceWorker.register('./sw.js');});
+   await page.waitForFunction(async()=>{const registration=await navigator.serviceWorker.getRegistration();if(registration?.installing?.state==='redundant')throw Error('Service worker installation failed');return registration?.active?.state==='activated';},null,{timeout:45000});
+   log('Service worker activated');
    await page.reload();
    await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
    const fixtures=await page.evaluate(async()=>Promise.all(['plan.docx','plan.pdf'].map(async name=>Array.from(new Uint8Array(await (await fetch('/dependency-check/fixtures/'+name)).arrayBuffer())))));
+   log('Fixtures loaded; switching offline');
    await page.context().setOffline(true);
    await page.reload();
    const result=await page.evaluate(async fixtures=>{
+    console.log('Reading DOCX');
     const text=await impRead(new File([new Uint8Array(fixtures[0])],'plan.docx'));
+    console.log('Reading PDF');
     await impRead(new File([new Uint8Array(fixtures[1])],'plan.pdf'));
+    console.log('Checking XSS and saving plan');
     const host=document.createElement('div');
     window.__securityProbe=0;
     host.innerHTML='<button onclick="window.__securityProbe=1" data-action-exercise-id="'+safe("' onclick='window.__securityProbe=2")+'">test</button>';
@@ -49,7 +63,8 @@ const root = path.resolve(__dirname,'..');
    assert.equal(result.id,"' onclick='window.__securityProbe=2");
    assert.equal(result.probe,1);
    assert.equal(result.saved,true);
-   await page.close();
+   log('Passed '+(prefix||'candidate'));
+   await page.context().close();
   }
- } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
-})().catch(error=>{console.error(error);process.exitCode=1;});
+ } finally {await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>clearTimeout(deadline));
