@@ -261,8 +261,8 @@ const seeds=[
 ["Wspięcia na palce na maszynie siedząc","Łydki","Maszyna"]
 ].map((v,i)=>({id:'seed-'+i,name:v[0],group:v[1],equipment:v[2]}));
 const backupKey=key+'-previous-valid',corruptKey=key+'-unreadable';
-function validState(v){return v&&Array.isArray(v.exercises)&&Array.isArray(v.active)&&Array.isArray(v.sessions)} // bootstrap path remains synchronous until full state migration
-function readState(raw){if(!raw)return null;try{const parsed=JSON.parse(raw);return validState(parsed)?parsed:null}catch(e){console.error('Nieprawidłowy zapis treningów',e);return null}}
+function validState(v){return globalThis.MojaStorageRecovery.validState(v)}
+function readState(raw){return globalThis.MojaStorageRecovery.readState(raw)}
 // Fail closed when existing data cannot be read safely.
 const recoverySnapshot=MojaStorageRecovery.inspect(localStorage,key,readState,seeds);
 let storageRecoveryBlocked=recoverySnapshot.blocked;
@@ -309,7 +309,9 @@ function save(){
   if(window.MojaSilowniaModules?.stateStorage?.key===key){
    window.MojaSilowniaModules.stateStorage.persist(state);
   }else{
-   const next=JSON.stringify(state),previous=localStorage.getItem(key);
+   const next=globalThis.MojaStorageRecovery.serializeState(state),previous=localStorage.getItem(key);
+   if(previous!==null&&!readState(previous))throw Error('Unsafe existing state');
+   if(previous===null&&localStorage.getItem(backupKey)!==null)throw Error('Recovery required');
    if(previous&&previous!==next&&validState(readState(previous))){
     try{localStorage.setItem(backupKey,previous)}catch(e){console.warn('Kopia poprzedniego stanu nieudana',e)}
    }

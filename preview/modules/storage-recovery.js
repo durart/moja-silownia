@@ -1,5 +1,19 @@
 // Shared synchronous storage recovery policy.
 (function(root){
+ function validState(value){
+  const record=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
+  return record(value)&&['exercises','active','sessions'].every(k=>Array.isArray(value[k])&&value[k].every(record))&&
+   value.exercises.every(e=>typeof e.id==='string'&&e.id.trim().length>0&&typeof e.name==='string')&&
+   value.sessions.every(s=>s.sessionMode==null||['standard','recovery'].includes(s.sessionMode))&&
+   (value.activeSessionMode==null||['standard','recovery'].includes(value.activeSessionMode));
+ }
+ function readState(raw){try{const value=JSON.parse(raw);return validState(value)?value:null;}catch{return null;}}
+ function serializeState(state){
+  if(!validState(state))throw Error('Invalid workout state');
+  const raw=JSON.stringify(state);
+  if(!readState(raw))throw Error('Invalid serialized workout state');
+  return raw;
+ }
  function inspect(storage,key,parse,seeds){
   const backupKey=key+'-previous-valid',corruptKey=key+'-unreadable';
   let primary=null,backup=null;
@@ -23,5 +37,5 @@
   storage.setItem(key,snapshot.backup);
   return true;
  }
- root.MojaStorageRecovery=Object.freeze({inspect,restore});
+ root.MojaStorageRecovery=Object.freeze({inspect,restore,validState,readState,serializeState});
 })(globalThis);

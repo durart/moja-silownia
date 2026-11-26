@@ -1,9 +1,6 @@
 // Pure state initialization and workout recovery helpers; no localStorage or DOM.
-export function validState(v){return !!v&&Array.isArray(v.exercises)&&Array.isArray(v.active)&&Array.isArray(v.sessions)}
-export function readState(raw){
- if(!raw)return null;
- try{const parsed=JSON.parse(raw);return validState(parsed)?parsed:null}catch{return null}
-}
+export function validState(v){return globalThis.MojaStorageRecovery.validState(v)}
+export function readState(raw){return globalThis.MojaStorageRecovery.readState(raw)}
 export function selectInitialState(primaryRaw,backupRaw,seeds){
  const primary=readState(primaryRaw);
  if(primary)return {state:primary,source:'primary',unreadable:null};

@@ -8,7 +8,8 @@ export function createStateStorage(storage,{key='moja-silownia-v01',isValid}={})
   return globalThis.MojaStorageRecovery.inspect(storage,key,readState,seeds);
  }
  function persist(state){
-  const next=JSON.stringify(state),previous=get(key);
+  const next=globalThis.MojaStorageRecovery.serializeState(state),previous=get(key);
+  if(previous===null&&get(backupKey)!==null)throw Error('Recovery required');
   if(previous!==null&&!valid(previous))throw Error('Unsafe existing state');
   if(previous&&previous!==next&&valid(previous)){
    try{storage.setItem(backupKey,previous)}catch(error){console.warn('Kopia poprzedniego stanu nieudana',error)}
