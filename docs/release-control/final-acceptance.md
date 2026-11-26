@@ -20,6 +20,6 @@ Status: planned, not activated. Baseline main: 2a6bfe6499d748791df89e61c553225c1
 | Approved exact artifact | Deploy only in isolated test target |
 | Rollback | Restore verified prior artifact with explicit approval |
 ## Activation
-Follow kiss-activation.md. The inactive Pages template is not deployable policy yet: full exact-SHA regression, artifact allowlist and trusted baseline integration must be completed and tested. Keep current production and preview URLs. Do not activate automatic staging. No custom keys for variant B. Existing cryptographic tests remain optional regression coverage.
+Follow kiss-activation.md. The inactive Pages template now references exact-SHA regression; the PR dry run records a complete manifest against Git and preserves evidence. The deployed allowlist and independent trusted baseline still need verification. The local authorization and rollback simulation is not an environment enforcement test. Keep current production and preview URLs. Do not activate automatic staging. No custom keys for variant B. Existing cryptographic tests remain optional regression coverage.
 ## Evidence
 Record run IDs, exact commit, approval identity, artifact digest and outcome for each case. No live authorization or deployment tests have been executed.

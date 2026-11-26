@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 
-export async function productionManifest(root) {
+export async function siteManifest(root) {
   const entries = [];
   async function walk(relative = '') {
     for (const name of (await readdir(join(root, relative))).sort()) {
@@ -17,7 +17,7 @@ export async function productionManifest(root) {
       if (stat.isDirectory()) await walk(path);
       else if (stat.isFile()) {
         if (stat.nlink !== 1) throw new Error('Hard link forbidden: ' + path);
-        if (!path.startsWith('preview/')) entries.push([path, createHash('sha256').update(await readFile(full)).digest('hex')]);
+        entries.push([path, createHash('sha256').update(await readFile(full)).digest('hex')]);
       }
       else throw new Error('Unsupported file: ' + path);
     }
@@ -27,6 +27,10 @@ export async function productionManifest(root) {
   await walk();
   if (!entries.some(([path]) => path === 'index.html')) throw new Error('Missing production index');
   return entries;
+}
+
+export async function productionManifest(root) {
+  return (await siteManifest(root)).filter(([path]) => !path.startsWith('preview/'));
 }
 
 export async function verifyStaging(baseline, candidate) {

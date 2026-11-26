@@ -17,12 +17,25 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
+          fetch-depth: 0
       - env:
           EXPECTED: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
-      - run: |
+      - name: Build candidate and compare with independent Git blob enumeration
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
           node scripts/release-artifact.mjs "$(git rev-parse HEAD)" "$RUNNER_TEMP/site"
-          node scripts/staging-integrity.mjs "$RUNNER_TEMP/site" "$RUNNER_TEMP/site"
+          node scripts/release-evidence.mjs "$(git rev-parse HEAD)" "$BASE_SHA" "$RUNNER_TEMP/site" "$RUNNER_TEMP/evidence"
+      - name: Preserve candidate and evidence (not a Pages artifact)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-dry-run-${{ github.event.pull_request.head.sha }}
+          path: |
+            ${{ runner.temp }}/site
+            ${{ runner.temp }}/evidence
+          if-no-files-found: error
+          retention-days: 14
