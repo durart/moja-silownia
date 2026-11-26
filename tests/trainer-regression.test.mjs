@@ -14,7 +14,7 @@ test('the preparation modules load in order and are all cached',()=>{
  }
  assert.match(read('preview/modules/bootstrap.js'),/key:'moja-silownia-preview-v01'/);
  assert.match(preview,/const key='moja-silownia-preview-v01'/);
- assert.match(psw,/moja-silownia-preview-shell-v50-isometric-3\.4\.0/);
+ assert.match(psw,/moja-silownia-preview-shell-v51-cardio-3\.5\.0/);
  assert.match(html,/const key='moja-silownia-v01'/);
 });
 
