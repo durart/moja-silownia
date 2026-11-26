@@ -21,8 +21,23 @@ function guidance(result){
   default:return {label:'Potrzebujemy więcej danych',tone:'neutral'};
  }
 }
+function makeTimedCard(exerciseId,options){
+ const prepared=options.prepared;
+ const messages={timed_initial:['Zacznij od celu czasowego','Brak porównywalnej historii. Wybierz czas z planu i zachowaj technikę.'],timed_increase:['Możliwa progresja czasu','Wykonano wszystkie porównywalne serie. Cel wzrasta o maksymalnie 5 s.'],timed_maintain:['Utrzymaj cel czasowy','Nie ma podstaw do zwiększenia celu. Zapisz rzeczywisty czas każdej serii.'],timed_at_limit:['Osiągnięto górny limit','Utrzymaj cel lub rozważ trudniejszy wariant po opanowaniu techniki.'],timed_recovery:['Trening regeneracyjny','Nie zwiększaj czasu ani dodatkowego obciążenia.'],timed_review:['Sprawdź technikę','Ból, technika lub sprzęt wymagają oceny przed progresją. Nie forsuj pozycji.'],timed_readiness:['Ostrożnie z progresją','Dzisiejszy sen lub samopoczucie ograniczają zwiększanie celu.']};
+ const [heading,body]=messages[prepared?.reason]||['Ćwiczenie na czas','Zapisuj rzeczywisty czas w sekundach, bez RIR.'];
+ const box=document.createElement('section');box.className='advisor-progression advisor-'+(prepared?.reason==='timed_increase'?'progress':/review|readiness/.test(prepared?.reason||'')?'caution':'steady');
+ box.setAttribute('aria-label','Wskazówka progresji czasowej');
+ const eyebrow=document.createElement('span');eyebrow.className='advisor-progression-overline';eyebrow.textContent='ASYSTENT · PROGRESJA CZASU';
+ const title=document.createElement('strong');title.textContent=heading;
+ const reason=document.createElement('p');reason.textContent=body;
+ box.append(eyebrow,title,reason);
+ const goals=(prepared?.rows||[]).filter(row=>row.setType!=='R'&&Number.isInteger(row.targetDurationSeconds)).map(row=>row.targetDurationSeconds);
+ if(goals.length){const goal=document.createElement('small');goal.textContent='Cel serii roboczych: '+goals.map(s=>s+' s').join(' / ');box.append(goal);}
+ return box;
+}
 function makeCard(exerciseId,options={}){
  const exercise=state.exercises?.find(item=>String(item.id)===String(exerciseId));
+ if(window.MojaTimedWorkout?.isTimed(exerciseId))return makeTimedCard(exerciseId,options);
  const equipmentLabel=exercise?.equipmentType||exercise?.equipment;
  const supported=['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg'];
  const result=window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,{
@@ -111,7 +126,7 @@ function decorate(root,mode){
   const cardNode=makeCard(id,{...numberRange(target),prepared});
   if(window.MojaTrainerDrafts?.active(state)){
    if(!window.MojaTrainerDrafts.settings(state).explanation)continue;
-   const label=document.createElement('small');label.textContent='Asystent przygotował edytowalne serie. RIR wpisz po wykonaniu.';cardNode.prepend(label);
+   const label=document.createElement('small');label.textContent=window.MojaTimedWorkout?.isTimed(id)?'Asystent przygotował edytowalne cele czasowe. Zapisz faktyczny czas.':'Asystent przygotował edytowalne serie. RIR wpisz po wykonaniu.';cardNode.prepend(label);
   }
   const heading=card.querySelector('.sport-exercise-title-row');
   if(heading)heading.insertAdjacentElement('afterend',cardNode);

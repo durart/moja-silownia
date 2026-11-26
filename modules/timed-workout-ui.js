@@ -55,7 +55,7 @@
 
   function durationValue({ entry, draftSeconds, previous, targetSeconds }) {
     if (core.isTimedSet(entry)) return entry.durationSeconds;
-    if (entry) return '';
+    if (entry || draftSeconds===null) return '';
     for (const value of [draftSeconds, targetSeconds, core.isTimedSet(previous) ? previous.durationSeconds : null])
       if (validSeconds(value)) return value;
     return '';

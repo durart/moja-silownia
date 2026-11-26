@@ -48,7 +48,7 @@
     const fallback = fallbackDraft(context);
     const goal = targetSeconds(target, setTarget, draft, previous);
     const weight = entry?.weight ?? draft?.weight ?? setTarget?.weight ?? target?.weight ?? previous?.weight ?? 0;
-    const value = fallback?.durationSeconds ?? draft?.durationSeconds;
+    const value = fallback ? fallback.durationSeconds : draft?.durationSeconds;
     const classes = 'set-grid hevy-set timed-set ' + (entry ? 'hevy-done' : next ? 'sport-next-set' : '');
     return '<div class="' + classes + '" data-timed-key="' + escape(rowKey) + '" data-timed-id="' +
       escape(id) + '" data-timed-index="' + index + '" data-timed-slot="' + (slot ?? '') +
@@ -101,7 +101,13 @@
     }
     const exercise = state.exercises.find(e => e.id === id);
     const goal = Number(row.dataset.timedTarget);
-    const fields = { exerciseId: id, name: exercise.name, weight, setType: readSetType(rowKey),
+    const workingRows = Array.from(row.closest('.exercise-card')?.querySelectorAll(':scope > .timed-set')||[])
+      .filter(node=>readSetType(node.dataset.timedKey)!=='R').length;
+    const planTarget = Number.isInteger(slot)?planSlot(id,slot).plan?.targets?.[slot]:null;
+    const plannedCount=Number(planTarget?.sets);
+    const plannedWarmups=(planTarget?.setDetails||[]).filter(x=>x?.setType==='R'||x?.type==='warmup'||x?.type==='R').length;
+    const targetSetCount=Math.max(1,workingRows,Number.isInteger(plannedCount)&&plannedCount<=100?plannedCount-plannedWarmups:0);
+    const fields = { exerciseId: id, name: exercise.name, weight, setType: readSetType(rowKey),targetSetCount,
       at: new Date().toISOString(), pr: [],
       ...(secondsValid(goal) ? { targetDurationSeconds: goal } : {}),
       ...(Number.isInteger(slot) ? { planId: state.activePlan, planSlotIndex: slot, planSetIndex: index }
