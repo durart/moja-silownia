@@ -263,19 +263,26 @@ const seeds=[
 const backupKey=key+'-previous-valid',corruptKey=key+'-unreadable';
 function validState(v){return v&&Array.isArray(v.exercises)&&Array.isArray(v.active)&&Array.isArray(v.sessions)} // bootstrap path remains synchronous until full state migration
 function readState(raw){if(!raw)return null;try{const parsed=JSON.parse(raw);return validState(parsed)?parsed:null}catch(e){console.error('Nieprawidłowy zapis treningów',e);return null}}
-let originalRaw=null;try{originalRaw=localStorage.getItem(key)}catch(e){console.error('Odczyt pamięci nieudany',e)}
+// Fail closed when existing data cannot be read safely.
+let storageRecoveryBlocked=false;
+let originalRaw=null,backupRaw=null;
+try{originalRaw=localStorage.getItem(key);backupRaw=localStorage.getItem(backupKey);}
+catch(error){storageRecoveryBlocked=true;console.error('Odczyt pamięci nieudany',error);}
 let state=readState(originalRaw);
 if(!state){
- const backup=readState((()=>{try{return localStorage.getItem(backupKey)}catch(e){return null}})());
- if(originalRaw){try{localStorage.setItem(corruptKey,originalRaw)}catch(e){console.error('Nie można zabezpieczyć uszkodzonego zapisu',e)}}
+ const backup=readState(backupRaw);
+ if(originalRaw!==null||backupRaw!==null)storageRecoveryBlocked=true;
+ if(originalRaw!==null){try{if(localStorage.getItem(corruptKey)===null)localStorage.setItem(corruptKey,originalRaw);}catch(error){console.error('Nie można zabezpieczyć uszkodzonego zapisu',error);}}
  state=backup||{exercises:seeds,active:[],sessions:[]};
- if(originalRaw)window.addEventListener('load',()=>alert(backup?'Odzyskano treningi z poprzedniej kopii. Wyeksportuj dane JSON.':'Nie udało się odczytać danych. Zachowano próbę kopii uszkodzonego zapisu. Przywróć kopię JSON, jeśli ją posiadasz.'));
-}if(!Array.isArray(state.plans))state.plans=[];if(!('activePlan' in state))state.activePlan=null;state.restSettings??={};state.startedAt??=null;state.restUntil??=null;state.bodyWeight??=100.6;if(state.profile==null)state.profile={heightCm:null,weightHistory:[]};state.preWorkout??=null;state.activeSessionMode=MojaSessionMode.normalize(state.activeSessionMode);state.pendingWorkout??=null;state.workoutSwaps??={};state.planRowCounts??={};state.hiddenWorkoutSlots??=[];
+}
+if(storageRecoveryBlocked)window.addEventListener('load',()=>alert('Tryb odzyskiwania: zapis zablokowany. Nie usuwaj danych aplikacji. Jeśli widzisz swoje dane, wyeksportuj kopię JSON. Uruchom aplikację ponownie po usunięciu problemu z pamięcią.'));
+if(!Array.isArray(state.plans))state.plans=[];if(!('activePlan' in state))state.activePlan=null;state.restSettings??={};state.startedAt??=null;state.restUntil??=null;state.bodyWeight??=100.6;if(state.profile==null)state.profile={heightCm:null,weightHistory:[]};state.preWorkout??=null;state.activeSessionMode=MojaSessionMode.normalize(state.activeSessionMode);state.pendingWorkout??=null;state.workoutSwaps??={};state.planRowCounts??={};state.hiddenWorkoutSlots??=[];
 // Aktualizacja katalogu bez utraty własnych ćwiczeń, planów ani historii.
 window.MojaCardioCatalog.normalizeState(state);state.exercises=window.MojaCardioCatalog.mergeExercises(state.exercises);
 const existingIds=new Set(state.exercises.map(e=>e.id));for(const e of [...seeds,...(window.CALISTHENICS_LIBRARY||[])]){if(!existingIds.has(e.id))state.exercises.push(e)}
 // The module loads after the synchronous state initialization.
 function attemptExerciseMigration(){
+ if(storageRecoveryBlocked)return;
  const identity=window.MojaSilowniaModules?.exerciseIdentity;
  if(!identity)return;
  const result=identity.initializeExerciseMigration(localStorage,key,state);
@@ -292,6 +299,7 @@ state.planExtraExerciseIds=normalizePlanExtraIds(state.planExtraExerciseIds);sta
 let draft=[];
 let storageWarningShown=false;
 function save(){
+ if(storageRecoveryBlocked)return false;
  try{
   if(window.MojaSilowniaModules?.stateStorage?.key===key){
    window.MojaSilowniaModules.stateStorage.persist(state);
