@@ -1,0 +1,24 @@
+name: Exercise graphics registry
+on:
+  push:
+    branches: [feature/exercise-graphics-library]
+  pull_request:
+    paths: ['modules/exercise-graphics.mjs', 'tests/exercise-graphics.test.mjs', 'assets/graphics-r6/**']
+permissions:
+  contents: read
+jobs:
+  registry:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/exercise-graphics.test.mjs
+
+      - run: node --test tests/*.test.mjs tests/*.test.js tests/*.test.cjs
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/exercise-graphics-browser.cjs
+
+      - run: node tests/exercise-identity-browser.cjs

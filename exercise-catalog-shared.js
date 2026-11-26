@@ -16,7 +16,7 @@ const categories=Object.freeze([
  {id:'__cardio__',label:'Kardio',art:11}
 ].map(x=>Object.freeze(x)));
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function matches(exercise,id){if(id==='__all__')return true;if(id==='__cardio__')return exercise?.group==='Kardio';return exercise?.group===id;}
+function matches(exercise,id){if(id==='__all__')return true;if(id==='__cardio__')return exercise?.group==='Kardio';return exercise?.group===id||(Array.isArray(exercise?.groups)&&exercise.groups.includes(id));}
 function count(exercises,id){return (Array.isArray(exercises)?exercises:[]).filter(e=>matches(e,id)).length;}
 function tiles(exercises,{surface='picker',selected=null,includeAll=false}={}){
  const catalog=surface==='atlas',tileClass=catalog?'muscle-tile':'pick-tile',imageClass=catalog?'catalog-source-art catalog-source-':'pick-source-image pick-source-',action=catalog?'selectMuscle':'pickerChoose';
@@ -24,7 +24,8 @@ function tiles(exercises,{surface='picker',selected=null,includeAll=false}={}){
   const selectedClass=catalog&&selected===c.id?' selected':'';
   const attrs=catalog?'onclick="'+action+'(this.dataset.category)"':'data-pick-group="'+escape(c.id)+'" onclick="'+action+'(this.dataset.pickGroup)"';
   const extra=catalog?' data-category="'+escape(c.id)+'"':'';
-  const art='<span class="'+imageClass+c.art+'" aria-hidden="true"></span>';
+  const path=globalThis.ExerciseGraphics?.categoryGraphic(c.id);
+  const art=path?'<span class="'+imageClass+c.art+'" style="background-image:none" aria-hidden="true"><img class="r6-exercise-art" src="'+path+'" alt="" loading="lazy"></span>':'<span class="'+imageClass+c.art+'" aria-hidden="true"></span>';
   const title=catalog?'<span>'+escape(c.label)+'</span>':'<strong>'+escape(c.label)+'</strong>';
   return '<button type="button" class="'+tileClass+selectedClass+'"'+extra+' '+attrs+'>'+art+title+'<small>'+count(exercises,c.id)+' ćw.</small></button>';
  });
