@@ -5,13 +5,15 @@
   const isId=id=>!!catalog.getExercise(id);
   const list=()=>Array.isArray(state.activeCardio)?state.activeCardio:[];
   const timer=()=>state.cardioTimer||null;
-  const draftFor=id=>state.cardioDrafts?.[id]??ui.draftFromHistory(id,state.sessions);
+  const progression=root.MojaCardioProgression;
+  const recommendationFor=id=>progression.suggest(id,state.sessions,{sessionMode:state.activeSessionMode});
+  const draftFor=id=>state.cardioDrafts?.[id]??progression.initialDraft(recommendationFor(id));
   const activityFor=id=>list().find(a=>a.exerciseId===id)||null;
   function hasRecords(){return list().length>0;}
   function busy(){if(!timer())return false;note('Najpierw zatrzymaj stoper kardio.');return true;}
   function clear(){delete state.activeCardio;delete state.cardioDrafts;delete state.cardioTimer;}
   function validContext(id){return isId(id)&&!!state.startedAt&&state.manualStarted&&!state.activePlan&&manualIds().includes(id);}
-  function render(id,index){return ui.renderCard(id,index,{draft:draftFor(id),activity:activityFor(id),timer:timer(),blocked:!!state.timedTimer});}
+  function render(id,index){return ui.renderCard(id,index,{draft:draftFor(id),activity:activityFor(id),timer:timer(),blocked:!!state.timedTimer,recommendation:recommendationFor(id)});}
   function persist(mutate){
     const snapshot=structuredClone(state);
     try{mutate();if(save()===false)throw Error('Storage write failed');return true;}
