@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm, symlink, link } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { verifyStaging } from '../scripts/staging-integrity.mjs';
@@ -27,3 +27,7 @@ for (const [name,mutate] of [
  ['preview prefix spoof',b=>writeFile(join(b,'preview-other'),'new')],
  ['changed cache',b=>writeFile(join(b,'sw.js'),'new')]
 ]) test(name,async t=>{const [a,b]=await fixture(t);await mutate(b);await assert.rejects(verifyStaging(a,b));});
+
+test('preview symlink rejected',async t=>{const [a,b]=await fixture(t);await symlink('../index.html',join(b,'preview','alias'));await assert.rejects(verifyStaging(a,b));});
+test('preview hard link rejected',async t=>{const [a,b]=await fixture(t);await link(join(b,'index.html'),join(b,'preview','alias'));await assert.rejects(verifyStaging(a,b));});
+test('nested preview symlink rejected',async t=>{const [a,b]=await fixture(t);await mkdir(join(b,'preview','nested'));await symlink('../../index.html',join(b,'preview','nested','alias'));await assert.rejects(verifyStaging(a,b));});

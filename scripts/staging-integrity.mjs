@@ -13,13 +13,17 @@ export async function productionManifest(root) {
       if (stat.isSymbolicLink()) throw new Error('Symlink forbidden: ' + path);
       if (path === 'preview') {
         if (!stat.isDirectory()) throw new Error('Invalid preview directory');
-        continue;
       }
       if (stat.isDirectory()) await walk(path);
-      else if (stat.isFile()) entries.push([path, createHash('sha256').update(await readFile(full)).digest('hex')]);
+      else if (stat.isFile()) {
+        if (stat.nlink !== 1) throw new Error('Hard link forbidden: ' + path);
+        if (!path.startsWith('preview/')) entries.push([path, createHash('sha256').update(await readFile(full)).digest('hex')]);
+      }
       else throw new Error('Unsupported file: ' + path);
     }
   }
+  const rootStat = await lstat(root);
+  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error('Invalid artifact root');
   await walk();
   if (!entries.some(([path]) => path === 'index.html')) throw new Error('Missing production index');
   return entries;
