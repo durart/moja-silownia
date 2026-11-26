@@ -39,7 +39,9 @@
   function targetSeconds(target, setTarget, draft, previous) {
     if (secondsValid(draft?.targetDurationSeconds)) return draft.targetDurationSeconds;
     return core.parseDurationTarget(setTarget?.reps)?.minSeconds ??
+      (secondsValid(setTarget?.durationSeconds)?setTarget.durationSeconds:null) ??
       core.parseDurationTarget(target?.reps)?.minSeconds ??
+      (secondsValid(target?.durationSeconds)?target.durationSeconds:null) ??
       (core.isTimedSet(previous) ? previous.durationSeconds : 30);
   }
   function renderRow({ id, slot = null, index, entry, draft, previous, target, setTarget, next }) {

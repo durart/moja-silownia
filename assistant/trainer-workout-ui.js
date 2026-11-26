@@ -67,7 +67,8 @@
         const current=value.targetDurationSeconds;
         if(Number.isInteger(current)&&current>lower){value.targetDurationSeconds=lower;if(value.durationSeconds!=null)value.durationSeconds=lower;changed=true;}
       });
-      if(changed){record.reason='timed_review';save();if(state.activePlan)renderPlanWorkout();else renderToday();}
+      if(record.reason!=='timed_review'){record.reason='timed_review';changed=true;}
+      if(changed){save();if(state.activePlan)renderPlanWorkout();else renderToday();}
       return;
     }
     const completed=Number.isInteger(slot)?planSets(id,slot):manualSetRows(id);

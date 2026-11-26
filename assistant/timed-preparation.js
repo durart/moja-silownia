@@ -33,7 +33,7 @@
     const working = core.workingTimedSets(latest,exercise.id);
     const explicit = rangeOf(target);
     const details = Array.isArray(target?.setDetails) ? target.setDetails : [];
-    const recordedCount = Math.max(0,...working.map(r=>countOf(r.targetSetCount)||0));
+    const recordedCount = Math.max(0,...working.map(r=>Number.isInteger(r.targetSetCount)&&r.targetSetCount>0?r.targetSetCount:0));
     const count = countOf(target?.sets) || countOf(details.length) ||
       countOf(recordedCount) || countOf(working.length) || (Number.isInteger(slotIndex)?3:1);
     const range = explicit || DEFAULT_RANGE;
@@ -51,6 +51,8 @@
     const comparable = expectedSets>0 && working.length>0 &&
       latest.sets.filter(r=>!warmup(r)).every(core.isTimedSet) &&
       (Number.isInteger(slotIndex)||recordedCount>0) &&
+      (working.every(r=>!Number.isInteger(r.planSetIndex)&&!Number.isInteger(r.manualSetIndex)) ||
+        new Set(working.map(r=>Number.isInteger(slotIndex)?r.planSetIndex:r.manualSetIndex)).size===working.length) &&
       planned.filter(r=>r.setType==='W').every(r=>r.range.minSeconds===range.minSeconds &&
         r.range.maxSeconds===range.maxSeconds && r.kg===validWeight(working[0].weight));
     let advice={action:working.length?'maintain':'initial',targetSeconds:priorGoal};

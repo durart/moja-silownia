@@ -53,7 +53,7 @@
   function ensure(state,id,slot,target,completed=[]) {
     if (!active(state)) return {entry:null,changed:false};
     const existing=get(state,id,slot);
-    if (existing && (existing.rows.every(r=>r.measurementType==='duration') || !preparation.isTimedExercise(state.exercises?.find(e=>e.id===id)))) return {entry:existing,changed:false};
+    if (existing && (existing.rows.every(r=>r?.measurementType==='duration') || !preparation.isTimedExercise(state.exercises?.find(e=>e.id===id)))) return {entry:existing,changed:false};
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return {entry:null,changed:false};
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
@@ -65,7 +65,7 @@
       const row=normalizeRow(prepared.rows[i]??(prepared.rows[0]?.measurementType==='duration'?prepared.rows.at(-1):undefined));
       if (!prefs.weights) row.weight=null;
       if (!prefs.reps) {if(row.measurementType==='duration')row.durationSeconds=null;else row.reps=null;}
-      if (completed[i]) return {...normalizeRow(completed[i]),edited:true};
+      if (completed[i]) return {...normalizeRow(row.measurementType==='duration'?{...completed[i],measurementType:'duration'}:completed[i]),edited:true};
       if (existing?.rows[i]?.edited && row.measurementType==='duration') {
         const prior=existing.rows[i];return {...row,weight:validNumber(prior.weight,0,10000)?prior.weight:row.weight,
           ...(validNumber(prior.durationSeconds,1,86400,true)?{durationSeconds:prior.durationSeconds}:{}),edited:true};
@@ -102,13 +102,15 @@
   function capture(state,id,slot,index,actual) {
     const entry=get(state,id,slot);
     if (!entry||!row(state,id,slot,index)) return false;
-    entry.rows[index]={...normalizeRow({...actual,targetRir:entry.rows[index]?.targetRir}),edited:true};
+    const previous=row(state,id,slot,index);
+    entry.rows[index]={...normalizeRow(previous.measurementType==='duration'?{...actual,measurementType:'duration'}:{...actual,targetRir:previous.targetRir}),edited:true};
     return true;
   }
   function append(state,id,slot,previous) {
     const entry=get(state,id,slot);
     if (!entry||entry.rows.length>=MAX_ROWS) return false;
-    const last=normalizeRow(previous??entry.rows.at(-1));
+    const tail=normalizeRow(entry.rows.at(-1));
+    const last=normalizeRow(tail.measurementType==='duration'&&previous?.measurementType!=='duration'?tail:previous??tail);
     entry.rows.push(last.measurementType==='duration'?{...last,edited:true}:{...last,rir:null,edited:true});return true;
   }
   function removeRow(state,id,slot,index) {
@@ -127,7 +129,7 @@
     entry.rows=entry.rows.map((value,i)=>{
       const prior=normalizeRow(value);
       if (completed[i]||prior.edited) return prior;
-      const next=normalizeRow(prepared.rows[i]);
+      const next=normalizeRow(prepared.rows[i]??(prepared.rows[0]?.measurementType==='duration'?prepared.rows.at(-1):undefined));
       if (!prefs.weights) next.weight=null;
       if (!prefs.reps) {if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;}
       return next;
