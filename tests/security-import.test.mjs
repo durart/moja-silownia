@@ -38,3 +38,16 @@ for (const prefix of ['', 'preview/']) {
     assert.equal(handlers.some(handler => handler.includes('${safe(id)}') || handler.includes('${safe(e.id)}')), false);
   });
 }
+
+for (const prefix of ['', 'preview/']) {
+  test(prefix + 'plan count and exercise count limits', async () => {
+    const source = await readFile(new URL('../' + prefix + 'plan-importer.js', import.meta.url), 'utf8');
+    const context = vm.createContext({});
+    vm.runInContext(source, context);
+    assert.throws(() => context.impValidatePlans(Array.from({length:51}, () => ({rows:[]}))), /limit/);
+    assert.throws(() => context.impValidatePlans([{rows:Array(101).fill({})}]), /limit/);
+    const valid = [{rows:Array(100).fill({})}];
+    assert.equal(context.impValidatePlans(valid), valid);
+    assert.throws(() => context.impParse('x'.repeat(1048577), 'plan.txt'), /rozmiar/);
+  });
+}
