@@ -42,4 +42,4 @@ function testCore(core, catalog, check, throws) {
  check(core.elapsedSeconds(timer,100000000)===86400,'Duration cap');
 }
 testCore(core,catalog,(value,message)=>assert.ok(value,message),(fn,message)=>assert.throws(fn,undefined,message));
-console.log('Cardio core: 31 assertions passed');
+console.log('Cardio core: 30 assertions passed');
