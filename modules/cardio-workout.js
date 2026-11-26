@@ -5,14 +5,14 @@
   const isId=id=>!!catalog.getExercise(id);
   const list=()=>Array.isArray(state.activeCardio)?state.activeCardio:[];
   const timer=()=>state.cardioTimer||null;
-  const progression=root.MojaCardioProgression;
-  const recommendationFor=id=>progression.suggest(id,state.sessions,{sessionMode:state.activeSessionMode});
+  const progression=root.MojaCardioProgression,plans=root.MojaCardioPlans;
+  const recommendationFor=id=>{const slot=plans.activeSlot(state,id),plan=state.plans?.find(p=>p.id===state.activePlan);return plans.recommendation(id,state.sessions,slot===null?null:plan?.targets?.[slot],{sessionMode:state.activeSessionMode});};
   const draftFor=id=>state.cardioDrafts?.[id]??progression.initialDraft(recommendationFor(id));
   const activityFor=id=>list().find(a=>a.exerciseId===id)||null;
   function hasRecords(){return list().length>0;}
   function busy(){if(!timer())return false;note('Najpierw zatrzymaj stoper kardio.');return true;}
   function clear(){delete state.activeCardio;delete state.cardioDrafts;delete state.cardioTimer;}
-  function validContext(id){return isId(id)&&!!state.startedAt&&state.manualStarted&&!state.activePlan&&manualIds().includes(id);}
+  function validContext(id){return plans.inContext(state,id);}
   function render(id,index){return ui.renderCard(id,index,{draft:draftFor(id),activity:activityFor(id),timer:timer(),blocked:!!state.timedTimer,recommendation:recommendationFor(id)});}
   function persist(mutate){
     const snapshot=structuredClone(state);
@@ -61,7 +61,7 @@
       }else if(action==='remove'){
         if(existing||current||window.MojaTimedWorkout.busy())return;
         if(!confirm('Usunąć ćwiczenie kardio z bieżącego treningu?'))return;
-        if(!persist(()=>{state.manualExerciseIds=manualIds().filter(x=>x!==id);if(state.cardioDrafts)delete state.cardioDrafts[id];}))return;
+        if(!persist(()=>{const slot=plans.activeSlot(state,id);if(slot!==null)state.hiddenWorkoutSlots=[...new Set([...(state.hiddenWorkoutSlots||[]),slot])];else if(state.activePlan!=null)state.planExtraExerciseIds=(state.planExtraExerciseIds||[]).filter(x=>x!==id);else state.manualExerciseIds=manualIds().filter(x=>x!==id);if(state.cardioDrafts)delete state.cardioDrafts[id];}))return;
         message='Usunięto kardio.';
       }else if(action==='start'){
         if(existing||current||window.MojaTimedWorkout.busy())return;
@@ -87,7 +87,7 @@
         if(!persist(()=>{state.activeCardio=[...list(),activity];if(state.cardioDrafts)delete state.cardioDrafts[id];}))return;
         message='✓ Aktywność kardio zapisana.';
       }else return;
-      renderToday();tick();note(message);
+      if(state.activePlan!=null)renderPlanWorkout();else renderToday();tick();note(message);
     }catch(error){note('Sprawdź parametry i czas aktywności kardio.');}
   }
   document.addEventListener('click',onClick);
