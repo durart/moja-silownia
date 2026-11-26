@@ -33,6 +33,16 @@ const root=path.resolve(__dirname,'..');
  }
  if(scenario!=='restore')assert.equal(await page.evaluate(k=>localStorage.getItem(k),key),scenario==='read'?backup:scenario==='missing'?null:'{broken');
  }
+ if(scenario==='first'||scenario==='restore'){
+ const result=await page.evaluate(k=>{
+  const before=localStorage.getItem(k),previous=localStorage.getItem(k+'-previous-valid');
+  const old=state.active;state.active=[null];
+  try{return {saved:save(),unchanged:localStorage.getItem(k)===before,backupUnchanged:localStorage.getItem(k+'-previous-valid')===previous};}
+  finally{state.active=old;}
+ },key);
+ assert.deepEqual(result,{saved:false,unchanged:true,backupUnchanged:true});
+ console.log(prefix,'invalid persistence PASS');
+ }
  assert.equal(await page.evaluate(()=>localStorage.getItem('isolation-sentinel')),'unchanged');
  assert.equal(await page.evaluate(k=>localStorage.getItem(k),prefix?'moja-silownia-v01':'moja-silownia-preview-v01'),null);
  console.log(prefix,scenario,'PASS');await context.close();
