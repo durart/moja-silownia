@@ -551,7 +551,7 @@ function comfortTick(){void comfortSyncWakeLock()}
 document.addEventListener('visibilitychange',()=>{void comfortSyncWakeLock()});
 window.addEventListener('pagehide',()=>{if(comfortWakeLock){void comfortWakeLock.release();comfortWakeLock=null}});
 function activateRest(){restAudioStop();restAudioUnlock();restAudioSchedule(state.restUntil);tick()}
-function commitWorkoutMutation(mutate,id){const snapshot=structuredClone(state),drafts=structuredClone(manualDrafts);try{mutate();if(id!=null)state.restUntil=Date.now()+restSeconds(id)*1000;if(save())return true;}catch(error){console.error('Workout mutation failed',error);}state=snapshot;manualDrafts=drafts;note('Nie zapisano zmian. Spróbuj ponownie.');return false;}
+function commitWorkoutMutation(mutate,id){const snapshot=structuredClone(state),drafts=structuredClone(manualDrafts);try{mutate();if(id!=null)state.restUntil=Date.now()+restSeconds(id)*1000;if(save())return true;}catch(error){console.error('Workout mutation failed',error);}for(const key of Object.keys(state))delete state[key];Object.assign(state,snapshot);manualDrafts=drafts;note('Nie zapisano zmian. Spróbuj ponownie.');return false;}
 function startRest(id){if(!commitWorkoutMutation(()=>{},id))return false;activateRest();return true;}
 function skipRest(){restAudioStop();state.restUntil=null;save();tick()}
 function formatTime(n){n=Math.max(0,Math.floor(n));return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(x=>String(x).padStart(2,'0')).join(':')}

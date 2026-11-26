@@ -42,6 +42,22 @@ const root=path.resolve(__dirname,'..');
  },key);
  assert.deepEqual(result,{saved:false,unchanged:true,backupUnchanged:true});
  console.log(prefix,'invalid persistence PASS');
+ if(scenario==='first'){
+ const result=await page.evaluate(k=>{
+ const original=Storage.prototype.setItem;
+ const before=JSON.stringify(state),raw=localStorage.getItem(k);
+ Storage.prototype.setItem=function(name,value){if(name===k)throw Error('Injected workout failure');return original.call(this,name,value);};
+ try{startManualWorkoutNow();return {memory:JSON.stringify(state)===before,disk:localStorage.getItem(k)===raw};}
+ finally{Storage.prototype.setItem=original;}
+ },key);
+ assert.deepEqual(result,{memory:true,disk:true});
+ await page.evaluate(()=>startManualWorkoutNow());
+ const started=await page.evaluate(()=>state.startedAt);
+ await page.reload();
+ assert.equal(await page.evaluate(()=>state.startedAt),started);
+ assert.equal(await page.evaluate(()=>state.manualStarted),true);
+ console.log(prefix,'workout start rollback and reload PASS');
+ }
  }
  assert.equal(await page.evaluate(()=>localStorage.getItem('isolation-sentinel')),'unchanged');
  assert.equal(await page.evaluate(k=>localStorage.getItem(k),prefix?'moja-silownia-v01':'moja-silownia-preview-v01'),null);

@@ -14,6 +14,7 @@ function fragment(from,to){
  return script.slice(a,b);
 }
 const code=[
+ script.split('\n').find(x=>x.startsWith('function commitWorkoutMutation(')),
  fragment('function cardioExerciseId(id){','function renderPlanWorkout(){'),
  fragment('function planSets(exerciseId,slotIndex){','/* BEGIN PLAN EXTRA CORE */'),
  fragment('/* BEGIN PLAN EXTRA CORE */','/* END PLAN EXTRA CORE */'),
@@ -38,10 +39,10 @@ function setup(){
   window:{matchMedia:()=>({matches:false})},
   document:{addEventListener:()=>{},querySelectorAll:()=>[],getElementById:id=>elements[id]||null},
   note:message=>calls.messages.push(message),confirm:()=>calls.confirm,
-  save:()=>{if(store.fail)throw Error('Storage full');store.value=JSON.stringify(state);return true},
+  save:()=>{if(store.fail)throw Error('Storage full');store.value=JSON.stringify(ctx.state);return true},
   renderPlanWorkout:()=>{},renderToday:()=>{},render:()=>{},tick:()=>{},
   tab:name=>{if(name==='history')calls.history++},
-  restAudioStop:()=>{},startRest:()=>{calls.timer++},
+  console,activateRest:()=>{calls.timer++},restAudioStop:()=>{},startRest:()=>{calls.timer++},
   detectPR:()=>[],readRir:()=>2,readSetType:()=> 'W',
   safe:String,sportExerciseArt:()=>'<span>icon</span>',
   lastSets:()=>[],planSets:id=>state.active.filter(row=>row.exerciseId===id),
@@ -62,7 +63,7 @@ function setup(){
  }
  vm.runInContext(readFileSync(new URL('../modules/cardio-workout.js',import.meta.url),'utf8'),ctx);
  vm.runInContext(code+'\nthis.api={normalizePlanExtraIds,planExtraStatus,addPlanExtraExercise,removePlanExtraExercise,renderPlanExtraExercises,saveManualRow,removeManualRow,detachPlanExtrasToManual,finishWorkout,togglePlanRow,savePlanRow,planSets,manualSetRows,toggleManualRow};',ctx);
- return {state,store,calls,elements,api:ctx.api};
+ return {get state(){return ctx.state},store,calls,elements,api:ctx.api};
 }
 test('inline application code compiles',()=>assert.doesNotThrow(()=>new Function(script)));
 test('old backup loads with no new property',()=>{
