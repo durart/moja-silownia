@@ -5,6 +5,29 @@ function impNotice(msg){document.getElementById('importStatus').textContent=msg}
 function impScript(url,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve(window[globalName]);let s=document.createElement('script');s.src=url;s.onload=()=>resolve(window[globalName]);s.onerror=()=>reject(Error('Nie udało się pobrać biblioteki odczytu dokumentów. Sprawdź internet.'));document.head.appendChild(s)})}
 const PDF_LIBRARY_BASE='https://cdn.jsdelivr.net/npm/pdfjs-dist@6.5.438/legacy/build';
 function impLoadPdfLibrary(){return import(PDF_LIBRARY_BASE+'/pdf.min.mjs');}
+// Reject oversized or unsupported ZIP containers before DOCX decompression.
+function impCheckDocxArchive(buffer){
+ const view=new DataView(buffer),length=view.byteLength;
+ const invalid=()=>{throw Error('Nieprawidłowe lub zbyt duże archiwum DOCX.');};
+ if(length<22)invalid();
+ let end=-1;
+ for(let i=length-22;i>=Math.max(0,length-65557);i--){
+  if(view.getUint32(i,true)===0x06054b50&&i+22+view.getUint16(i+20,true)===length){end=i;break;}
+ }
+ if(end<0)invalid();
+ const count=view.getUint16(end+10,true),size=view.getUint32(end+12,true),start=view.getUint32(end+16,true);
+ if(view.getUint16(end+4,true)||view.getUint16(end+6,true)||view.getUint16(end+8,true)!==count||count>2048||start+size!==end)invalid();
+ let pos=start,total=0;
+ for(let i=0;i<count;i++){
+  if(pos+46>end||view.getUint32(pos,true)!==0x02014b50)invalid();
+  const flags=view.getUint16(pos+8,true),method=view.getUint16(pos+10,true),compressed=view.getUint32(pos+20,true),expanded=view.getUint32(pos+24,true);
+  total+=expanded;
+  if((flags&1)||![0,8].includes(method)||compressed>length||expanded>16*1024*1024||total>32*1024*1024)invalid();
+  pos+=46+view.getUint16(pos+28,true)+view.getUint16(pos+30,true)+view.getUint16(pos+32,true);
+  if(pos>end)invalid();
+ }
+ if(pos!==end)invalid();
+}
 async function impRead(file){
  let ext=file.name.split('.').pop().toLowerCase();
  const maxBytes=ext==='txt'?1024*1024:10*1024*1024;
@@ -41,8 +64,10 @@ async function impRead(file){
   return lines.join('\n');
  }
  if(ext==='docx'){
+  const arrayBuffer=await file.arrayBuffer();
+  impCheckDocxArchive(arrayBuffer);
   const mammoth=await impScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js','mammoth');
-  const out=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
+  const out=await mammoth.convertToHtml({arrayBuffer},{externalFileAccess:false});
   const template=document.createElement('template');template.innerHTML=out.value;
   const el=template.content;
   el.querySelectorAll('script,style,iframe,object,embed,link,meta,svg,math').forEach(node=>node.remove());
