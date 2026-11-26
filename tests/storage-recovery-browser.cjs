@@ -29,7 +29,7 @@ const root=path.resolve(__dirname,'..');
  assert.equal(await page.evaluate(()=>save()),false);
  if(['restore','cancel','write','archive'].includes(scenario)){
  await page.getByRole('button',{name:'Przywróć poprawną kopię'}).click();
- if(scenario==='restore'){await page.waitForFunction(()=>!document.getElementById('storageRecoveryPanel'));assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).plans.some(p=>p.id==='recovery-test'),key),true);assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k+'-recovery-original')).primary,key),'{broken');}
+ if(scenario==='restore'){await page.waitForFunction(()=>typeof state !== 'undefined' && !storageRecoveryBlocked && !document.getElementById('storageRecoveryPanel'));assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).plans.some(p=>p.id==='recovery-test'),key),true);assert.equal(await page.evaluate(k=>JSON.parse(localStorage.getItem(k+'-recovery-original')).primary,key),'{broken');}
  }
  if(scenario!=='restore')assert.equal(await page.evaluate(k=>localStorage.getItem(k),key),scenario==='read'?backup:scenario==='missing'?null:'{broken');
  }
