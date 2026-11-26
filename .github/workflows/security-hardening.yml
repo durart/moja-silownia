@@ -2,6 +2,10 @@ name: Security hardening checks
 on:
   pull_request:
     paths:
+      - 'vendor/**'
+      - 'preview/vendor/**'
+      - 'sw.js'
+      - 'preview/sw.js'
       - 'plan-importer.js'
       - 'preview/plan-importer.js'
       - 'index.html'
@@ -30,6 +34,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify committed vendor integrity
+        run: |
+          for dir in vendor preview/vendor; do
+            (cd "$dir" && sha256sum -c SHA256SUMS)
+          done
+          diff -qr vendor preview/vendor
       - name: Resolve pinned libraries and audit
         run: |
           mkdir dependency-check
@@ -66,19 +76,3 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - run: node tests/security-browser.cjs
-      - name: Prepare candidate local libraries and licenses
-        run: |
-          mkdir -p vendor/pdfjs vendor/mammoth
-          cp dependency-check/node_modules/pdfjs-dist/legacy/build/pdf.min.mjs vendor/pdfjs/
-          cp dependency-check/node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs vendor/pdfjs/
-          cp dependency-check/node_modules/pdfjs-dist/LICENSE vendor/pdfjs/
-          cp dependency-check/node_modules/mammoth/mammoth.browser.min.js vendor/mammoth/
-          cp dependency-check/node_modules/mammoth/LICENSE vendor/mammoth/
-          cp dependency-check/package-lock.json vendor/
-          (cd vendor && find . -type f -print0 | sort -z | xargs -0 sha256sum) > vendor.sha256
-      - uses: actions/upload-artifact@v4
-        with:
-          name: candidate-import-libraries
-          path: |
-            vendor/
-            vendor.sha256
