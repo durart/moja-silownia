@@ -3,6 +3,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
+const production=process.env.CARDIO_SURFACE==='production';
+const storageKey=production?'moja-silownia-v01':'moja-silownia-preview-v01',otherKey=production?'moja-silownia-preview-v01':'moja-silownia-v01';
 const ids=['cardio-treadmill-walk','cardio-treadmill-run','cardio-bike','cardio-stairmaster','cardio-elliptical','cardio-rowing'];
 async function open(card){
  const toggle=card.locator('.compact-card-toggle');await toggle.waitFor();
@@ -30,13 +32,13 @@ async function verify(card,id){
   const context=await browser.newContext({viewport:{width:390,height:844}});
   try{
    const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
-   await page.addInitScript(()=>{
-    if(!localStorage.getItem('moja-silownia-preview-v01'))localStorage.setItem('moja-silownia-preview-v01',JSON.stringify({exercises:[{id:'old-elliptical',name:'Orbitrek',group:'Kardio',equipment:'Orbitrek'},{id:'seed-0',name:'Wyciskanie sztangi na ławce płaskiej',group:'Klatka piersiowa',equipment:'Sztanga'}],plans:[{id:1,name:'Stary plan',exerciseIds:['old-elliptical']}],active:[],sessions:[]}));
-    localStorage.setItem('moja-silownia-v01','production-sentinel');
-   });
-   await page.goto('http://127.0.0.1:'+server.address().port+'/preview/');
+   await page.addInitScript(({storageKey,otherKey})=>{
+    if(!localStorage.getItem(storageKey))localStorage.setItem(storageKey,JSON.stringify({exercises:[{id:'old-elliptical',name:'Orbitrek',group:'Kardio',equipment:'Orbitrek'},{id:'seed-0',name:'Wyciskanie sztangi na ławce płaskiej',group:'Klatka piersiowa',equipment:'Sztanga'}],plans:[{id:1,name:'Stary plan',exerciseIds:['old-elliptical']}],active:[],sessions:[]}));
+    localStorage.setItem(otherKey,'production-sentinel');
+   },{storageKey,otherKey});
+   await page.goto('http://127.0.0.1:'+server.address().port+(production?'/':'/preview/'));
    await page.waitForFunction(()=>!!window.MojaCardioWorkout&&!!document.getElementById('compactWorkoutDock'));
-   assert.match(await page.title(),/Kardio r2/);
+   assert.match(await page.title(),production?/v3\.5\.0 — Kardio/:/Kardio r2/);
    assert.equal(await page.evaluate(()=>state.plans[0].exerciseIds[0]),'cardio-elliptical');
    await page.evaluate(()=>{tab('catalog');uiCatalogChoose('__cardio__');});
    const rows=page.locator('#catalogList .catalog-exercise-main');
@@ -70,7 +72,7 @@ async function verify(card,id){
    await page.reload();await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
    await context.setOffline(true);await page.reload({waitUntil:'domcontentloaded'});
    await verify(page.locator('#today [data-cardio-id="cardio-elliptical"]'),'cardio-elliptical');
-   assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),'production-sentinel');
+   assert.equal(await page.evaluate(key=>localStorage.getItem(key),otherKey),'production-sentinel');
    assert.deepEqual(errors,[]);
    console.log('All six cardio atlas icons, saved plan cards, picker and offline state verified.');
   }finally{await context.close();}
