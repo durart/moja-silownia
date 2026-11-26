@@ -103,9 +103,9 @@ test('calories prefer persisted estimate over current function', () => {
 
 test('new summary assets are integrated and old full PNG remains available', () => {
   assert.match(html, /id="summary"/);
-  assert.match(html, /summary-core\.js\?v=1/);
-  assert.match(html, /summary-export\.js\?v=1/);
-  assert.match(html, /summary-ui\.js\?v=1/);
+  assert.match(html, /summary-core\.js\?v=2/);
+  assert.match(html, /summary-export\.js\?v=2/);
+  assert.match(html, /summary-ui\.js\?v=2/);
   assert.match(html, /summary\.css\?v=1/);
   assert.match(html, /openSportSummary\(session\.id\)/);
   assert.match(html, /function exportWorkoutPNG\(id\)/);
