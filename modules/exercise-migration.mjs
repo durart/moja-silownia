@@ -2,7 +2,6 @@ import {canonicalExerciseId,projectCatalog,EXERCISE_ALIASES} from './exercise-id
 
 const own=(object,key)=>Object.hasOwn(object,key);
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-const mapIds=ids=>ids.map(canonicalExerciseId);
 
 // Prepare a candidate without mutating or persisting the source.
 export function prepareExerciseMigration(source) {
@@ -38,7 +37,11 @@ export function prepareExerciseMigration(source) {
  }
  for(const plan of next.plans||[]){
   if(!Array.isArray(plan.exerciseIds))throw new TypeError('Invalid plan exercise IDs');
-  plan.exerciseIds=plan.exerciseIds.map(resolve);
+  const mapped=plan.exerciseIds.map(resolve);
+  if(mapped.some((id,i)=>mapped.slice(0,i).includes(id)&&plan.exerciseIds.slice(0,i).some((old,j)=>mapped[j]===id&&old!==plan.exerciseIds[i]))) {
+   conflicts.push({path:'plan:'+plan.id+':exerciseIds',reason:'duplicate-plan-slots'});
+  }
+  plan.exerciseIds=mapped;
  }
  for(const key of ['restSettings','activeExerciseNotes'])if(next[key]!=null)next[key]=mapRecord(next[key],key);
  for(const key of ['manualExerciseIds','planExtraExerciseIds'])if(Array.isArray(next[key]))next[key]=next[key].map(resolve);
@@ -59,4 +62,13 @@ export function persistExerciseMigration(storage,key,source) {
  if(storage.getItem(backupKey)!==previous)throw new Error('Migration backup could not be verified');
  storage.setItem(key,JSON.stringify(candidate.state));
  return candidate;
+}
+
+// The caller must pass the exact persisted state, not an unsaved normalized copy.
+export function initializeExerciseMigration(storage,key,state) {
+ try {
+  return persistExerciseMigration(storage,key,state);
+ } catch(error) {
+  return {status:'error',state,conflicts:[],reason:String(error.message||error)};
+ }
 }
