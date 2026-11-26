@@ -12,7 +12,13 @@ body.sport-performance #exercisePicker.swap-embedded-picker{position:static!impo
 #exercisePicker.swap-embedded-picker .pick-head h2{font-size:1rem}
 #exercisePicker.swap-embedded-picker .pick-tiles{grid-template-columns:repeat(2,minmax(0,1fr));margin:8px 0}
 #exercisePicker.swap-embedded-picker .pick-results{padding:4px;max-height:48dvh;overflow:auto}
-.swap-section .swap-option{overflow-wrap:anywhere}
+.swap-section .swap-option{display:grid;grid-template-columns:clamp(56px,20vw,84px) minmax(0,1fr);align-items:center;gap:10px;overflow-wrap:anywhere;text-align:left}
+.swap-option .swap-thumb{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:8px;background:#132633}
+.swap-option .swap-thumb img,.swap-option .swap-thumb svg{width:100%;height:100%;display:block;object-fit:contain}
+.swap-option .swap-thumb .ui-thumb-sprite,.swap-option .swap-thumb .ui-thumb-fallback{width:100%;height:100%}
+.swap-option .swap-option-copy{display:block;min-width:0}
+.swap-option .swap-option-copy strong{display:block}
+@media(max-width:360px){.swap-section .swap-option{gap:8px;padding:8px}}
 .swap-section .swap-score{float:none;display:block;font-size:.83rem;margin-bottom:4px}
 </style></head><body class="sport-performance"><main><h1 class="sport-app-title"><span class="sport-app-mark" aria-hidden="true"><img src="./icon-192.png?v=1.6.12" alt="" width="48" height="48" style="display:block;width:100%;height:100%;object-fit:cover;border-radius:12px"></span><span class="sport-app-name">Moja Siłownia</span><span class="badge">TEST v3.5.1</span></h1><p class="sport-tagline"><strong>SPORT PERFORMANCE</strong><span aria-hidden="true"> / </span> Prywatny dziennik treningowy</p>
 <nav class="top-start-nav" aria-label="Nawigacja aplikacji"><button onclick="tab('dashboard')">Start</button><button class="secondary" onclick="tab('plans')">Plany</button><button class="secondary" onclick="tab('catalog')">Atlas ćwiczeń</button><button class="secondary" onclick="tab('history')">Historia</button><button class="secondary" onclick="tab('progress')">Postępy</button><button class="secondary" onclick="tab('profile')">Profil</button></nav>
@@ -94,6 +100,9 @@ function chestThumbnail(name){
   if(index<0||index===7)return '<span class="pick-chest-fallback" aria-hidden="true"></span>';
   return '<span class="pick-chest-img pick-chest-'+index+'" aria-hidden="true"></span>';
 }
+function pickerExerciseArt(e){
+ return reviewedExerciseArt(e)||(e.group==='Kalistenika'?calisthenicsArt(e.kind,e.id):uiExerciseThumb(e));
+}
 function pickerRender(){
  const config=ExerciseCatalog.categories.map(c=>[c.id,c.label,c.art]);
  const query=document.getElementById("pickSearch").value.trim().toLocaleLowerCase("pl");
@@ -111,7 +120,7 @@ function pickerRender(){
  results.innerHTML='<p class="pick-count">'+filtered.length+" ćwiczeń · "+(pickerOrder==="recent"?"ostatnio używane najpierw":"kolejność alfabetyczna")+"</p>"+
  (filtered.length?filtered.map(e=>
   '<div class="pick-row"><button type="button" class="pick-exercise" data-pick-id="'+safe(e.id)+'" onclick="pickerAdd(this.dataset.pickId)"><span class="pick-thumb" aria-hidden="true">'+
-  (e.group==='Kalistenika'?calisthenicsArt(e.kind,e.id):uiExerciseThumb(e))+'</span><span class="pick-exercise-name">'+safe(e.name)+"<small>"+safe(e.equipment||e.group)+"</small></span></button>"+
+  pickerExerciseArt(e)+'</span><span class="pick-exercise-name">'+safe(e.name)+"<small>"+safe(e.equipment||e.group)+"</small></span></button>"+
   '<button type="button" class="pick-more" data-pick-id="'+safe(e.id)+'" onclick="pickerTechnique(this.dataset.pickId)" title="Zobacz technikę" aria-label="Zobacz technikę: '+safe(e.name)+'">⋮</button></div>'
  ).join(""):'<p class="pick-empty">Brak ćwiczeń w tej grupie. Możesz wrócić i wybrać inną partię.</p>');
 }
@@ -1113,7 +1122,7 @@ function openSwap(mode,index,manualId=null){
  if(swapContext)closeSwap();
  swapContext={mode,index,id};swapBodyOverflow=document.body.style.overflow;
  const options=swapSuggestions(id),profile=exerciseProfile(exercise);
- const details=options.length?options.map(({e,score})=>`<button type="button" class="swap-option" data-swap-id="${safe(e.id)}"><span class="swap-score">${score}% dopasowania</span><strong>${safe(e.name)}</strong><small>${safe(e.equipment||'Sprzęt nieokreślony')} · ${Object.entries(exerciseProfile(e)).map(([m,v])=>safe(m)+' '+Math.round(v*100)+'%').join(' · ')}</small></button>`).join(''):'<p>Brak podobnych ćwiczeń w katalogu.</p>';
+ const details=options.length?options.map(({e,score})=>`<button type="button" class="swap-option" data-swap-id="${safe(e.id)}"><span class="swap-thumb" aria-hidden="true">${pickerExerciseArt(e)}</span><span class="swap-option-copy"><strong>${safe(e.name)}</strong><small>${safe(e.equipment||'Sprzęt nieokreślony')} · ${Object.entries(exerciseProfile(e)).map(([m,v])=>safe(m)+' '+Math.round(v*100)+'%').join(' · ')}</small><span class="swap-score">${score}% dopasowania</span></span></button>`).join(''):'<p>Brak podobnych ćwiczeń w katalogu.</p>';
  const contents=document.getElementById('swapContents');
  contents.innerHTML=`<p><strong>Obecnie:</strong> ${safe(exercise.name)}</p>
  <details class="swap-section" id="swapAtlas"><summary>Atlas ćwiczeń <small>Wybierz dowolne ćwiczenie</small></summary><div id="swapPickerMount"></div></details>
