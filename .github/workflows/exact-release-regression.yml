@@ -1,0 +1,116 @@
+name: Exact SHA release regression
+on:
+  workflow_call:
+    inputs:
+      release_sha:
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.release_sha }}
+          persist-credentials: false
+      - env:
+          EXPECTED: ${{ inputs.release_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: node --test tests/*.test.mjs tests/*.test.js tests/*.test.cjs
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.release_sha }}
+          persist-credentials: false
+      - env:
+          EXPECTED: ${{ inputs.release_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          node tests/cardio-preview-browser-smoke.cjs
+          CARDIO_SURFACE=production node tests/cardio-preview-browser-smoke.cjs
+          node tests/timed-workout-browser-smoke.cjs
+          node tests/musclemap-browser-smoke.cjs
+          node tests/compact-workout-browser-smoke.cjs
+          node tests/exercise-graphics-browser.cjs
+          node tests/exercise-identity-browser.cjs
+          node tests/progress-browser-smoke.cjs
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.release_sha }}
+          persist-credentials: false
+      - env:
+          EXPECTED: ${{ inputs.release_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Verify committed vendor integrity
+        run: |
+          cat > /tmp/expected-vendor.sha256 <<'EOF'
+          6663bbd049205d38a496ccacb412a151980b444627d38de218b3b809aef330f1  ./mammoth/LICENSE
+          2a0c24d419b8b6b307b2c59dcad9ac045ef43c29fdb23f3b0f2e82d5b09287fe  ./mammoth/mammoth.browser.min.js
+          37f5fa5aeb39d56b22305537bf45f24665798997bd9272305c8e614cce9efdf7  ./package-lock.json
+          0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594  ./pdfjs/LICENSE
+          522ad2c83bc8a0010e7f0cc60d0892b77c8d2bf2c9702dc12288311d94270f42  ./pdfjs/pdf.min.mjs
+          b4c8353ded0d88d2e2009574a29eb4e0c3ff7e942ecdf51ef5f71566a9667f31  ./pdfjs/pdf.worker.min.mjs
+          EOF
+          for dir in vendor preview/vendor; do
+            (cd "$dir" && sha256sum -c /tmp/expected-vendor.sha256)
+            (cd "$dir" && sha256sum -c SHA256SUMS)
+          done
+          diff -qr vendor preview/vendor
+      - name: Resolve pinned libraries and audit
+        run: |
+          mkdir dependency-check
+          cd dependency-check
+          npm init -y
+          npm install --ignore-scripts --save-exact pdfjs-dist@6.5.438 mammoth@1.9.0
+          npm audit --omit=dev --audit-level=high
+      - name: Generate real document fixtures and test dependencies
+        run: |
+          mkdir -p dependency-check/fixtures
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          root = Path('dependency-check/fixtures')
+          stream = b'BT /F1 12 Tf 50 750 Td (TRENING 1) Tj ET'
+          objects = [b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>', b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>', b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>', b'<< /Length '+str(len(stream)).encode()+b' >>\nstream\n'+stream+b'\nendstream']
+          pdf = bytearray(b'%PDF-1.4\n')
+          offsets = [0]
+          for i, obj in enumerate(objects, 1):
+              offsets.append(len(pdf))
+              pdf.extend(str(i).encode()+b' 0 obj\n'+obj+b'\nendobj\n')
+          xref = len(pdf)
+          pdf.extend(b'xref\n0 6\n0000000000 65535 f \n')
+          for offset in offsets[1:]:
+              pdf.extend(f'{offset:010d} 00000 n \n'.encode())
+          pdf.extend(f'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n'.encode())
+          (root/'plan.pdf').write_bytes(pdf)
+          with ZipFile(root/'plan.docx','w') as z:
+              z.writestr('[Content_Types].xml','<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+              z.writestr('_rels/.rels','<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')
+              z.writestr('word/document.xml','<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>TRENING 1</w:t></w:r></w:p><w:p><w:r><w:t>Bench press</w:t></w:r></w:p></w:body></w:document>')
+          PY
+          SECURITY_VENDOR_ROOT="$PWD/dependency-check" node --test tests/security-real-documents.test.mjs
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - name: Run offline browser security regression
+        timeout-minutes: 4
+        run: node tests/security-browser.cjs

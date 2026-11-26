@@ -1,0 +1,2 @@
+# Exact SHA dry run
+The PR dry run has read-only permissions and no deployment job. It tests the exact PR head, not the merge result. The inactive production template calls the same regression at the main SHA. The artifact builder reads tracked blobs only, excludes infrastructure and rejects links. Review the allowlist against the live site before activation. The self-comparison is a smoke test, not proof of an independently trusted production baseline. Real owner approval, rollback and Pages deployment remain untested. No automatic staging publisher is enabled.

@@ -13,7 +13,12 @@ concurrency:
   group: pages-publication
   cancel-in-progress: false
 jobs:
+  regression:
+    uses: ./.github/workflows/exact-release-regression.yml
+    with:
+      release_sha: ${{ github.sha }}
   build:
+    needs: regression
     if: github.ref == 'refs/heads/main' && vars.PAGES_RELEASE_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -30,11 +35,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-      - run: node --test tests/*.test.mjs
-      - run: |
-          mkdir -p "$RUNNER_TEMP/site"
-          git archive HEAD | tar -x -C "$RUNNER_TEMP/site"
-          rm -rf "$RUNNER_TEMP/site/.github" "$RUNNER_TEMP/site/tests" "$RUNNER_TEMP/site/scripts" "$RUNNER_TEMP/site/docs"
+      - run: node scripts/release-artifact.mjs "$GITHUB_SHA" "$RUNNER_TEMP/site"
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: ${{ runner.temp }}/site

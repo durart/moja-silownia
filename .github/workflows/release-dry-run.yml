@@ -1,0 +1,28 @@
+name: Release dry run
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  regression:
+    uses: ./.github/workflows/exact-release-regression.yml
+    with:
+      release_sha: ${{ github.event.pull_request.head.sha }}
+  artifact:
+    needs: regression
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - env:
+          EXPECTED: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: |
+          node scripts/release-artifact.mjs "$(git rev-parse HEAD)" "$RUNNER_TEMP/site"
+          node scripts/staging-integrity.mjs "$RUNNER_TEMP/site" "$RUNNER_TEMP/site"
