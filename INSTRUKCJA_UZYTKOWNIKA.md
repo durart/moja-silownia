@@ -1,6 +1,6 @@
 # Moja Siłownia — instrukcja użytkownika
 
-Wersja dokumentacji: 1.4 | Aplikacja: 3.4.0 | Aktualizacja: 26.11.2026
+Wersja dokumentacji: 1.5 | Aplikacja: 3.6.0 | Aktualizacja: 26.11.2026
 
 [Aplikacja](https://durart.github.io/moja-silownia/)
 
@@ -97,3 +97,7 @@ Instrukcja obejmuje kandydata wydania 3.4.0. Wdrożenie produkcyjne wymaga zako�
 
 ## Instrukcje techniki — aktualizacja 3.3.1
 W katalogu wybierz przycisk Technika przy ćwiczeniu. Instrukcje 103 ćwiczeń podstawowych są przypisane do identyfikatorów ćwiczeń, nie do podobieństwa nazw. Wybrane ćwiczenia mają nowe ilustracje poglądowe. Odnośniki zewnętrzne wymagają internetu. Ilustracje nie zastępują korekty techniki przez trenera.
+
+
+## Katalog ćwiczeń — wersja 3.6.0
+Sześć powielonych pozycji kalistenicznych ma wspólną tożsamość z odpowiednikami w katalogu podstawowym. Migracja zachowuje serie historyczne i ich pierwotne identyfikatory; jest odraczana podczas aktywnego treningu. W przypadku konfliktu danych migracja nie powinna nadpisywać rozbieżnych wartości.

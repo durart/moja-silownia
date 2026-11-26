@@ -70,7 +70,7 @@ function renderCatalog(){
  list.innerHTML=`<p class="catalog-count">${hits.length} ćwiczeń · ${uiCatalogOrder==='recent'?'ostatnio używane najpierw':'kolejność alfabetyczna'}</p>`+
  (hits.length?hits.map(e=>`<div class="catalog-exercise-row">
   <button class="catalog-exercise-main" type="button" data-id="${safe(e.id)}" onclick="uiCatalogAdd(this.dataset.id)" title="Dodaj do planu: ${safe(e.name)}">
-   <span class="catalog-thumb" aria-hidden="true">${window.CALISTHENICS_ICON_SVGS?.[e.id]||uiExerciseThumb(e)}</span>
+   <span class="catalog-thumb" aria-hidden="true">${r6ExerciseArt(e)||window.CALISTHENICS_ICON_SVGS?.[e.id]||uiExerciseThumb(e)}</span>
    <span class="catalog-exercise-label">${safe(e.name)}<small>${safe(e.equipment||e.group)} · dotknij, aby dodać do planu</small></span>
   </button>
   <button class="catalog-technique" type="button" data-id="${safe(e.id)}" onclick="openTechnique(this.dataset.id)" title="Zobacz technikę" aria-label="Zobacz technikę: ${safe(e.name)}">⋮</button>

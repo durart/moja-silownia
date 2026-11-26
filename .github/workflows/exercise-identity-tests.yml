@@ -1,0 +1,21 @@
+name: Exercise identity migration tests
+on:
+  push:
+    branches:
+      - feature/exercise-catalog-deduplication
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  identity:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/exercise-identity.test.mjs tests/exercise-migration.test.mjs
+      - run: node --test tests/*.test.mjs
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/exercise-identity-browser.cjs

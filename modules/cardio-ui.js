@@ -45,7 +45,7 @@
   }
   function thumbnail(exerciseId) {
     const ex=catalog.getExercise(exerciseId);
-    return ex?'<img class="cardio-thumbnail" src="'+escape(ex.imagePath)+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain">':'';
+    return ex?'<img class="cardio-thumbnail" src="'+escape(globalThis.ExerciseGraphics?.exerciseGraphic(ex.id)||ex.imagePath)+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain">':'';
   }
   function activityLabel(activity) {
     const ex=catalog.getExercise(activity?.exerciseId);
