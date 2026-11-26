@@ -4,7 +4,7 @@
 const num=x=>Number.isFinite(Number(x))?Number(x):0;
 const validDate=x=>{const t=Date.parse(x);return Number.isFinite(t)?t:null};
 function weekStart(date){const d=new Date(date);d.setHours(0,0,0,0);d.setDate(d.getDate()-(d.getDay()+6)%7);return d.getTime();}
-function sessionVolume(s){return (s?.sets||[]).reduce((v,x)=>v+Math.max(0,num(x.weight))*Math.max(0,num(x.reps)),0);}
+function sessionVolume(s){return (s?.sets||[]).reduce((v,x)=>v+(x.measurementType==='duration'?0:Math.max(0,num(x.weight))*Math.max(0,num(x.reps))),0);}
 function snapshot(state,now=new Date(),goal=3){
  const sessions=Array.isArray(state?.sessions)?state.sessions:[];
  const sorted=sessions.filter(s=>validDate(s?.date)!==null).slice().sort((a,b)=>validDate(b.date)-validDate(a.date));

@@ -55,7 +55,7 @@ const root=path.resolve(__dirname,'..');
    // Inject the former asset URL with a deliberately stale API into the active cache.
    // A new version must not request this legacy URL, even offline.
    await page.evaluate(async()=>{
-    const name=(await caches.keys()).find(n=>n.includes('v49-isometric-dev'));
+    const name=(await caches.keys()).find(n=>n.includes('v50-isometric-3.4.0'));
     const cache=await caches.open(name);
     await cache.put(new Request(new URL('progress-core-v2.js?v=3',location.href)),new Response('window.ProgressCore={inPeriod:()=>[]};',{headers:{'Content-Type':'text/javascript'}}));
    });
@@ -70,9 +70,9 @@ const root=path.resolve(__dirname,'..');
    await page.getByRole('heading',{name:'Podsumowanie okresowe',exact:true}).waitFor();
    assert.match(await page.locator('#progressContent').innerText(),/585 kg/);
    assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before.raw,'reports are read-only offline');
-   assert.ok((await page.title()).includes('3.3.2'));
+   assert.ok((await page.title()).includes('3.4.0'));
    const names=await page.evaluate(()=>caches.keys());
-   assert.ok(names.some(n=>n.includes('v49-isometric-dev')));
+   assert.ok(names.some(n=>n.includes('v50-isometric-3.4.0')));
   }finally{await context.close();await new Promise(resolve=>server.close(resolve));}
  }finally{await browser.close();}
 })().then(()=>require('./trainer-browser-smoke.cjs')()).catch(error=>{console.error(error);process.exitCode=1;});

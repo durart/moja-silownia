@@ -1,6 +1,6 @@
 # Moja Siłownia — instrukcja użytkownika
 
-Wersja dokumentacji: 1.3 | Aplikacja: 3.3.2 | Aktualizacja: 26.11.2026
+Wersja dokumentacji: 1.4 | Aplikacja: 3.4.0 | Aktualizacja: 26.11.2026
 
 [Aplikacja](https://durart.github.io/moja-silownia/)
 
@@ -32,6 +32,9 @@ Wybierz ćwiczenie, wpisz rzeczywisty ciężar i powtórzenia oraz opcjonalnie R
 
 Dotknij nagłówka ćwiczenia lub strzałki, aby rozwinąć lub zwinąć serie. Widoczny jest licznik wykonanych serii i zielony znacznik ukończenia. Po zapisaniu ostatniej serii otwartego ćwiczenia rozwija się następne nieukończone. Możesz ponownie otworzyć dowolną kartę; zwinięcie nie usuwa serii. Wybrana karta jest zapamiętywana dla bieżącej sesji.
 
+### Ćwiczenia izometryczne (3.4.0)
+Plank, plank boczny, zwis na drążku, hollow body hold i L-sit na poręczach mają pole Czas (s) i opcjonalny dodatkowy ciężar zamiast powtórzeń i RIR. Uruchom stoper, zatrzymaj po wykonaniu pozycji, sprawdź czas i zatwierdź serię; wtedy zacznie się przerwa. Możesz wpisać sekundy ręcznie. Jeden stoper na sesję; odświeżenie zachowuje moment startu. Przed zakończeniem sesji zatrzymaj stoper.
+
 ## 7. Czas i przerwy
 Licznik mierzy czas sesji, a timer odlicza przerwę (domyślnie 90 s według dotychczasowych ustaleń). Na ekranie aktywnego treningu licznik jest stale widoczny nad przyciskiem zakończenia. +15 s wydłuża aktywną przerwę, a Pomiń pozwala kontynuować wcześniej. Testuj dźwięk sprawdza sygnały zależne od urządzenia.
 
@@ -42,6 +45,8 @@ Skrócona rekomendacja pozostaje widoczna; wybierz Pokaż uzasadnienie, aby zoba
 
 ## 9. Asystent Trenera
 Przygotowuje wartości startowe kolejnego treningu na podstawie wcześniejszych zapisów. Po wykonaniu i zapisaniu treningu A kolejna sesja może otrzymać zaktualizowane propozycje. Zawsze koryguj je do rzeczywistego wykonania.
+
+W ćwiczeniach czasowych Asystent proponuje wzrost o 5 s po ukończeniu porównywalnych serii roboczych, do limitu planu. W treningu dowolnym domyślny zakres to 30–60 s. Regeneracja, gorsza gotowość, problemy z techniką lub niepełne serie ograniczają progresję. Nie zwiększa automatycznie dodatkowego ciężaru. Zapisuj rzeczywisty czas.
 
 ## 10. Atlas ćwiczeń
 Wybierz partię mięśniową lub wyszukaj nazwę. Przełącz sortowanie między ostatnio używanymi i alfabetycznym. Dla dostępnych pozycji otwórz informacje o technice. Aby dodać własne ćwiczenie, rozwiń Dodaj własne ćwiczenie, wpisz nazwę, wybierz grupę i zapisz.
@@ -55,6 +60,8 @@ Przeglądaj ostatni trening, zakończone sesje i statystyki aktywności. Wybierz
 ## 13. Postępy
 Analizuj progresję siłową, szacowane 1RM i objętość. 1RM jest estymacją, nie wynikiem testu maksymalnego. Porównuj to samo ćwiczenie, maszynę i technikę; oceniaj trend wielu sesji, nie pojedynczy słabszy wynik. Analiza pracy mięśni nie mierzy rzeczywistej hipertrofii.
 
+W Postępach wybierz ćwiczenie czasowe: najdłuższa seria i łączny czas serii roboczych są w sekundach. Rekord czasu uwzględnia sesje standardowe, a dodatkowy ciężar jest wyświetlany osobno. Sekundy nie zwiększają tonażu ani 1RM. Historia, mapa mięśni, podsumowanie i PNG uwzględniają izometrię; CSV ma oddzielną kolumnę czasu. Stare zapisy bez jednostki czasu nie są automatycznie przeliczane.
+
 ## 14. Profil
 Zapisuj masę ciała z datą i wzrost. Masa wspiera szacowanie kalorii i analizy siły względnej. Kalorie są szacowane, nie mierzone bezpośrednio.
 
@@ -66,7 +73,7 @@ Dane Garmin Connect można wpisywać ręcznie przed sesją: Body Battery, sen, o
 
 ## 17. Kopie zapasowe
 Dane pozostają w pamięci przeglądarki. Historia → Kopia danych → Pobierz kopię na telefon (JSON) lub Wybierz miejsce zapisu kopii. System może udostępniać lokalny folder, Dysk Google lub Dropbox.
-Aby przywrócić dane, najpierw wyeksportuj bieżący stan, następnie wybierz Import kopii JSON i sprawdź historię oraz plany. Import może wpływać na istniejące dane.
+Aby przywrócić dane, najpierw wyeksportuj bieżący stan, następnie wybierz Import kopii JSON i sprawdź historię oraz plany. Import po potwierdzeniu zastępuje dane na danym urządzeniu. Nieprawidłowe jawne serie czasowe są odrzucane przed zastąpieniem danych; stare zapisy zachowują format. Import zatrzymuje aktywny stoper, ale zachowuje zapisane serie i robocze wartości.
 Wykonuj kopię co najmniej raz w tygodniu, przed aktualizacją, zmianą urządzenia i importem. Zapis w chmurze nie oznacza automatycznej synchronizacji. Nie czyść danych witryny bez kopii.
 
 ## 18. Codzienny sposób pracy
@@ -86,7 +93,7 @@ Przed treningiem sprawdź obciążenie mięśni, wybierz plan i opcjonalnie wpis
 Zapisuj rzeczywiste wyniki, wiarygodny RIR, sesje regeneracyjne i notatki. Analizuj trendy. Traktuj asystenta jako wsparcie. Regularnie twórz kopie.
 
 ## Zakres weryfikacji
-Instrukcja uwzględnia zakres wydania 3.3.0; przed publikacją wymagana jest weryfikacja regresyjna i akceptacja użytkownika. Szczegółowe zachowanie raportów, asystentów i importu nie zostało ponownie przetestowane przy sporządzaniu dokumentacji. Funkcje testowe nie są przedstawiane jako produkcyjne.
+Instrukcja obejmuje kandydata wydania 3.4.0. Wdrożenie produkcyjne wymaga zakończenia regresji i akceptacji użytkownika. Garmin LIVE i kardio pozostają poza zakresem.
 
 ## Instrukcje techniki — aktualizacja 3.3.1
 W katalogu wybierz przycisk Technika przy ćwiczeniu. Instrukcje 103 ćwiczeń podstawowych są przypisane do identyfikatorów ćwiczeń, nie do podobieństwa nazw. Wybrane ćwiczenia mają nowe ilustracje poglądowe. Odnośniki zewnętrzne wymagają internetu. Ilustracje nie zastępują korekty techniki przez trenera.
