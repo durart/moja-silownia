@@ -61,7 +61,7 @@ function assertTimedSet(set, seconds) {
           if (!localStorage.getItem(otherKey)) localStorage.setItem(otherKey,'isolation-sentinel');
         }, {seed,storageKey,otherKey});
         await page.goto('http://127.0.0.1:' + server.address().port + (preview?'/preview/':'/'));
-        assert.match(await page.title(),preview?/TEST v3\.4\.0/:/v3\.4\.0/);
+        assert.match(await page.title(),preview?/TEST v3\.(?:4|5)\.0/:/v3\.(?:4|5)\.0/);
         await page.waitForFunction(() => !!window.MojaTimedWorkout && !!document.getElementById('compactWorkoutDock'));
         await page.evaluate(() => { startPlan(0); confirmWorkoutStart(); });
         const plank = page.locator('#planWorkout [data-workout-slot="0"]');
@@ -167,7 +167,39 @@ function assertTimedSet(set, seconds) {
         await openCard(manual);
         assertTimedSet(await page.evaluate(() => state.active[0]),42);
         assert.equal(await page.evaluate(key => localStorage.getItem(key),otherKey),'isolation-sentinel');
-        assert.ok((await page.evaluate(()=>caches.keys())).includes(preview?'moja-silownia-preview-shell-v50-isometric-3.4.0':'moja-silownia-shell-v50-isometric-3.4.0'));
+        assert.ok((await page.evaluate(()=>caches.keys())).some(k=>k.startsWith(preview?'moja-silownia-preview-shell-':'moja-silownia-shell-')&&/3\.(?:4|5)\.0(?:-r2)?$/.test(k)));
+        if(await page.evaluate(()=>!!window.MojaCardioWorkout)){
+          // Continue the existing manual workout while offline, with cardio and a saved timed set.
+          await page.evaluate(()=>{document.getElementById('exercise').value='cardio-treadmill-walk';addManualExercise();});
+          const cardio=page.locator('#today [data-cardio-id="cardio-treadmill-walk"]');
+          await openCard(cardio);
+          await cardio.locator('input[data-cardio-field="speedKmh"]').fill('5.5');
+          await cardio.locator('input[data-cardio-field="inclinePercent"]').fill('5');
+          await cardio.locator('button[data-cardio-action="start"]').click();
+          await page.waitForTimeout(1100);
+          await cardio.locator('button[data-cardio-action="pause"]').click();
+          const timerSnapshot=await page.evaluate(()=>state.cardioTimer);
+          assert.equal(timerSnapshot.status,'paused');
+          await page.reload({waitUntil:'domcontentloaded'});
+          await openCard(cardio);
+          assert.deepEqual(await page.evaluate(()=>state.cardioTimer),timerSnapshot);
+          await cardio.locator('button[data-cardio-action="resume"]').click();
+          await page.waitForTimeout(1100);
+          await cardio.locator('button[data-cardio-action="stop"]').click();
+          await cardio.locator('input[data-cardio-field="durationSeconds"]').fill('30');
+          await cardio.locator('button[data-cardio-action="save"]').click();
+          assert.equal(await page.evaluate(()=>state.active.length),1);
+          assert.equal(await page.evaluate(()=>state.activeCardio[0].durationSeconds),1800);
+          assert.match(await cardio.locator('.compact-card-status').innerText(),/Kardio wykonane/);
+          await page.evaluate(()=>finishWorkout());
+          const mixed=await page.evaluate(()=>state.sessions[0]);
+          assert.equal(mixed.sets.length,1);
+          assert.equal(mixed.cardio.length,1);
+          assert.equal(mixed.cardio[0].distanceMeters,2750);
+          assert.ok(mixed.calories.cardio.active>0);
+          assert.match(await page.locator('#summaryContent').textContent(),/CZAS KARDIO/);
+          assert.equal(await page.evaluate(key=>localStorage.getItem(key),otherKey),'isolation-sentinel');
+        }
         assert.deepEqual(errors,[]);
         console.log('Timed workout smoke passed at width '+width+' ('+(preview?'preview':'candidate')+')');
       } finally { await context.close(); }

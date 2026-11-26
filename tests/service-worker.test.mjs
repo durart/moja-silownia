@@ -11,8 +11,10 @@ function setup({ failPrecache = false } = {}) {
   const added = [];
   const cache = {
     add: async asset => {
-      added.push(asset);
-      if (failPrecache && asset.includes('index.html')) throw new Error('offline');
+      assert.ok(asset instanceof Request);
+      assert.equal(asset.cache, 'reload');
+      added.push(asset.url);
+      if (failPrecache && asset.url.includes('index.html')) throw new Error('offline');
     },
   };
   const caches = {
@@ -25,7 +27,7 @@ function setup({ failPrecache = false } = {}) {
     registration: { scope: 'https://example.test/moja-silownia/' },
     addEventListener: (name, handler) => handlers.set(name, handler),
   };
-  vm.runInNewContext(source, { self: worker, caches, URL, Promise, Response });
+  vm.runInNewContext(source, { self: worker, caches, URL, Promise, Request, Response });
   return { handlers, deleted, added };
 }
 

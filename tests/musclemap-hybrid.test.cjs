@@ -76,9 +76,9 @@ test('staging mirrors feature assets without changing training storage',()=>{
   for(const index of ['index.html','preview/index.html'])assert.ok(read(index).includes('./'+asset+'?v='+v),asset+' '+index);
   for(const sw of ['sw.js','preview/sw.js'])assert.ok(read(sw).includes('./'+asset+'?v='+v),asset+' '+sw);
  }
- assert.match(read('sw.js'),/moja-silownia-shell-v50-isometric-3.4.0/);
+ assert.match(read('sw.js'),/moja-silownia-shell-v51-cardio-3.5.0/);
  assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-v51-cardio-3\.5\.0/);
- assert.match(read('index.html'),/<title>Moja Siłownia v3\.4\.0/);
+ assert.match(read('index.html'),/<title>Moja Siłownia v3\.5\.0/);
  assert.match(read('preview/index.html'),/<title>Moja Siłownia TEST v3\.5\.0/);
  assert.match(read('preview/index.html'),/moja-silownia-preview-v01/);
  assert.doesNotMatch(read('muscle-atlas-ui.js'),/localStorage|indexedDB|sessionStorage/);

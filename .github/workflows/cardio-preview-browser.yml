@@ -2,6 +2,9 @@ name: Cardio preview acceptance regression
 on:
   pull_request:
     paths:
+      - 'index.html'
+      - 'modules/cardio-*.js'
+      - 'sw.js'
       - 'preview/index.html'
       - 'preview/modules/cardio-*.js'
       - 'preview/sw.js'
@@ -21,3 +24,4 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - run: node tests/cardio-preview-browser-smoke.cjs
+      - run: CARDIO_SURFACE=production node tests/cardio-preview-browser-smoke.cjs
