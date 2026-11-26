@@ -17,6 +17,7 @@ const root = path.resolve(__dirname,'..');
  try {
   for(const prefix of ['', 'preview/']){
    const page=await browser.newPage();
+   page.on('dialog',dialog=>dialog.accept());
    await page.route('**/pdfjs-dist@6.5.438/legacy/build/*',route=>route.fulfill({path:path.join(root,'dependency-check/node_modules/pdfjs-dist/legacy/build',new URL(route.request().url()).pathname.split('/').pop()),contentType:'text/javascript',headers:{'access-control-allow-origin':'*'}}));
    await page.route('**/mammoth/1.9.0/mammoth.browser.min.js',route=>route.fulfill({path:path.join(root,'dependency-check/node_modules/mammoth/mammoth.browser.min.js'),contentType:'text/javascript'}));
    await page.goto('http://127.0.0.1:'+server.address().port+'/'+prefix+'index.html');
@@ -30,13 +31,22 @@ const root = path.resolve(__dirname,'..');
     host.innerHTML='<button onclick="window.__securityProbe=1" data-action-exercise-id="'+safe("' onclick='window.__securityProbe=2")+'">test</button>';
     document.body.append(host);
     const id=host.firstElementChild.dataset.actionExerciseId;
+    host.firstElementChild.click();
+    const probe=window.__securityProbe;
     host.remove();
-    return {text,id,probe:window.__securityProbe};
+    const name='Security test '+String(Date.now());
+    importedDraft=[{name,rows:[{name:'Bench press',action:'new',series:3,reps:'10',weight:'40',group:'Inne'}]}];
+    impRender();
+    impSave();
+    const key=location.pathname.startsWith('/preview/')?'moja-silownia-preview-v01':'moja-silownia-v01';
+    const stored=JSON.parse(localStorage.getItem(key));
+    return {text,id,probe,saved:stored.plans.some(p=>p.name===name&&p.targets[0].sets===3&&p.targets[0].reps==='10')};
    });
    assert.match(result.text,/TRENING 1/);
    assert.match(result.text,/Bench press/);
    assert.equal(result.id,"' onclick='window.__securityProbe=2");
-   assert.equal(result.probe,0);
+   assert.equal(result.probe,1);
+   assert.equal(result.saved,true);
    await page.close();
   }
  } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
