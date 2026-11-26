@@ -34,10 +34,15 @@ jobs:
     needs: regression
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
       - env:
           KIND: ${{ needs.regression.outputs.kind }}
           REGRESSION: ${{ needs.regression.result }}
         run: |
-          test "$REGRESSION" = success
-          case "$KIND" in staging|production|infrastructure) ;; *) exit 1 ;; esac
+          node --input-type=module -e 'import { regressionPassed } from "./scripts/release-gate.mjs"; if (!regressionPassed(process.env.KIND, process.env.REGRESSION)) process.exit(1)'
           printf 'Classification: %s. This check is not deployment approval.\n' "$KIND"

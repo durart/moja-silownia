@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyPaths, gatePassed } from '../scripts/release-gate.mjs';
+import { classifyPaths, gatePassed, regressionPassed } from '../scripts/release-gate.mjs';
 for (const [paths, expected] of [
  [['preview/index.html'],'staging'],
  [['preview/sw.js','preview/vendor/a.js'],'staging'],
@@ -23,3 +23,9 @@ for (const [kind,regression,approval,enabled,expected] of [
  ['production','cancelled','success',true,false],
  ['unknown','success','success',true,false]
 ]) test([kind,regression,approval,enabled].join(' '),()=>assert.equal(gatePassed({kind,regression,approval,enabled}),expected));
+
+for (const [kind,result,expected] of [
+ ['staging','success',true], ['production','success',true], ['infrastructure','success',true],
+ ['staging','failure',false], ['production','cancelled',false], ['infrastructure','skipped',false],
+ ['unknown','success',false], ['', 'success',false], ['production','',false]
+]) test('variant B regression '+kind+' '+result,()=>assert.equal(regressionPassed(kind,result),expected));

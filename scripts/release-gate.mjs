@@ -8,6 +8,11 @@ export function classifyPaths(paths) {
   return paths.every(p => p.startsWith('preview/')) ? 'staging' : 'production';
 }
 
+export function regressionPassed(kind, regression) {
+  return regression === 'success' && ['staging', 'production', 'infrastructure'].includes(kind);
+}
+
+// Optional legacy approval prototype; not used by variant B.
 export function gatePassed({kind, regression, approval, enabled}) {
   if (regression !== 'success') return false;
   if (kind === 'staging') return approval === 'skipped';

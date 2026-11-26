@@ -1,7 +1,3 @@
-# Release gate (candidate; not enabled)
-Base: 2a6bfe6499d748791df89e61c553225c15e65f5a. PR #78 remains independent.
-Only preview/ changes qualify as staging; tests, docs, scripts and workflow changes require infrastructure approval. Renames are evaluated as deletion plus addition.
-Configure main ruleset: require PR, strict status checks, conversation resolution, prohibit deletion and force pushes, no bypass where feasible. Require release-gate and existing critical regression jobs after confirming stable job names and triggers. Path-filtered checks must not be required until made unconditional.
-Create release-approval environment with required human reviewer and no administrator bypass where supported. Verify self-review constraints for the single-owner repository. Set RELEASE_GATE_ENABLED=true only after verifying environment enforcement. Do not treat the variable itself as authorization.
-The PR workflow is a prototype: its code is modifiable by PR authors, and the environment approval is not a cryptographic authorization of a later Pages deployment. Before enforcing it, protect workflow and gate code using independently controlled required workflows or equivalent trusted policy, and verify exact-SHA approval and Pages publication settings. For actual deployment enforcement, use a protected deployment environment in a dedicated Pages workflow; do not switch Pages source without explicit approval.
-No production deployment, settings changes, or merge authorized. The gate intentionally fails for infrastructure/production while the variable is unset. Test the positive and negative paths in an isolated environment before enabling rules.
+# Superseded prototype notes
+Variant B is the approved design. Follow [owner-controlled activation](release-control/kiss-activation.md). The active PR check reports regression only; it does not authorize merge or deployment. The legacy approval helper and cryptographic verifier remain optional tested code. Do not set RELEASE_GATE_ENABLED or configure release-approval for variant B.
+
