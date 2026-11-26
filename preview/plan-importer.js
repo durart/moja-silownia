@@ -8,7 +8,7 @@ async function impRead(file){
  if(ext==='pdf'){
   const pdfjs=await impScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','pdfjsLib');
   pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  let doc=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise,lines=[];
+  let doc=await pdfjs.getDocument({data:await file.arrayBuffer(),isEvalSupported:false}).promise,lines=[];
   for(let p=1;p<=doc.numPages;p++){
    const page=await doc.getPage(p),viewport=page.getViewport({scale:1});
    const items=(await page.getTextContent()).items.filter(x=>x.str&&x.str.trim()).map(x=>({str:x.str.trim(),x:x.transform[4],y:viewport.height-x.transform[5]}));
