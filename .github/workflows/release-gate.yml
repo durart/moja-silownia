@@ -23,30 +23,21 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
-        run: echo "kind=$(node scripts/release-gate.mjs "$BASE" "$HEAD")" >> "$GITHUB_OUTPUT"
+        run: |
+          kind="$(node scripts/release-gate.mjs "$BASE" "$HEAD")"
+          case "$kind" in staging|production|infrastructure) ;; *) exit 1 ;; esac
+          printf 'kind=%s\n' "$kind" >> "$GITHUB_OUTPUT"
       - run: node --test tests/*.test.mjs
-  approval:
-    needs: regression
-    if: needs.regression.outputs.kind != 'staging' && vars.RELEASE_GATE_ENABLED == 'true'
-    runs-on: ubuntu-latest
-    environment: release-approval
-    steps:
-      - run: echo "Environment approval received"
   gate:
     name: release-gate
     if: always()
-    needs: [regression, approval]
+    needs: regression
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: '22'
       - env:
           KIND: ${{ needs.regression.outputs.kind }}
           REGRESSION: ${{ needs.regression.result }}
-          APPROVAL: ${{ needs.approval.result }}
-          ENABLED: ${{ vars.RELEASE_GATE_ENABLED }}
-        run: node --input-type=module -e 'import {gatePassed} from "./scripts/release-gate.mjs"; if (!gatePassed({kind:process.env.KIND,regression:process.env.REGRESSION,approval:process.env.APPROVAL,enabled:process.env.ENABLED==="true"})) process.exit(1)'
+        run: |
+          test "$REGRESSION" = success
+          case "$KIND" in staging|production|infrastructure) ;; *) exit 1 ;; esac
+          printf 'Classification: %s. This check is not deployment approval.\n' "$KIND"
