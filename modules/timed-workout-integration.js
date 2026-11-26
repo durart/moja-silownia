@@ -110,7 +110,8 @@
     const plannedWarmups=(planTarget?.setDetails||[]).filter(x=>x?.setType==='R'||x?.type==='warmup'||x?.type==='R').length;
     const targetSetCount=Math.max(1,workingRows,Number.isInteger(plannedCount)&&plannedCount<=100?plannedCount-plannedWarmups:0);
     const fields = { exerciseId: id, name: exercise.name, weight, setType: readSetType(rowKey),targetSetCount,
-      at: new Date().toISOString(), pr: [],
+      at: new Date().toISOString(), pr: core.detectDurationRecord({exerciseId:id,weight,durationSeconds:seconds,
+        completedSessions:state.sessions,activeSets:state.active,sessionMode:state.activeSessionMode,setType:readSetType(rowKey)}),
       ...(secondsValid(goal) ? { targetDurationSeconds: goal } : {}),
       ...(Number.isInteger(slot) ? { planId: state.activePlan, planSlotIndex: slot, planSetIndex: index }
         : { manualSetIndex: index }) };

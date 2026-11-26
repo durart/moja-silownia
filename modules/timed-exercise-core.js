@@ -69,11 +69,18 @@
     return { action: 'increase', targetSeconds: Math.min(maxSeconds, targetSeconds + STEP_SECONDS) };
   }
 
+  function detectDurationRecord({exerciseId,weight,durationSeconds,completedSessions=[],activeSets=[],exclude=null,sessionMode='standard',setType='W'}) {
+    if(sessionMode==='recovery'||setType==='R'||!validSeconds(durationSeconds)||!Number.isFinite(weight)||weight<0)return [];
+    const prior=[...completedSessions.filter(s=>s?.sessionMode!=='recovery').flatMap(s=>workingTimedSets(s,exerciseId)),...workingTimedSets({sets:activeSets},exerciseId)]
+      .filter(s=>s!==exclude&&s.weight!=null&&s.weight!==''&&Number(s.weight)===weight);
+    return prior.length&&durationSeconds>Math.max(...prior.map(s=>s.durationSeconds))?['Czas']: [];
+  }
+
   function elapsedSeconds(startedAt, now) {
     if (!Number.isFinite(startedAt) || !Number.isFinite(now) || now < startedAt) return 0;
     return Math.min(86400, Math.floor((now - startedAt) / 1000));
   }
 
   return Object.freeze({ measurementType, parseDurationTarget, isTimedSet, createTimedSet,
-    workingTimedSets, suggestDuration, elapsedSeconds });
+    workingTimedSets, suggestDuration, detectDurationRecord, elapsedSeconds });
 });

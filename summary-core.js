@@ -36,12 +36,15 @@
     if (!session || typeof session !== 'object') return null;
     const sourceSets = Array.isArray(session.sets) ? session.sets : [];
     const groups = [], byKey = new Map();
-    let volume = 0, reps = 0, records = 0, validSets = 0;
+    let volume = 0, reps = 0, records = 0, validSets = 0, timedSeconds = 0;
     for (let i = 0; i < sourceSets.length; i++) {
       const set = sourceSets[i];
       if (!set || typeof set !== 'object') continue;
       validSets++;
-      const weight = positive(set.weight), count = Math.floor(positive(set.reps));
+      const timed=set.measurementType==='duration';
+      const seconds=timed&&Number.isInteger(set.durationSeconds)&&set.durationSeconds>0&&set.durationSeconds<=86400?set.durationSeconds:0;
+      const weight = positive(set.weight), count = timed?0:Math.floor(positive(set.reps));
+      timedSeconds+=seconds;
       volume += weight * count;
       reps += count;
       const isPR = Array.isArray(set.pr) && set.pr.length > 0;
@@ -62,8 +65,9 @@
       if (isPR) group.records++;
       group.minWeight = group.minWeight == null ? weight : Math.min(group.minWeight, weight);
       group.maxWeight = group.maxWeight == null ? weight : Math.max(group.maxWeight, weight);
+      if(timed)group.timedSeconds=(group.timedSeconds||0)+seconds;
       group.sets.push({
-        weight, reps: count, rir: set.rir == null ? null : safeNumber(set.rir),
+        weight, ...(timed?{measurementType:'duration',durationSeconds:seconds}:{reps:count,rir:set.rir==null?null:safeNumber(set.rir)}),
         records: isPR ? set.pr.map(String) : []
       });
     }
@@ -81,7 +85,7 @@
       fileDate: filenameDate(session.date),
       duration: duration(session.durationSeconds),
       exerciseCount: groups.length, setCount: validSets,
-      reps, volume, prCount: records, activeKcal, groups
+      reps, volume, ...(timedSeconds?{timedSeconds}:{}), prCount: records, activeKcal, groups
     };
   }
   root.SportSummaryCore = Object.freeze({ build, duration, dateLabel, filenameDate });
