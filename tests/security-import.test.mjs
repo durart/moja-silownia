@@ -18,7 +18,7 @@ for (const prefix of ['', 'preview/']) {
     await context.impRead({ name: 'plan.pdf', arrayBuffer: async () => data });
     assert.equal(options.isEvalSupported, false);
     assert.equal(options.enableScripting, false);
-    assert.match(pdfjsLib.GlobalWorkerOptions.workerSrc, /6\.5\.438\/legacy\/build\/pdf\.worker\.min\.mjs$/);
+    assert.match(pdfjsLib.GlobalWorkerOptions.workerSrc, /vendor\/pdfjs\/pdf\.worker\.min\.mjs$/);
     assert.equal(options.data, data);
   });
 }
