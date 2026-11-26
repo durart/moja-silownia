@@ -7,6 +7,7 @@ function uiExerciseMatchesGroup(e,group){
  return ExerciseCatalog.matches(e,group);
 }
 function uiExerciseThumb(e){
+  const cardio=window.MojaCardioUI.thumbnail(e?.id);if(cardio)return cardio;
   const match=/^seed-(\d+)$/.exec(String(e.id||''));
   let index=match?Number(match[1]):-1;
   // Existing/imported exercises can have alternative ids. Match only exact catalog names.
