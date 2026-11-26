@@ -501,8 +501,8 @@ function changeSessionRecoveryMode(enabled){
  note(enabled?'Trening oznaczony jako regeneracyjny.':'Trening oznaczony jako standardowy.');
 }
 function optionalNumber(id,min,max){let raw=document.getElementById(id).value.trim();if(raw==='')return null;let n=Number(raw);if(!Number.isFinite(n)||n<min||n>max)throw Error('Sprawdź pole: '+id);return n}
-function confirmWorkoutStart(){if(!state.pendingWorkout)return;let p;try{p={battery:optionalNumber('preBattery',0,100),sleepHours:optionalNumber('preSleep',0,24),sleepScore:optionalNumber('preSleepScore',0,100),feeling:document.getElementById('preFeeling').value||null,weight:optionalNumber('preWeight',20,350),recordedAt:new Date().toISOString()}}catch(e){note(e.message);return}state.preWorkout=p;state.activeSessionMode=MojaSessionMode.normalize(document.getElementById('preRecoveryMode').checked?'recovery':'standard');if(p.weight)state.bodyWeight=p.weight;let pending=state.pendingWorkout;state.pendingWorkout=null;document.getElementById('preWorkout').classList.add('hidden');if(pending.kind==='plan')startPlanNow(pending.index);else startManualWorkoutNow();save();render()}
-function startPlanNow(i){if(window.MojaTimedWorkout.busy())return;let p=state.plans[i];if(!p)return;if(state.active.length&&!confirm('Masz niezakończone serie. Przełączyć aktywny plan, zachowując serie?'))return;extraRows={};removedRows={};state.planRowCounts={};state.planExtraExerciseIds=[];planExtraInputDrafts={};state.manualStarted=false;state.activePlan=p.id;state.workoutSwaps={};state.hiddenWorkoutSlots=[];state.startedAt??=new Date().toISOString();window.MojaTrainerDrafts?.initialize(state);save();tab('workout');let e=state.exercises.find(x=>x.id===p.exerciseIds[0]);if(e)document.getElementById('exercise').value=e.id;note('Uruchomiono plan: '+p.name)}
+function confirmWorkoutStart(){if(!state.pendingWorkout)return;let p;try{p={battery:optionalNumber('preBattery',0,100),sleepHours:optionalNumber('preSleep',0,24),sleepScore:optionalNumber('preSleepScore',0,100),feeling:document.getElementById('preFeeling').value||null,weight:optionalNumber('preWeight',20,350),recordedAt:new Date().toISOString()}}catch(e){note(e.message);return}const previous=structuredClone(state);state.preWorkout=p;state.activeSessionMode=MojaSessionMode.normalize(document.getElementById('preRecoveryMode').checked?'recovery':'standard');if(p.weight)state.bodyWeight=p.weight;let pending=state.pendingWorkout;state.pendingWorkout=null;const started=pending.kind==='plan'?startPlanNow(pending.index):startManualWorkoutNow();if(!started){state=previous;return;}document.getElementById('preWorkout').classList.add('hidden');render()}
+function startPlanNow(i){if(window.MojaTimedWorkout.busy())return;let p=state.plans[i];if(!p)return;if(state.active.length&&!confirm('Masz niezakończone serie. Przełączyć aktywny plan, zachowując serie?'))return;if(!commitWorkoutMutation(()=>{state.planRowCounts={};state.planExtraExerciseIds=[];state.manualStarted=false;state.activePlan=p.id;state.workoutSwaps={};state.hiddenWorkoutSlots=[];state.startedAt??=new Date().toISOString();window.MojaTrainerDrafts?.initialize(state);}))return false;extraRows={};removedRows={};planExtraInputDrafts={};tab('workout');let e=state.exercises.find(x=>x.id===p.exerciseIds[0]);if(e)document.getElementById('exercise').value=e.id;note('Uruchomiono plan: '+p.name);return true;}
 function leavePlan(){if(window.MojaTimedWorkout.busy()||window.MojaCardioWorkout.busy())return;for(const a of window.MojaCardioWorkout.list()){state.manualExerciseIds??=[];if(!state.manualExerciseIds.includes(a.exerciseId))state.manualExerciseIds.push(a.exerciseId);}detachPlanExtrasToManual();planExtraInputDrafts={};state.activePlan=null;state.planRowCounts={};state.workoutSwaps={};state.hiddenWorkoutSlots=[];state.manualStarted=!!state.startedAt||state.active.length>0;recoverActiveWorkout();save();render();note('Dostępny cały katalog ćwiczeń — zapisane serie zachowane')}
 const restOptions=[30,60,90,120,150,180];
 function restSeconds(id){return restOptions.includes(Number(state.restSettings[id]))?Number(state.restSettings[id]):(restOptions.includes(Number(state.restDefaultSeconds))?Number(state.restDefaultSeconds):90)}
@@ -550,7 +550,9 @@ async function comfortTestSignals(){
 function comfortTick(){void comfortSyncWakeLock()}
 document.addEventListener('visibilitychange',()=>{void comfortSyncWakeLock()});
 window.addEventListener('pagehide',()=>{if(comfortWakeLock){void comfortWakeLock.release();comfortWakeLock=null}});
-function startRest(id){restAudioStop();state.restUntil=Date.now()+restSeconds(id)*1000;save();restAudioUnlock();restAudioSchedule(state.restUntil);tick()}
+function activateRest(){restAudioStop();restAudioUnlock();restAudioSchedule(state.restUntil);tick()}
+function commitWorkoutMutation(mutate,id){const snapshot=structuredClone(state),drafts=structuredClone(manualDrafts);try{mutate();if(id!=null)state.restUntil=Date.now()+restSeconds(id)*1000;if(save())return true;}catch(error){console.error('Workout mutation failed',error);}state=snapshot;manualDrafts=drafts;note('Nie zapisano zmian. Spróbuj ponownie.');return false;}
+function startRest(id){if(!commitWorkoutMutation(()=>{},id))return false;activateRest();return true;}
 function skipRest(){restAudioStop();state.restUntil=null;save();tick()}
 function formatTime(n){n=Math.max(0,Math.floor(n));return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(x=>String(x).padStart(2,'0')).join(':')}
 let restAudio=null;
@@ -838,14 +840,14 @@ function savePlanRow(id,index,row,slotIndex){
  const w=Number(wInput.value),r=Number(rInput.value),rir=readRir(row+'_rir'),setType=readSetType(row);
  if(wInput.value===''||rInput.value===''||!Number.isFinite(w)||w<0||!Number.isInteger(r)||r<1){note('Podaj prawidłowy ciężar i powtórzenia');return}
  const e=state.exercises.find(x=>x.id===id);if(!e)return;
- const item=planSets(id,pos)[index];
+ if(!commitWorkoutMutation(()=>{const item=planSets(id,pos)[index];
  if(item){item.weight=w;item.reps=r;item.rir=rir;item.setType=setType;item.at=new Date().toISOString();item.pr=setType==='R'?[]:detectPR(id,w,r,item)}
  else {const pr=setType==='R'?[]:detectPR(id,w,r);state.active.push({exerciseId:id,name:e.name,weight:w,reps:r,rir,setType,at:new Date().toISOString(),pr,planSlotIndex:pos,planSetIndex:index,planId:state.activePlan})}
- delete planUndoDrafts[row];
- state.startedAt??=new Date().toISOString();startRest(id);save();renderPlanWorkout();tick();
+ state.startedAt??=new Date().toISOString();},id))return;
+ delete planUndoDrafts[row];activateRest();renderPlanWorkout();tick();
  note(planSets(id,pos)[index]?.pr?.length?'🏆 Nowy PR!':'Seria zapisana');
 }
-function startManualWorkoutNow(){if(window.MojaCardioWorkout.hasRecords()){note('Najpierw zakończ zapisany trening kardio');return;}if(state.activePlan){note('Najpierw zakończ trening według planu');return}if(state.active.length){recoverActiveWorkout();render();note('Przywrócono zapisany trening, nie rozpoczęto nowego');return}if(state.manualStarted)return;state.manualStarted=true;state.manualExerciseIds=[];state.planExtraExerciseIds=[];manualDrafts={};state.startedAt=new Date().toISOString();state.restUntil=null;window.MojaTrainerDrafts?.initialize(state);save();render();note('Trening dowolny rozpoczęty')}
+function startManualWorkoutNow(){if(window.MojaCardioWorkout.hasRecords()){note('Najpierw zakończ zapisany trening kardio');return;}if(state.activePlan){note('Najpierw zakończ trening według planu');return}if(state.active.length){recoverActiveWorkout();render();note('Przywrócono zapisany trening, nie rozpoczęto nowego');return}if(state.manualStarted)return;if(!commitWorkoutMutation(()=>{state.manualStarted=true;state.manualExerciseIds=[];state.planExtraExerciseIds=[];manualDrafts={};state.startedAt=new Date().toISOString();state.restUntil=null;window.MojaTrainerDrafts?.initialize(state);}))return false;render();note('Trening dowolny rozpoczęty');return true;}
 // Ekran wprowadzania serii inspirowany układem Hevy; zapisane serie mają zielony znacznik.
 let manualDrafts={};
 let planExtraInputDrafts={};
@@ -896,12 +898,11 @@ function saveManualRow(id,j){
   }
  };
  if(isPlanExtraExercise(id)){
-  if(!saveExtraMutation(mutate))return;
-  delete planExtraInputDrafts[prefix];
-  try{startRest(id)}catch(err){note('Seria zapisana, lecz timer przerwy nie został zaktualizowany')}
+  if(!commitWorkoutMutation(mutate,id))return;
+  delete planExtraInputDrafts[prefix];activateRest();
   renderPlanWorkout();tick();note('✓ Dodatkowa seria zapisana');return;
  }
- mutate();startRest(id);save();renderToday();tick();note('✓ Seria wykonana');
+ if(!commitWorkoutMutation(mutate,id))return;activateRest();renderToday();tick();note('✓ Seria wykonana');
 }
 function toggleManualRow(id,j){if(window.MojaTimedWorkout.busy()||window.MojaCardioWorkout.busy()||window.MojaCardioCatalog.getExercise(id))return;
  const rows=manualSetRows(id),entry=rows[j];
@@ -953,7 +954,7 @@ function renderToday(){
  return head+body+`<button class="secondary hevy-add" onclick="addManualRow(this.dataset.actionExerciseId)" data-action-exercise-id="${safe(id)}">+ Dodaj serię</button></div>`;
  }).join('');
 }
-function addSet(){if(window.MojaTimedWorkout.busy()||window.MojaCardioWorkout.busy()||window.MojaCardioCatalog.getExercise(document.getElementById('exercise')?.value))return;if(window.MojaTimedWorkout.isTimed(document.getElementById('exercise')?.value)){note('Zapisz czas na karcie ćwiczenia.');return;}if(!state.manualStarted||state.activePlan){note('Najpierw kliknij Zacznij trening');return}let e=state.exercises.find(x=>x.id===document.getElementById('exercise').value),w=Number(document.getElementById('weight').value),r=Number(document.getElementById('reps').value);if(!e||!Number.isFinite(w)||w<0||!Number.isInteger(r)||r<1||document.getElementById('weight').value===''){note('Podaj prawidłowy ciężar i liczbę powtórzeń.');return}state.active.push({exerciseId:e.id,name:e.name,weight:w,reps:r,rir:readRir('manualRir'),at:new Date().toISOString(),pr:detectPR(e.id,w,r)});state.startedAt??=new Date().toISOString();startRest(e.id);save();renderToday();tick();document.getElementById('manualRir').value='';note(state.active.at(-1)?.pr?.length?'🏆 Nowy rekord osobisty!':'Seria zapisana')}
+function addSet(){if(window.MojaTimedWorkout.busy()||window.MojaCardioWorkout.busy()||window.MojaCardioCatalog.getExercise(document.getElementById('exercise')?.value))return;if(window.MojaTimedWorkout.isTimed(document.getElementById('exercise')?.value)){note('Zapisz czas na karcie ćwiczenia.');return;}if(!state.manualStarted||state.activePlan){note('Najpierw kliknij Zacznij trening');return}let e=state.exercises.find(x=>x.id===document.getElementById('exercise').value),w=Number(document.getElementById('weight').value),r=Number(document.getElementById('reps').value);if(!e||!Number.isFinite(w)||w<0||!Number.isInteger(r)||r<1||document.getElementById('weight').value===''){note('Podaj prawidłowy ciężar i liczbę powtórzeń.');return}if(!commitWorkoutMutation(()=>{state.active.push({exerciseId:e.id,name:e.name,weight:w,reps:r,rir:readRir('manualRir'),at:new Date().toISOString(),pr:detectPR(e.id,w,r)});state.startedAt??=new Date().toISOString();},e.id))return;activateRest();renderToday();tick();document.getElementById('manualRir').value='';note(state.active.at(-1)?.pr?.length?'🏆 Nowy rekord osobisty!':'Seria zapisana')}
 function detectPR(id,w,r,exclude=null){if(window.MojaSilowniaModules?.records)return window.MojaSilowniaModules.records.detectRecords({exerciseId:id,weight:w,reps:r,completedSessions:state.sessions,activeSets:state.active,exclude});let prior=[...state.sessions.flatMap(s=>s.sets||[]),...state.active].filter(s=>s.exerciseId===id&&s!==exclude&&s.measurementType!=='duration'&&s.setType!=='R'&&s.type!=='warmup');if(!prior.length)return [];let flags=[];let maxWeight=Math.max(...prior.map(s=>Number(s.weight)||0));if(w>maxWeight)flags.push('Ciężar');let maxAtWeight=Math.max(0,...prior.filter(s=>Number(s.weight)===w).map(s=>Number(s.reps)||0));if(r>maxAtWeight&&prior.some(s=>Number(s.weight)===w))flags.push('Powtórzenia');let maxVolume=Math.max(...prior.map(s=>(Number(s.weight)||0)*(Number(s.reps)||0)));if(w*r>maxVolume)flags.push('Objętość');return flags}
 function prefillManual(){return}
 function removeSet(i){if(window.MojaTimedWorkout.busy())return;state.active.splice(i,1);save();renderToday()}

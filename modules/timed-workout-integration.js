@@ -115,16 +115,15 @@
       ...(secondsValid(goal) ? { targetDurationSeconds: goal } : {}),
       ...(Number.isInteger(slot) ? { planId: state.activePlan, planSlotIndex: slot, planSetIndex: index }
         : { manualSetIndex: index }) };
-    const snapshot = structuredClone(state), previousManual = { ...manualDrafts };
+    if (!commitWorkoutMutation(()=>{
     state.active.push(core.createTimedSet(fields, seconds));
     if (slot === null) manualDrafts[id] = Math.max(0, (manualDrafts[id] || 1) - 1);
     clearFallback(context);
-    if (!save()) {
-      state = snapshot; manualDrafts = previousManual;
+    },id)) {
       note('Nie zapisano serii. Wpisane dane pozostają na ekranie.'); return;
     }
     delete planUndoDrafts[rowKey]; delete planExtraInputDrafts[rowKey];
-    startRest(id); rerender(); note('✓ Seria czasowa zapisana');
+    activateRest(); rerender(); note('✓ Seria czasowa zapisana');
   }
 
   function updateTimers() {
@@ -188,8 +187,7 @@
     if (!context || completed(context)) return;
     const value = event.target.value;
     if (value !== '' && !secondsValid(Number(value))) return;
-    rememberDuration(context,value);
-    save();
+    commitWorkoutMutation(()=>rememberDuration(context,value));
   }
   document.addEventListener('click', onClick);
   document.addEventListener('change', onInput);
