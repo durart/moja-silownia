@@ -75,7 +75,7 @@ test('production recovery recommendations preserve strength and fatigue semantic
 
 test('staging continues to use independent data and cache', () => {
   assert.match(read('preview/index.html'),/const key='moja-silownia-preview-v01'/);
-  assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-v50-isometric-3\.4\.0/);
+  assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-v51-cardio-3\.5\.0/);
   assert.doesNotMatch(sw,/moja-silownia-preview-shell-/);
   assert.equal(read('assistant/session-mode.js'),read('preview/assistant/session-mode.js'));
 });
