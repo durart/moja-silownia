@@ -71,7 +71,7 @@ function assertTimedSet(set, seconds) {
           if (!localStorage.getItem(otherKey)) localStorage.setItem(otherKey,'isolation-sentinel');
         }, {seed,storageKey,otherKey});
         await page.goto('http://127.0.0.1:' + server.address().port + (preview?'/preview/':'/'));
-        assert.match(await page.title(),preview?/TEST v3\.7\.1/:/v3\.7\.1/);
+        assert.match(await page.title(),preview?/TEST v3\.8\.0/:/v3\.8\.0/);
         await page.waitForFunction(() => !!window.MojaTimedWorkout && !!document.getElementById('compactWorkoutDock'));
         await page.evaluate(() => { startPlan(0); confirmWorkoutStart(); });
         const plank = page.locator('#planWorkout [data-workout-slot="0"]');
@@ -184,7 +184,7 @@ function assertTimedSet(set, seconds) {
         await openCard(manual);
         assertTimedSet(await page.evaluate(() => state.active[0]),42);
         assert.equal(await page.evaluate(key => localStorage.getItem(key),otherKey),'isolation-sentinel');
-        assert.ok((await page.evaluate(()=>caches.keys())).some(k=>k.startsWith(preview?'moja-silownia-preview-shell-':'moja-silownia-shell-')&&/3\.7\.1-security-r2$/.test(k)));
+        assert.ok((await page.evaluate(()=>caches.keys())).some(k=>k.startsWith(preview?'moja-silownia-preview-shell-':'moja-silownia-shell-')&&/3\.8\.0-data-reliability$/.test(k)));
         if(await page.evaluate(()=>!!window.MojaCardioWorkout)){
           // Continue the existing manual workout while offline, with cardio and a saved timed set.
           await page.evaluate(()=>{document.getElementById('exercise').value='cardio-treadmill-walk';addManualExercise();});
