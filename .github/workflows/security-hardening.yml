@@ -29,6 +29,7 @@ jobs:
       - run: node --test tests/*.test.mjs
   dependency-review:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -84,4 +85,6 @@ jobs:
           SECURITY_VENDOR_ROOT="$PWD/dependency-check" node --test tests/security-real-documents.test.mjs
       - run: npm install --no-save --no-package-lock playwright@1.56.1
       - run: npx playwright install --with-deps chromium
-      - run: node tests/security-browser.cjs
+      - name: Run offline browser security regression
+        timeout-minutes: 4
+        run: node tests/security-browser.cjs
