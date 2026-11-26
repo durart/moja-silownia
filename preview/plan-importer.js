@@ -3,12 +3,40 @@ let importedDraft=[];
 const impNorm=s=>String(s||'').toLocaleLowerCase('pl').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 function impNotice(msg){document.getElementById('importStatus').textContent=msg}
 function impScript(url,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve(window[globalName]);let s=document.createElement('script');s.src=url;s.onload=()=>resolve(window[globalName]);s.onerror=()=>reject(Error('Nie udało się pobrać biblioteki odczytu dokumentów. Sprawdź internet.'));document.head.appendChild(s)})}
+const PDF_LIBRARY_BASE='./vendor/pdfjs';
+function impLoadPdfLibrary(){return import(PDF_LIBRARY_BASE+'/pdf.min.mjs');}
+// Reject oversized or unsupported ZIP containers before DOCX decompression.
+function impCheckDocxArchive(buffer){
+ const view=new DataView(buffer),length=view.byteLength;
+ const invalid=()=>{throw Error('Nieprawidłowe lub zbyt duże archiwum DOCX.');};
+ if(length<22)invalid();
+ let end=-1;
+ for(let i=length-22;i>=Math.max(0,length-65557);i--){
+  if(view.getUint32(i,true)===0x06054b50&&i+22+view.getUint16(i+20,true)===length){end=i;break;}
+ }
+ if(end<0)invalid();
+ const count=view.getUint16(end+10,true),size=view.getUint32(end+12,true),start=view.getUint32(end+16,true);
+ if(view.getUint16(end+4,true)||view.getUint16(end+6,true)||view.getUint16(end+8,true)!==count||count>2048||start+size!==end)invalid();
+ let pos=start,total=0;
+ for(let i=0;i<count;i++){
+  if(pos+46>end||view.getUint32(pos,true)!==0x02014b50)invalid();
+  const flags=view.getUint16(pos+8,true),method=view.getUint16(pos+10,true),compressed=view.getUint32(pos+20,true),expanded=view.getUint32(pos+24,true);
+  total+=expanded;
+  if((flags&1)||![0,8].includes(method)||compressed>length||expanded>16*1024*1024||total>32*1024*1024)invalid();
+  pos+=46+view.getUint16(pos+28,true)+view.getUint16(pos+30,true)+view.getUint16(pos+32,true);
+  if(pos>end)invalid();
+ }
+ if(pos!==end)invalid();
+}
 async function impRead(file){
  let ext=file.name.split('.').pop().toLowerCase();
+ const maxBytes=ext==='txt'?1024*1024:10*1024*1024;
+ if(file.size>maxBytes)throw Error('Plik przekracza dopuszczalny rozmiar.');
  if(ext==='pdf'){
-  const pdfjs=await impScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','pdfjsLib');
-  pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  let doc=await pdfjs.getDocument({data:await file.arrayBuffer()}).promise,lines=[];
+  const pdfjs=await impLoadPdfLibrary();
+  pdfjs.GlobalWorkerOptions.workerSrc=PDF_LIBRARY_BASE+'/pdf.worker.min.mjs';
+  let doc=await pdfjs.getDocument({data:await file.arrayBuffer(),isEvalSupported:false,enableScripting:false}).promise,lines=[];
+  if(doc.numPages>100){await doc.destroy();throw Error('Dokument PDF przekracza limit 100 stron.');}
   for(let p=1;p<=doc.numPages;p++){
    const page=await doc.getPage(p),viewport=page.getViewport({scale:1});
    const items=(await page.getTextContent()).items.filter(x=>x.str&&x.str.trim()).map(x=>({str:x.str.trim(),x:x.transform[4],y:viewport.height-x.transform[5]}));
@@ -36,9 +64,13 @@ async function impRead(file){
   return lines.join('\n');
  }
  if(ext==='docx'){
-  const mammoth=await impScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js','mammoth');
-  const out=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});
-  const el=document.createElement('div');el.innerHTML=out.value;
+  const arrayBuffer=await file.arrayBuffer();
+  impCheckDocxArchive(arrayBuffer);
+  const mammoth=await impScript('./vendor/mammoth/mammoth.browser.min.js','mammoth');
+  const out=await mammoth.convertToHtml({arrayBuffer},{externalFileAccess:false});
+  const template=document.createElement('template');template.innerHTML=out.value;
+  const el=template.content;
+  el.querySelectorAll('script,style,iframe,object,embed,link,meta,svg,math').forEach(node=>node.remove());
   el.querySelectorAll('tr').forEach(tr=>{let cells=[...tr.querySelectorAll('th,td')].map(c=>c.textContent.trim());tr.replaceWith(document.createTextNode('\n'+cells.join('  |  ')+'\n'))});
   el.querySelectorAll('p,h1,h2,h3,h4,li').forEach(n=>n.append(document.createTextNode('\n')));
   return el.textContent;
@@ -137,10 +169,15 @@ function impParseSetBlocks(text,filename){
  return found&&plans.length?plans:null;
 }
 
+function impValidatePlans(plans){
+ if(plans.length>50||plans.some(plan=>plan.rows.length>100))throw Error('Przekroczono limit 50 planów lub 100 ćwiczeń w planie.');
+ return plans;
+}
 function impParse(text,filename){
+ if(typeof text!=='string'||text.length>1024*1024)throw Error('Tekst przekracza dopuszczalny rozmiar.');
  const csvPlans=impParseCSV(text,filename);
- if(csvPlans)return csvPlans;
- const detailed=impParseSetBlocks(text,filename);if(detailed)return detailed;
+ if(csvPlans)return impValidatePlans(csvPlans);
+ const detailed=impParseSetBlocks(text,filename);if(detailed)return impValidatePlans(detailed);
  let plans=[],current={name:'Plan 1',rows:[]};
  const flush=()=>{if(current.rows.length)plans.push(current)};
  const raw=text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -179,7 +216,7 @@ function impParse(text,filename){
  flush();
  if(!plans.length)throw Error('Nie wykryto ćwiczeń. Wklej tekst lub użyj PDF z warstwą tekstową.');
  if(plans.length===1&&plans[0].name==='Plan 1')plans[0].name=filename.replace(/\.[^.]+$/,'');
- return plans;
+ return impValidatePlans(plans);
 }
 function impRender(){
  const host=document.getElementById('importPreview');
