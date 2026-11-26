@@ -38,7 +38,7 @@ async function verify(card,id){
    },{storageKey,otherKey});
    await page.goto('http://127.0.0.1:'+server.address().port+(production?'/':'/preview/'));
    await page.waitForFunction(()=>!!window.MojaCardioWorkout&&!!document.getElementById('compactWorkoutDock'));
-   assert.match(await page.title(),production?/v3\.5\.0 — Kardio/:/TEST v3\.5\.1 — Zamiana ćwiczeń/);
+   assert.match(await page.title(),production?/v3\.5\.1 — Zamiana ćwiczeń/:/TEST v3\.5\.1 — Zamiana ćwiczeń/);
    assert.equal(await page.evaluate(()=>state.plans[0].exerciseIds[0]),'cardio-elliptical');
    await page.evaluate(()=>{tab('catalog');uiCatalogChoose('__cardio__');});
    const rows=page.locator('#catalogList .catalog-exercise-main');
@@ -72,7 +72,7 @@ async function verify(card,id){
    await page.reload();await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
    await context.setOffline(true);await page.reload({waitUntil:'domcontentloaded'});
    await verify(page.locator('#today [data-cardio-id="cardio-elliptical"]'),'cardio-elliptical');
-   if(!production){
+   {
     // Exercise swap must use the existing picker, even with the installed app offline.
     await page.evaluate(()=>{pickerOpen();document.getElementById('pickSearch').value='Wyciskanie sztangi na ławce płaskiej';pickerRender();});
     await page.locator('#pickResults .pick-exercise[data-pick-id="seed-0"]').click();
