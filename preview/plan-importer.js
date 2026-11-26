@@ -3,7 +3,7 @@ let importedDraft=[];
 const impNorm=s=>String(s||'').toLocaleLowerCase('pl').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 function impNotice(msg){document.getElementById('importStatus').textContent=msg}
 function impScript(url,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve(window[globalName]);let s=document.createElement('script');s.src=url;s.onload=()=>resolve(window[globalName]);s.onerror=()=>reject(Error('Nie udało się pobrać biblioteki odczytu dokumentów. Sprawdź internet.'));document.head.appendChild(s)})}
-const PDF_LIBRARY_BASE='https://cdn.jsdelivr.net/npm/pdfjs-dist@6.5.438/legacy/build';
+const PDF_LIBRARY_BASE='./vendor/pdfjs';
 function impLoadPdfLibrary(){return import(PDF_LIBRARY_BASE+'/pdf.min.mjs');}
 // Reject oversized or unsupported ZIP containers before DOCX decompression.
 function impCheckDocxArchive(buffer){
@@ -66,7 +66,7 @@ async function impRead(file){
  if(ext==='docx'){
   const arrayBuffer=await file.arrayBuffer();
   impCheckDocxArchive(arrayBuffer);
-  const mammoth=await impScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js','mammoth');
+  const mammoth=await impScript('./vendor/mammoth/mammoth.browser.min.js','mammoth');
   const out=await mammoth.convertToHtml({arrayBuffer},{externalFileAccess:false});
   const template=document.createElement('template');template.innerHTML=out.value;
   const el=template.content;
