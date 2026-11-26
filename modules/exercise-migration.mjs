@@ -57,7 +57,9 @@ export function persistExerciseMigration(storage,key,source) {
  if(candidate.status!=='ready')return candidate;
  const previous=storage.getItem(key);
  if(previous===null || !equal(JSON.parse(previous),source))throw new Error('Stored state differs from migration source');
- const backupKey=key+'-before-exercise-identity-v1';
+ const baseKey=key+'-before-exercise-identity-v1';
+ let backupKey=baseKey;
+ for(let index=1;storage.getItem(backupKey)!==null&&storage.getItem(backupKey)!==previous;index++)backupKey=baseKey+'-'+index;
  if(storage.getItem(backupKey)===null)storage.setItem(backupKey,previous);
  if(storage.getItem(backupKey)!==previous)throw new Error('Migration backup could not be verified');
  storage.setItem(key,JSON.stringify(candidate.state));
