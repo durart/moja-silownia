@@ -100,7 +100,7 @@ test('staging remains isolated and production v2 retains profile v1.9', () => {
   assert.match(preview, /profile-ui\.js\?v=310/);
   assert.match(sw, /profile-core\.js\?v=190/);
   assert.match(sw, /profile-ui\.js\?v=310/);
-  assert.match(production, /v3\.5\.1/);
+  assert.match(production, /v3\.7\.0/);
   assert.match(production, /const key='moja-silownia-v01'/);
   assert.match(production, /id="profileContent"/);
   assert.match(production, /profile-core\.js\?v=190/);
