@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {prepareExerciseMigration,persistExerciseMigration} from '../modules/exercise-migration.mjs';
-const fixture=()=>({exercises:[{id:'seed-13',group:'Klatka piersiowa'},{id:'cali-02',group:'Kalistenika'}],active:[],sessions:[{id:1,sets:[{exerciseId:'cali-02',reps:8},{exerciseId:'seed-13',reps:9}],exerciseNotes:{'cali-02':{text:'note',flag:'pain'}}}],plans:[{exerciseIds:['cali-02','seed-13'],targets:[1,2]}],restSettings:{'cali-02':90}});
+import {prepareExerciseMigration,persistExerciseMigration,initializeExerciseMigration} from '../modules/exercise-migration.mjs';
+const fixture=()=>({exercises:[{id:'seed-13',group:'Klatka piersiowa'},{id:'cali-02',group:'Kalistenika'}],active:[],sessions:[{id:1,sets:[{exerciseId:'cali-02',reps:8},{exerciseId:'seed-13',reps:9}],exerciseNotes:{'cali-02':{text:'note',flag:'pain'}}}],plans:[{exerciseIds:['cali-02'],targets:[1]}],restSettings:{'cali-02':90}});
 test('preserves sets, slots, notes and original identity',()=>{
  const source=fixture(),before=structuredClone(source);
  const result=prepareExerciseMigration(source);
  assert.equal(result.status,'ready');
  assert.equal(result.state.exercises.length,1);
- assert.deepEqual(result.state.plans[0].exerciseIds,['seed-13','seed-13']);
- assert.deepEqual(result.state.plans[0].targets,[1,2]);
+ assert.deepEqual(result.state.plans[0].exerciseIds,['seed-13']);
+ assert.deepEqual(result.state.plans[0].targets,[1]);
  assert.equal(result.state.sessions[0].sets.length,2);
  assert.equal(result.state.sessions[0].sets[0].originalExerciseId,'cali-02');
  assert.equal(result.state.sessions[0].exerciseNotes['seed-13'].flag,'pain');
@@ -38,4 +38,16 @@ test('verified backup preserves original data',()=>{
  assert.equal(persistExerciseMigration(storage,'test',source).status,'ready');
  assert.equal(data.get('test-before-exercise-identity-v1'),raw);
  assert.equal(JSON.parse(data.get('test')).exercises.length,1);
+});
+
+test('ambiguous duplicate plan slots defer destructive identity changes',()=>{
+ const source=fixture();source.plans[0].exerciseIds.push('seed-13');
+ const result=prepareExerciseMigration(source);
+ assert.equal(result.status,'conflict');
+ assert.equal(result.state,source);
+});
+test('startup preserves state when storage is unavailable',()=>{
+ const source=fixture();
+ const result=initializeExerciseMigration({getItem(){throw Error('unavailable')}},'test',source);
+ assert.equal(result.status,'error');assert.equal(result.state,source);
 });
