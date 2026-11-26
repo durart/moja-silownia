@@ -9,16 +9,18 @@ const log=message=>console.log('[security-browser] '+message);
 (async()=>{
  const server=http.createServer((req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
-  const file=path.resolve(root,'.'+pathname);
-  if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}
+  const file=path.resolve(root,'.'+(pathname.endsWith('/')?pathname+'index.html':pathname));
+  if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){console.error('HTTP 404:',pathname);res.writeHead(404);res.end();return;}
   res.setHeader('Content-Type',file.endsWith('.mjs')||file.endsWith('.js')?'text/javascript':file.endsWith('.html')?'text/html':'application/octet-stream');
   fs.createReadStream(file).pipe(res);
  });
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const browser=await chromium.launch({headless:true});
  try {
+  const context=await browser.newContext();
   for(const prefix of ['', 'preview/']){
-   const page=await browser.newPage();
+   await context.setOffline(false);
+   const page=await context.newPage();
    log('Starting '+(prefix||'candidate'));
    page.setDefaultTimeout(30000);
    page.on('console',message=>log(message.text()));
@@ -64,7 +66,18 @@ const log=message=>console.log('[security-browser] '+message);
    assert.equal(result.probe,1);
    assert.equal(result.saved,true);
    log('Passed '+(prefix||'candidate'));
-   await page.context().close();
+   await page.close();
+  }
+  await context.setOffline(false);
+  const isolation=await context.newPage();
+  await isolation.goto('http://127.0.0.1:'+server.address().port+'/index.html');
+  const keys=await isolation.evaluate(()=>['moja-silownia-v01','moja-silownia-preview-v01'].map(key=>JSON.parse(localStorage.getItem(key)).plans.filter(p=>p.name.startsWith('Security test ')).map(p=>p.name)));
+  assert.equal(keys[0].length,1);
+  assert.equal(keys[1].length,1);
+  assert.notEqual(keys[0][0],keys[1][0]);
+  log('Storage isolation passed');
+  await context.close();
+  {
   }
  } finally {await browser.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>clearTimeout(deadline));
