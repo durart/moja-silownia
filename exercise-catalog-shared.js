@@ -16,7 +16,7 @@ const categories=Object.freeze([
  {id:'__cardio__',label:'Kardio',art:11}
 ].map(x=>Object.freeze(x)));
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function matches(exercise,id){if(id==='__all__')return true;if(id==='__cardio__')return exercise?.group==='Kardio';return exercise?.group===id;}
+function matches(exercise,id){if(id==='__all__')return true;if(id==='__cardio__')return exercise?.group==='Kardio';return exercise?.group===id||(Array.isArray(exercise?.groups)&&exercise.groups.includes(id));}
 function count(exercises,id){return (Array.isArray(exercises)?exercises:[]).filter(e=>matches(e,id)).length;}
 function tiles(exercises,{surface='picker',selected=null,includeAll=false}={}){
  const catalog=surface==='atlas',tileClass=catalog?'muscle-tile':'pick-tile',imageClass=catalog?'catalog-source-art catalog-source-':'pick-source-image pick-source-',action=catalog?'selectMuscle':'pickerChoose';
