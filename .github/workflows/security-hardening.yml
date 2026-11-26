@@ -88,3 +88,7 @@ jobs:
       - name: Run offline browser security regression
         timeout-minutes: 4
         run: node tests/security-browser.cjs
+
+      - name: Run storage recovery browser regression
+        timeout-minutes: 4
+        run: node tests/storage-recovery-browser.cjs

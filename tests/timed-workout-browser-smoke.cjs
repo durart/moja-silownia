@@ -14,6 +14,16 @@ async function openCard(card) {
 function timedRow(card, index) {
   return card.locator('.timed-set[data-timed-index="' + index + '"]');
 }
+async function rejectedWrite(page,key,button){
+  await page.evaluate(key=>{
+    window.originalWorkoutSetItem=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(k,v){if(k===key)throw Error('Injected workout write failure');return window.originalWorkoutSetItem.call(this,k,v);};
+  },key);
+  const snapshot=()=>page.evaluate(key=>({active:state.active,cardio:state.activeCardio,rest:state.restUntil,raw:localStorage.getItem(key)}),key);
+  const before=await snapshot();
+  try{await button.click();assert.deepEqual(await snapshot(),before);}
+  finally{await page.evaluate(()=>{Storage.prototype.setItem=window.originalWorkoutSetItem;delete window.originalWorkoutSetItem;});}
+}
 async function saveSeconds(row, seconds) {
   await row.locator('input[id$="_duration"]').fill(String(seconds));
   await row.locator('.timed-save').click();
@@ -61,7 +71,7 @@ function assertTimedSet(set, seconds) {
           if (!localStorage.getItem(otherKey)) localStorage.setItem(otherKey,'isolation-sentinel');
         }, {seed,storageKey,otherKey});
         await page.goto('http://127.0.0.1:' + server.address().port + (preview?'/preview/':'/'));
-        assert.match(await page.title(),preview?/TEST v3\.8\.0/:/v3\.7\.1/);
+        assert.match(await page.title(),preview?/TEST v3\.8\.0/:/v3\.8\.0/);
         await page.waitForFunction(() => !!window.MojaTimedWorkout && !!document.getElementById('compactWorkoutDock'));
         await page.evaluate(() => { startPlan(0); confirmWorkoutStart(); });
         const plank = page.locator('#planWorkout [data-workout-slot="0"]');
@@ -96,12 +106,19 @@ function assertTimedSet(set, seconds) {
         await first.locator('.timed-save').click();
         assertTimedSet(await page.evaluate(() => state.active[0]),measured);
         assert.ok(await page.evaluate(() => state.restUntil > Date.now()));
+        await second.locator('input[id$="_duration"]').fill('45');
+        await second.locator('input[id$="_duration"]').blur();
+        await rejectedWrite(page,storageKey,second.locator('.timed-save'));
         await saveSeconds(second,45);
+        assert.equal(await page.evaluate(()=>state.active.length),2);
         assertTimedSet(await page.evaluate(() => state.active[1]),45);
         await openCard(bench);
         await bench.locator('#r_1_0_w').fill('40');
         await bench.locator('#r_1_0_r').fill('10');
+        await bench.locator('#r_1_0_r').blur();
+        await rejectedWrite(page,storageKey,bench.locator('button[onclick^="togglePlanRow"]'));
         await bench.locator('button[onclick^="togglePlanRow"]').click();
+        assert.equal(await page.evaluate(()=>state.active.length),3);
         assert.equal(await page.evaluate(() => state.active[2].reps),10);
         assert.equal(await page.evaluate(() => Object.hasOwn(state.active[2],'durationSeconds')),false);
         await page.evaluate(() => addPlanExtraExercise('seed-93'));
@@ -167,7 +184,7 @@ function assertTimedSet(set, seconds) {
         await openCard(manual);
         assertTimedSet(await page.evaluate(() => state.active[0]),42);
         assert.equal(await page.evaluate(key => localStorage.getItem(key),otherKey),'isolation-sentinel');
-        assert.ok((await page.evaluate(()=>caches.keys())).some(k=>k.startsWith(preview?'moja-silownia-preview-shell-':'moja-silownia-shell-')&&(preview?/3\.8\.0-data-reliability$/:/3\.7\.1-security-r2$/).test(k)));
+        assert.ok((await page.evaluate(()=>caches.keys())).some(k=>k.startsWith(preview?'moja-silownia-preview-shell-':'moja-silownia-shell-')&&/3\.8\.0-data-reliability$/.test(k)));
         if(await page.evaluate(()=>!!window.MojaCardioWorkout)){
           // Continue the existing manual workout while offline, with cardio and a saved timed set.
           await page.evaluate(()=>{document.getElementById('exercise').value='cardio-treadmill-walk';addManualExercise();});
@@ -187,7 +204,20 @@ function assertTimedSet(set, seconds) {
           await page.waitForTimeout(1100);
           await cardio.locator('button[data-cardio-action="stop"]').click();
           await cardio.locator('input[data-cardio-field="durationSeconds"]').fill('30');
+          await cardio.locator('input[data-cardio-field="durationSeconds"]').blur();
+          await rejectedWrite(page,storageKey,cardio.locator('button[data-cardio-action="save"]'));
           await cardio.locator('button[data-cardio-action="save"]').click();
+          assert.equal(await page.evaluate(()=>state.activeCardio.length),1);
+          const persisted=await page.evaluate(()=>({active:state.active,cardio:state.activeCardio,startedAt:state.startedAt}));
+          const reopenUrl=page.url();
+          const reopened=await context.newPage();
+          await reopened.goto(reopenUrl,{waitUntil:'domcontentloaded'});
+          await reopened.waitForFunction(()=>!!window.MojaCardioWorkout);
+          assert.deepEqual(await reopened.evaluate(()=>({active:state.active,cardio:state.activeCardio,startedAt:state.startedAt})),persisted);
+          await reopened.close();
+          const closed=await context.newPage();await closed.goto(reopenUrl,{waitUntil:'domcontentloaded'});await closed.close();
+          const resumed=await context.newPage();await resumed.goto(reopenUrl,{waitUntil:'domcontentloaded'});await resumed.waitForFunction(()=>!!window.MojaCardioWorkout);assert.deepEqual(await resumed.evaluate(()=>({active:state.active,cardio:state.activeCardio,startedAt:state.startedAt})),persisted);await resumed.close();
+          console.log('Offline reopen and rejected strength, timed and cardio writes PASS');
           assert.equal(await page.evaluate(()=>state.active.length),1);
           assert.equal(await page.evaluate(()=>state.activeCardio[0].durationSeconds),1800);
           assert.match(await cardio.locator('.compact-card-status').innerText(),/Kardio wykonane/);
