@@ -167,7 +167,7 @@ function assertTimedSet(set, seconds) {
         await openCard(manual);
         assertTimedSet(await page.evaluate(() => state.active[0]),42);
         assert.equal(await page.evaluate(key => localStorage.getItem(key),otherKey),'isolation-sentinel');
-        assert.ok((await page.evaluate(()=>caches.keys())).some(k=>k.startsWith(preview?'moja-silownia-preview-shell-':'moja-silownia-shell-')&&/3\.7\.1-security-r1$/.test(k)));
+        assert.ok((await page.evaluate(()=>caches.keys())).some(k=>k.startsWith(preview?'moja-silownia-preview-shell-':'moja-silownia-shell-')&&/3\.7\.1-security-r2$/.test(k)));
         if(await page.evaluate(()=>!!window.MojaCardioWorkout)){
           // Continue the existing manual workout while offline, with cardio and a saved timed set.
           await page.evaluate(()=>{document.getElementById('exercise').value='cardio-treadmill-walk';addManualExercise();});
