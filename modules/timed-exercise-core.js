@@ -27,6 +27,21 @@
     return set?.measurementType === 'duration' && validSeconds(set.durationSeconds);
   }
 
+  function validateTimedRecords(state) {
+    // Validate only explicitly typed new records. Legacy repetition entries remain untouched.
+    const sets=[...(Array.isArray(state?.active)?state.active:[]),...(Array.isArray(state?.sessions)?state.sessions:[])
+      .flatMap(session=>Array.isArray(session?.sets)?session.sets:[])];
+    for(const set of sets){
+      if(set?.measurementType!=='duration')continue;
+      if(!isTimedSet(set)||typeof set.exerciseId!=='string'||!set.exerciseId||
+        typeof set.weight!=='number'||!Number.isFinite(set.weight)||set.weight<0||
+        (set.targetDurationSeconds!=null&&!validSeconds(set.targetDurationSeconds))||
+        (set.targetSetCount!=null&&(!Number.isSafeInteger(set.targetSetCount)||set.targetSetCount<1||set.targetSetCount>100)))
+        throw new Error('Nieprawidłowy zapis serii czasowej w kopii zapasowej.');
+    }
+    return state;
+  }
+
   function createTimedSet(fields, seconds) {
     if (!validSeconds(seconds)) throw new RangeError('Invalid duration in seconds');
     const { reps, rir, ...base } = fields || {};
@@ -81,6 +96,6 @@
     return Math.min(86400, Math.floor((now - startedAt) / 1000));
   }
 
-  return Object.freeze({ measurementType, parseDurationTarget, isTimedSet, createTimedSet,
+  return Object.freeze({ measurementType, parseDurationTarget, isTimedSet, validateTimedRecords, createTimedSet,
     workingTimedSets, suggestDuration, detectDurationRecord, elapsedSeconds });
 });

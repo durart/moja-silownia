@@ -18,4 +18,4 @@ test('the preparation modules load in order and are all cached',()=>{
  assert.match(html,/const key='moja-silownia-v01'/);
 });
 
-test('timed preparation is loaded before the trainer and cached',()=>{const html=read('index.html'),sw=read('sw.js');let last=-1;for(const script of ['modules/timed-exercise-core.js?v=2','assistant/timed-preparation.js?v=1','assistant/trainer-preparation.js?v=311']){const pos=html.indexOf(script);assert.ok(pos>last,script);assert.ok(sw.includes(script));last=pos;}});
+test('timed preparation is loaded before the trainer and cached',()=>{const html=read('index.html'),sw=read('sw.js');let last=-1;for(const script of ['modules/timed-exercise-core.js?v=3','assistant/timed-preparation.js?v=1','assistant/trainer-preparation.js?v=311']){const pos=html.indexOf(script);assert.ok(pos>last,script);assert.ok(sw.includes(script));last=pos;}});
