@@ -38,14 +38,14 @@ async function verify(card,id){
    },{storageKey,otherKey});
    await page.goto('http://127.0.0.1:'+server.address().port+(production?'/':'/preview/'));
    await page.waitForFunction(()=>!!window.MojaCardioWorkout&&!!document.getElementById('compactWorkoutDock'));
-   assert.match(await page.title(),production?/v3\.5\.1 — Zamiana ćwiczeń/:/TEST v3\.5\.1 — Zamiana ćwiczeń/);
+   assert.match(await page.title(),production?/v3\.7\.0 — Katalog ćwiczeń/:/TEST v3\.7\.0 — Katalog ćwiczeń/);
    assert.equal(await page.evaluate(()=>state.plans[0].exerciseIds[0]),'cardio-elliptical');
    await page.evaluate(()=>{tab('catalog');uiCatalogChoose('__cardio__');});
    const rows=page.locator('#catalogList .catalog-exercise-main');
    assert.equal(await rows.count(),6);
    for(const id of ids){
     const row=page.locator('#catalogList .catalog-exercise-main[data-id="'+id+'"]');
-    const img=row.locator('img.cardio-thumbnail');await img.scrollIntoViewIfNeeded();await img.evaluate(img=>img.decode());assert.ok(await img.evaluate(img=>img.naturalWidth>0));
+    const img=row.locator('img.r6-exercise-art');await img.scrollIntoViewIfNeeded();await img.evaluate(img=>img.decode());assert.ok(await img.evaluate(img=>img.naturalWidth>0));
     await row.click();
    }
    await page.evaluate(()=>{tab('plans');showPlansPanel('mine');});
@@ -66,7 +66,7 @@ async function verify(card,id){
    await page.evaluate(()=>{tab('workout');startManualWorkout();confirmWorkoutStart();pickerOpen();pickerChoose('__cardio__');});
    assert.equal(await page.locator('#pickResults .pick-exercise').count(),6);
    const pick=page.locator('#pickResults .pick-exercise[data-pick-id="cardio-elliptical"]');
-   await pick.locator('img.cardio-thumbnail').evaluate(img=>img.decode());await pick.click();
+   await pick.locator('img.r6-exercise-art').evaluate(img=>img.decode());await pick.click();
    await verify(page.locator('#today [data-cardio-id="cardio-elliptical"]'),'cardio-elliptical');
    await page.evaluate(async()=>await navigator.serviceWorker.ready);
    await page.reload();await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
