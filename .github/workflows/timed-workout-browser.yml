@@ -1,0 +1,25 @@
+name: Timed workout browser regression
+on:
+  push:
+    branches: [feature/isometric-training]
+  pull_request:
+    paths:
+      - 'modules/timed-*.js'
+      - 'styles/timed-workout.css'
+      - 'tests/timed-workout-browser-smoke.cjs'
+      - '.github/workflows/timed-workout-browser.yml'
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check modules/timed-workout-integration.js
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/timed-workout-browser-smoke.cjs
