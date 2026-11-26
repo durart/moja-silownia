@@ -3,14 +3,16 @@ let importedDraft=[];
 const impNorm=s=>String(s||'').toLocaleLowerCase('pl').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 function impNotice(msg){document.getElementById('importStatus').textContent=msg}
 function impScript(url,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve(window[globalName]);let s=document.createElement('script');s.src=url;s.onload=()=>resolve(window[globalName]);s.onerror=()=>reject(Error('Nie udało się pobrać biblioteki odczytu dokumentów. Sprawdź internet.'));document.head.appendChild(s)})}
+const PDF_LIBRARY_BASE='https://cdn.jsdelivr.net/npm/pdfjs-dist@6.5.438/legacy/build';
+function impLoadPdfLibrary(){return import(PDF_LIBRARY_BASE+'/pdf.min.mjs');}
 async function impRead(file){
  let ext=file.name.split('.').pop().toLowerCase();
  const maxBytes=ext==='txt'?1024*1024:10*1024*1024;
  if(file.size>maxBytes)throw Error('Plik przekracza dopuszczalny rozmiar.');
  if(ext==='pdf'){
-  const pdfjs=await impScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','pdfjsLib');
-  pdfjs.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  let doc=await pdfjs.getDocument({data:await file.arrayBuffer(),isEvalSupported:false}).promise,lines=[];
+  const pdfjs=await impLoadPdfLibrary();
+  pdfjs.GlobalWorkerOptions.workerSrc=PDF_LIBRARY_BASE+'/pdf.worker.min.mjs';
+  let doc=await pdfjs.getDocument({data:await file.arrayBuffer(),isEvalSupported:false,enableScripting:false}).promise,lines=[];
   if(doc.numPages>100){await doc.destroy();throw Error('Dokument PDF przekracza limit 100 stron.');}
   for(let p=1;p<=doc.numPages;p++){
    const page=await doc.getPage(p),viewport=page.getViewport({scale:1});
