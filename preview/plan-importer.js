@@ -144,10 +144,15 @@ function impParseSetBlocks(text,filename){
  return found&&plans.length?plans:null;
 }
 
+function impValidatePlans(plans){
+ if(plans.length>50||plans.some(plan=>plan.rows.length>100))throw Error('Przekroczono limit 50 planów lub 100 ćwiczeń w planie.');
+ return plans;
+}
 function impParse(text,filename){
+ if(typeof text!=='string'||text.length>1024*1024)throw Error('Tekst przekracza dopuszczalny rozmiar.');
  const csvPlans=impParseCSV(text,filename);
- if(csvPlans)return csvPlans;
- const detailed=impParseSetBlocks(text,filename);if(detailed)return detailed;
+ if(csvPlans)return impValidatePlans(csvPlans);
+ const detailed=impParseSetBlocks(text,filename);if(detailed)return impValidatePlans(detailed);
  let plans=[],current={name:'Plan 1',rows:[]};
  const flush=()=>{if(current.rows.length)plans.push(current)};
  const raw=text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -186,7 +191,7 @@ function impParse(text,filename){
  flush();
  if(!plans.length)throw Error('Nie wykryto ćwiczeń. Wklej tekst lub użyj PDF z warstwą tekstową.');
  if(plans.length===1&&plans[0].name==='Plan 1')plans[0].name=filename.replace(/\.[^.]+$/,'');
- return plans;
+ return impValidatePlans(plans);
 }
 function impRender(){
  const host=document.getElementById('importPreview');
