@@ -11,14 +11,14 @@ const sessionMode = require('../assistant/session-mode.js');
 const activeAdvisor = require('../assistant/assistant-core.js');
 
 test('release 2.1 retains progression assets in executable order', () => {
-  assert.match(index, /<title>Moja Siłownia v3\.3\.2/);
-  assert.match(index, /<span class="badge">v3\.3\.2<\/span>/);
+  assert.match(index, /<title>Moja Siłownia v3\.4\.0/);
+  assert.match(index, /<span class="badge">v3\.4\.0<\/span>/);
   const scripts = [
     'assistant/session-mode.js?v=200',
     'assistant/assistant-core.js?v=200',
     'assistant/assistant-progression.js?v=201',
     'assistant/equipment-settings-ui.js?v=200',
-    'assistant/assistant-progression-ui.js?v=310'
+    'assistant/assistant-progression-ui.js?v=311'
   ];
   for (const script of scripts) {
     assert.equal(index.split('src="./' + script + '"').length - 1, 1, script + ' script tag');
@@ -26,8 +26,8 @@ test('release 2.1 retains progression assets in executable order', () => {
   }
   assert.ok(index.indexOf('assistant/session-mode.js?v=200') < index.indexOf("const key='moja-silownia-v01'"));
   assert.ok(index.indexOf('assistant/assistant-core.js?v=200') < index.indexOf('assistant/assistant-ui.js?v=1'));
-  assert.ok(index.indexOf('assistant/assistant-progression.js?v=201') < index.indexOf('assistant/assistant-progression-ui.js?v=310'));
-  assert.ok(index.indexOf('assistant/equipment-settings-ui.js?v=200') < index.indexOf('assistant/assistant-progression-ui.js?v=310'));
+  assert.ok(index.indexOf('assistant/assistant-progression.js?v=201') < index.indexOf('assistant/assistant-progression-ui.js?v=311'));
+  assert.ok(index.indexOf('assistant/equipment-settings-ui.js?v=200') < index.indexOf('assistant/assistant-progression-ui.js?v=311'));
 });
 
 test('data key and profile 1.9 remain unchanged while 2.0 gets a new PWA shell', () => {
@@ -35,7 +35,7 @@ test('data key and profile 1.9 remain unchanged while 2.0 gets a new PWA shell',
   assert.match(index, /id="profileContent"/);
   assert.match(index, /profile-core\.js\?v=190/);
   assert.match(index, /profile-ui\.js\?v=310/);
-  assert.match(sw, /moja-silownia-shell-v48-technique-3\.3\.2/);
+  assert.match(sw, /moja-silownia-shell-v50-isometric-3.4.0/);
   assert.match(sw, /profile-core\.js\?v=190/);
   assert.match(sw, /modules\/state-storage\.js/);
   assert.match(index, /state\.profile/);
@@ -75,7 +75,7 @@ test('production recovery recommendations preserve strength and fatigue semantic
 
 test('staging continues to use independent data and cache', () => {
   assert.match(read('preview/index.html'),/const key='moja-silownia-preview-v01'/);
-  assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-v48-technique-3\.3\.2/);
+  assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-v50-isometric-3\.4\.0/);
   assert.doesNotMatch(sw,/moja-silownia-preview-shell-/);
   assert.equal(read('assistant/session-mode.js'),read('preview/assistant/session-mode.js'));
 });

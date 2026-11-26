@@ -2,10 +2,14 @@
 (function(root, factory) {
   const progression = typeof module === 'object' && module.exports
     ? require('./assistant-progression.js') : root.MojaAdvisorProgression;
-  const api = factory(progression);
+  const timed = typeof module === 'object' && module.exports
+    ? require('./timed-preparation.js') : root.MojaTimedPreparation;
+  const timedCore = typeof module === 'object' && module.exports
+    ? require('../modules/timed-exercise-core.js') : root.MojaTimedExercise;
+  const api = factory(progression,timed,timedCore);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.MojaTrainerPreparation = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression,timed,timedCore) {
   'use strict';
   const MAX_SETS = 30;
   const supportedEquipment = new Set(['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg']);
@@ -55,6 +59,7 @@
   }
   function prepare({sessions, exercise, target = null, sessionMode = 'standard', preWorkout, activeFlag, planId, slotIndex} = {}) {
     if (!exercise?.id) return { rows: [], reason: 'missing_exercise' };
+    if (timedCore?.measurementType(exercise)==='duration') return timed.prepare({sessions,exercise,target,sessionMode,activeFlag,planId,slotIndex,cautionToday:readinessCaution(preWorkout)});
     const history = historyFor(sessions, exercise.id, {planId, slotIndex});
     const standard = history.filter(s => s.sessionMode !== 'recovery');
     const recovery = history.filter(s => s.sessionMode === 'recovery');
@@ -105,5 +110,5 @@
     });
     return { rows, action: advice.action, reason: recentFlag || flags.has(activeFlag) ? 'review' : isRecovery ? 'recovery' : caution ? 'readiness' : mayIncrease ? 'progression' : reference ? 'history' : 'plan' };
   }
-  return Object.freeze({ prepare, repRange, readinessCaution });
+  return Object.freeze({ prepare, repRange, readinessCaution, isTimedExercise:exercise=>timedCore?.measurementType(exercise)==='duration' });
 });

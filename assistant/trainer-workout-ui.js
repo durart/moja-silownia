@@ -15,7 +15,7 @@
   }
   function row(id,slot,index) {
     const value=drafts.row(state,id,slot,index);
-    return value?{...value,weight:value.weight??'',reps:value.reps??''}:null;
+    return value?{...value,weight:value.weight??'',...(value.measurementType==='duration'?{}:{reps:value.reps??''})}:null;
   }
   function count(id,slot){return drafts.get(state,id,slot)?.rows.length;}
   function capture(id,slot,index,actual){return drafts.capture(state,id,slot,index,actual);}
@@ -56,6 +56,21 @@
     const identity=input?inputIdentity(input):null;
     const slot=identity?.slot??null,record=drafts.get(state,id,slot);
     if(!record)return;
+    if(window.MojaTimedWorkout?.isTimed(id)){
+      const completed=Number.isInteger(slot)?planSets(id,slot):manualSetRows(id);
+      let changed=false;
+      record.rows.forEach((value,i)=>{
+        if(completed[i]||value?.edited)return;
+        if(value.weight!==0){value.weight=0;changed=true;}
+        const target=Number.isInteger(slot)?state.plans.find(p=>p.id===state.activePlan)?.targets?.[slot]:null;
+        const lower=window.MojaTimedExercise.parseDurationTarget(target?.setDetails?.[i]?.reps??target?.reps)?.minSeconds??30;
+        const current=value.targetDurationSeconds;
+        if(Number.isInteger(current)&&current>lower){value.targetDurationSeconds=lower;if(value.durationSeconds!=null)value.durationSeconds=lower;changed=true;}
+      });
+      if(record.reason!=='timed_review'){record.reason='timed_review';changed=true;}
+      if(changed){save();if(state.activePlan)renderPlanWorkout();else renderToday();}
+      return;
+    }
     const completed=Number.isInteger(slot)?planSets(id,slot):manualSetRows(id);
     let changed=false;
     record.rows.forEach((value,i)=>{
@@ -73,7 +88,7 @@
     const prefs=drafts.settings(state),section=document.createElement('div');
     section.className='card';section.id='trainerSettings';
     const title=document.createElement('h2');title.textContent='Asystent Trenera';section.append(title);
-    for(const [key,label] of [['weights','Automatycznie uzupełniaj ciężary'],['reps','Automatycznie uzupełniaj powtórzenia'],['sets','Automatycznie przygotowuj serie'],['explanation','Pokazuj uzasadnienie zaleceń']]){
+    for(const [key,label] of [['weights','Automatycznie uzupełniaj ciężary'],['reps','Automatycznie uzupełniaj powtórzenia i czas'],['sets','Automatycznie przygotowuj serie'],['explanation','Pokazuj uzasadnienie zaleceń']]){
       const line=document.createElement('label');line.style.display='flex';line.style.alignItems='center';line.style.gap='8px';
       const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=prefs[key];checkbox.style.width='auto';
       checkbox.addEventListener('change',()=>{

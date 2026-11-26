@@ -16,12 +16,12 @@
     const sets = group.sets.map((set, index) => {
       const rir = set.rir == null ? '' : ' · RIR ' + number(set.rir);
       const pr = set.records.length ? '<span class="sp2-record">🏆 PR</span>' : '';
-      return '<li><span>' + (index + 1) + '. ' + number(set.weight) + ' kg × ' +
-        number(set.reps) + ' powt.' + rir + '</span>' + pr + '</li>';
+      const result=set.measurementType==='duration'?(set.durationSeconds?number(set.durationSeconds)+' s':'Brak prawidłowego czasu')+(set.weight?' · '+number(set.weight)+' kg dodatkowo':''):number(set.weight)+' kg × '+number(set.reps)+' powt.'+rir;
+      return '<li><span>'+(index+1)+'. '+result+'</span>'+pr+'</li>';
     }).join('');
     return '<details class="sp2-exercise"><summary><span class="sp2-exercise-name">' +
       esc(group.name) + '</span><span class="sp2-exercise-count">' +
-      group.count + ' ser. · ' + weights + '</span><span class="sp2-chevron">⌄</span></summary>' +
+      group.count + ' ser. · ' + (group.timedSeconds?number(group.timedSeconds)+' s izometrii':weights) + '</span><span class="sp2-chevron">⌄</span></summary>' +
       '<ol class="sp2-sets">' + sets + '</ol></details>';
   }
   function render(session) {
@@ -46,7 +46,7 @@
       metric('CZAS', model.duration) + metric('ĆWICZENIA', model.exerciseCount) +
       metric('SERIE', model.setCount) + '</div>' +
       '<div class="sp2-metrics sp2-metrics-secondary">' +
-      metric('OBJĘTOŚĆ', number(model.volume) + ' kg') +
+      metric('OBJĘTOŚĆ', number(model.volume) + ' kg') + (model.timedSeconds?metric('CZAS IZOMETRII',number(model.timedSeconds)+' s'):'') +
       metric('KCAL AKTYWNE*', model.activeKcal == null ? '—' : number(model.activeKcal) + ' kcal') +
       '</div>' +
       (model.prCount ? '<div class="sp2-pr"><span class="sp2-pr-ico">🏆</span><span><strong>' +
