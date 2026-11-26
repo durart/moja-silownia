@@ -1,10 +1,11 @@
 name: Timed workout browser regression
 on:
-  push:
-    branches: [feature/isometric-training]
   pull_request:
     paths:
       - 'modules/timed-*.js'
+      - 'index.html'
+      - 'assistant/trainer-drafts.js'
+      - 'sw.js'
       - 'styles/timed-workout.css'
       - 'tests/timed-workout-browser-smoke.cjs'
       - '.github/workflows/timed-workout-browser.yml'
