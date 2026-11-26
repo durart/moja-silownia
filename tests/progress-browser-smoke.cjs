@@ -26,6 +26,8 @@ const root=path.resolve(__dirname,'..');
    await page.close();
   }
   const http=require('node:http'),fs=require('node:fs');
+  const expectedTitle=fs.readFileSync(path.join(root,'index.html'),'utf8').match(/<title>([^<]+)<\/title>/)[1];
+  const expectedCache=fs.readFileSync(path.join(root,'sw.js'),'utf8').match(/const CACHE=['"]([^'"]+)['"]/)[1];
   const server=http.createServer((req,res)=>{
    const pathname=new URL(req.url,'http://localhost').pathname;
    const file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
@@ -54,11 +56,12 @@ const root=path.resolve(__dirname,'..');
    assert.match(await page.locator('#progressContent').innerText(),/585 kg/);
    // Inject the former asset URL with a deliberately stale API into the active cache.
    // A new version must not request this legacy URL, even offline.
-   await page.evaluate(async()=>{
-    const name=(await caches.keys()).find(n=>n.includes('v50-isometric-3.4.0'));
+   await page.evaluate(async(expectedCache)=>{
+    const name=(await caches.keys()).find(n=>n===expectedCache);
+    if (!name) throw new Error('Active cache missing');
     const cache=await caches.open(name);
     await cache.put(new Request(new URL('progress-core-v2.js?v=3',location.href)),new Response('window.ProgressCore={inPeriod:()=>[]};',{headers:{'Content-Type':'text/javascript'}}));
-   });
+   },expectedCache);
    const before=await page.evaluate(()=>{const key='moja-silownia-v01';const raw=localStorage.getItem(key);return {raw,cacheNames:null};});
    await context.setOffline(true);
    await page.reload({waitUntil:'domcontentloaded'});
@@ -70,9 +73,9 @@ const root=path.resolve(__dirname,'..');
    await page.getByRole('heading',{name:'Podsumowanie okresowe',exact:true}).waitFor();
    assert.match(await page.locator('#progressContent').innerText(),/585 kg/);
    assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before.raw,'reports are read-only offline');
-   assert.ok((await page.title()).includes('3.4.0'));
+   assert.equal(await page.title(),expectedTitle);
    const names=await page.evaluate(()=>caches.keys());
-   assert.ok(names.some(n=>n.includes('v50-isometric-3.4.0')));
+   assert.ok(names.includes(expectedCache));
   }finally{await context.close();await new Promise(resolve=>server.close(resolve));}
  }finally{await browser.close();}
 })().then(()=>require('./trainer-browser-smoke.cjs')()).catch(error=>{console.error(error);process.exitCode=1;});

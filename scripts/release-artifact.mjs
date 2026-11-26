@@ -31,6 +31,18 @@ export async function buildArtifact(sha, target) {
   for (const prefix of ['', 'preview/']) {
     for (const file of ['index.html','sw.js','manifest.webmanifest']) await readFile(join(target,prefix+file));
   }
+  for (const prefix of ['', 'preview/']) {
+    const sw = await readFile(join(target,prefix+'sw.js'),'utf8');
+    const assets = sw.match(/const ASSETS\s*=\s*\[([\s\S]*?)\];/);
+    if (!assets) throw new Error('Missing precache list');
+    const paths = [...assets[1].matchAll(/['"]([^'"]+)['"]/g)].map(m=>m[1]);
+    if (!paths.length) throw new Error('Empty precache list');
+    for (const asset of paths) {
+      const relative = asset.replace(/^\.\//,'').split('?')[0];
+      if (!publicPath(prefix+relative)) throw new Error('Invalid precache path: '+asset);
+      await readFile(join(target,prefix+relative));
+    }
+  }
   return createHash('sha256').update(JSON.stringify(await productionManifest(target))).digest('hex');
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
