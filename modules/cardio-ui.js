@@ -62,6 +62,7 @@
     if(!recommendation)return '';
     const reasons={
       'no-history':'Pierwsza aktywność. Ustaw komfortowe tempo.',
+      'plan-target':'Cel zapisany w planie. Dostosuj intensywność do samopoczucia.',
       'recovery':'Sesja regeneracyjna – bez zwiększania obciążenia. Dostosuj intensywność do samopoczucia.',
       'history-gap':'Dłuższa przerwa lub nieprawidłowa data – bez automatycznej progresji.',
       'high-rpe':'Ostatni wysiłek był bardzo wysoki – rozważ lżejszą aktywność.',
