@@ -63,7 +63,7 @@ test('atlas uses approved shared 30-region SVG with accessible controls',()=>{
 });
 test('production and preview code match with isolated staging cache',()=>{
  for(const name of ['muscle-atlas-core.js','muscle-atlas-ui.js','muscle-atlas.css','muscle-anatomy-art.js']){
-  const version=name==='muscle-atlas-core.js'?'1':name==='muscle-atlas.css'?'32':'40';
+  const version=name==='muscle-atlas-core.js'?'1':name==='muscle-atlas.css'?'32':name==='muscle-anatomy-art.js'?'41':'40';
   assert.equal(read(name),read('preview/'+name));
   for(const html of ['index.html','preview/index.html'])assert.ok(read(html).includes('./'+name+'?v='+version),html+' '+name);
   for(const sw of ['sw.js','preview/sw.js'])assert.ok(read(sw).includes('./'+name+'?v='+version),sw+' '+name);

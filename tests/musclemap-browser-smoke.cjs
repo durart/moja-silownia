@@ -50,8 +50,24 @@ async function run(){
     canvas.height=700;
     const ctx=canvas.getContext('2d');
     await window.MuscleAnatomyArt.drawSession(ctx,{'Nogi':1,'Barki':0.5},0,0,900);
+    const neutral=document.createElement('canvas');
+    neutral.width=canvas.width;
+    neutral.height=canvas.height;
+    const neutralCtx=neutral.getContext('2d');
+    await window.MuscleAnatomyArt.drawSession(neutralCtx,{},0,0,900);
+    const coloredPixels=ctx.getImageData(0,0,900,700).data;
+    const neutralPixels=neutralCtx.getImageData(0,0,900,700).data;
+    let redPixels=0,yellowPixels=0;
+    for(let i=0;i<coloredPixels.length;i+=4){
+     const [r,g,b]=coloredPixels.subarray(i,i+3);
+     const delta=Math.abs(r-neutralPixels[i])+Math.abs(g-neutralPixels[i+1])+Math.abs(b-neutralPixels[i+2]);
+     if(delta<30)continue;
+     if(r-g>30&&r-b>30)redPixels++;
+     if(r-b>35&&g-b>25&&r-g<45)yellowPixels++;
+    }
     const sample=(x,y)=>[...ctx.getImageData(x,y,1,1).data];
     return {
+     redPixels,yellowPixels,
      pathCount:pathElements.length,
      imageCount:photoPaths.length,
      images,
@@ -65,6 +81,8 @@ async function run(){
      background:sample(10,15)
     };
    });
+   assert.ok(result.redPixels>300,'PNG contains primary red muscles');
+   assert.ok(result.yellowPixels>300,'PNG contains secondary yellow muscles');
    assert.equal(result.pathCount,56,'all paths');
    assert.equal(result.imageCount,2,'both embedded images');
    assert.deepEqual(result.images,[{width:1024,height:1536},{width:1024,height:1536}]);
