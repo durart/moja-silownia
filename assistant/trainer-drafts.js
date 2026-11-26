@@ -20,6 +20,8 @@
       rir:validNumber(row?.rir,0,5,true) ? row.rir : null,
       targetRir:validNumber(row?.targetRir,0,5,true) ? row.targetRir : null,
       setType:row?.setType === 'R' ? 'R' : 'W',
+      ...(row && 'durationSeconds' in row ? {durationSeconds:validNumber(row.durationSeconds,1,86400,true) ? row.durationSeconds : null} : {}),
+      ...(row && 'targetDurationSeconds' in row ? {targetDurationSeconds:validNumber(row.targetDurationSeconds,1,86400,true) ? row.targetDurationSeconds : null} : {}),
       edited:row?.edited === true
     };
   }
@@ -77,12 +79,12 @@
   function change(state,id,slot,index,field,value) {
     const entry=get(state,id,slot);
     const prior=row(state,id,slot,index);
-    if (!entry||!prior||!['weight','reps','rir','setType'].includes(field)) return false;
+    if (!entry||!prior||!['weight','reps','rir','setType','durationSeconds'].includes(field)) return false;
     if (field==='setType') { if (!['W','R'].includes(value)) return false; }
     else if (value===''||value==null) value=null;
     else {
       if (typeof value==='string') value=Number(value);
-      const limits=field==='weight'?[0,10000,false]:field==='reps'?[1,10000,true]:[0,5,true];
+      const limits=field==='weight'?[0,10000,false]:field==='reps'?[1,10000,true]:field==='durationSeconds'?[1,86400,true]:[0,5,true];
       if (!validNumber(value,...limits)) return false;
     }
     entry.rows[index]={...prior,[field]:value,edited:true};return true;
