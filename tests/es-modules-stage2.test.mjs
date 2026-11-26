@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const core=await import('data:text/javascript;base64,'+Buffer.from(source('modules/state-core.js')).toString('base64'));
+await import('data:text/javascript;base64,'+Buffer.from(source('modules/storage-recovery.js')).toString('base64'));
 const rawAdapter=source('modules/state-storage.js').replace("import {readState,selectInitialState} from './state-core.js';",'');
 const adapter=await import('data:text/javascript;base64,'+Buffer.from(rawAdapter.replace('export function createStateStorage','export function createStateStorage')+'\nconst validState='+core.validState.toString()+';\nconst readState='+core.readState.toString()+';\nconst selectInitialState='+core.selectInitialState.toString()+';').toString('base64'));
 const store=()=>{const m=new Map();return {m,getItem:k=>m.has(k)?m.get(k):null,setItem:(k,v)=>m.set(k,v)}};
@@ -11,7 +12,7 @@ test('primary state wins',()=>assert.equal(core.selectInitialState(JSON.stringif
 test('valid backup restores corrupt primary',()=>{const s=store();s.setItem('moja-silownia-v01','{broken');s.setItem('moja-silownia-v01-previous-valid',JSON.stringify(example));const r=adapter.createStateStorage(s).load([]);assert.equal(r.source,'backup');assert.equal(s.getItem('moja-silownia-v01-unreadable'),'{broken')});
 test('invalid primary preserved when no backup',()=>{const s=store();s.setItem('moja-silownia-v01','{bad');const r=adapter.createStateStorage(s).load([]);assert.equal(r.source,'new');assert.equal(s.getItem('moja-silownia-v01-unreadable'),'{bad')});
 test('persist stores previous valid state',()=>{const s=store(),a=adapter.createStateStorage(s);a.persist(example);a.persist({...example,active:[]});assert.equal(JSON.parse(s.getItem(a.backupKey)).active.length,1)});
-test('persist does not back up invalid previous data',()=>{const s=store(),a=adapter.createStateStorage(s);s.setItem(a.key,'bad');a.persist(example);assert.equal(s.getItem(a.backupKey),null)});
+test('persist does not back up invalid previous data',()=>{const s=store(),a=adapter.createStateStorage(s);s.setItem(a.key,'bad');assert.throws(()=>a.persist(example));assert.equal(s.getItem(a.backupKey),null)});
 test('recover unfinished workout without plan',()=>{const state={...example,manualStarted:false,manualExerciseIds:[],activePlan:null,startedAt:null};const r=core.recoverActiveState(state);assert.equal(r.changed,true);assert.equal(state.manualStarted,true);assert.deepEqual(state.manualExerciseIds,['x']);assert.ok(state.startedAt)});
 test('do not change workout with valid active plan',()=>{const state={...example,activePlan:'p',plans:[{id:'p'}]};assert.equal(core.recoverActiveState(state).changed,false)});
 test('no schema migration',()=>assert.deepEqual(core.normalizeBaseState({...example}).active,example.active));

@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 for(const prefix of ['', 'preview/']){
  const html=readFileSync(new URL('../'+prefix+'index.html',import.meta.url),'utf8');
- const init=html.slice(html.indexOf('let storageRecoveryBlocked=false;'),html.indexOf('if(!Array.isArray(state.plans))',html.indexOf('let storageRecoveryBlocked=false;')));
+ const init=html.slice(html.indexOf('const recoverySnapshot='),html.indexOf('if(!Array.isArray(state.plans))',html.indexOf('const recoverySnapshot=')));
  const save=html.slice(html.indexOf('function save(){'),html.indexOf('/* Naprawa starszego zapisu'));
  const valid=JSON.stringify({exercises:[],active:[],sessions:[{id:1}]});
  function run(primary,backup,fail=false){
@@ -12,6 +12,7 @@ for(const prefix of ['', 'preview/']){
   let reads=0;
   const localStorage={getItem(k){if(fail&&reads++===0)throw Error('read failure');return values.get(k)??null;},setItem(k,v){values.set(k,v);}};
   const ctx=vm.createContext({localStorage,key:'main',backupKey:'backup',corruptKey:'corrupt',seeds:[],readState(raw){try{return JSON.parse(raw)}catch{return null}},validState(v){return !!v},window:{addEventListener(){}},console:{error(){},warn(){}},alert(){}});
+  vm.runInContext(readFileSync(new URL('../'+prefix+'modules/storage-recovery.js',import.meta.url),'utf8'),ctx);
   vm.runInContext(init+'\nlet storageWarningShown=false;\n'+save,ctx);
   return {values,result:vm.runInContext('save()',ctx)};
  }

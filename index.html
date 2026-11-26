@@ -58,7 +58,7 @@ body.sport-performance #exercisePicker.swap-embedded-picker{position:static!impo
 <section id="profile" class="hidden"><div id="profileContent" aria-live="polite"></div></section><section id="history" class="hidden"><div class="card"><h2>Ostatni trening</h2><div id="dashboardLatest"></div></div><div class="card dash-stat-card"><h2>Twoje wyniki</h2><div id="dashboardStats" class="dashboard-stats"></div><h3>Aktywność treningowa</h3><div class="row"><label>Okres<select id="dashboardPeriod" onchange="renderDashboard()"><option value="6">Ostatnie 6 tygodni</option><option value="12">Ostatnie 12 tygodni</option><option value="26">Ostatnie 26 tygodni</option></select></label></div><div class="metric-tabs"><button class="secondary" onclick="setDashboardMetric('time')">Czas</button><button class="secondary" onclick="setDashboardMetric('volume')">Objętość</button><button class="secondary" onclick="setDashboardMetric('reps')">Powtórzenia</button></div><div id="dashboardChart"></div></div><div class="card"><h2>Zakończone treningi</h2><div id="historyList"></div></div><div class="card"><h2>Kopia danych</h2><p>Eksportuj plik JSON, aby przenieść dane na drugie urządzenie. Synchronizacja automatyczna będzie w późniejszej wersji.</p><button onclick="exportData()">Pobierz kopię na telefon (JSON)</button><button id="saveBackupPicker" type="button">Wybierz miejsce zapisu kopii</button><p>Wybierz lokalny folder, Dysk Google lub Dropbox, jeśli system je udostępnia.</p><p id="backupStatus" role="status" aria-live="polite"></p><label>Import kopii JSON<input type="file" accept=".json,application/json" onchange="importData(event)"></label></div></section>
 <p class="muted">Dane pozostają w pamięci tej przeglądarki. Nie czyść danych witryny bez wykonania kopii.</p><div id="techOverlay" class="tech-overlay hidden" role="dialog" aria-modal="true" aria-label="Atlas techniki"><div class="tech-sheet"><div class="tech-header"><h2 id="techTitle">Technika ćwiczenia</h2><button class="secondary" onclick="closeTechnique()">Zamknij ✕</button></div><div id="techContent"></div></div></div><div id="swapOverlay" class="swap-overlay hidden" role="dialog" aria-modal="true" aria-label="Zamiana ćwiczenia"><div class="swap-sheet"><div class="swap-header"><h2>⇄ Zamień ćwiczenie</h2><button class="secondary" onclick="closeSwap()">Zamknij ✕</button></div><div id="swapContents"></div></div></div><div id="exercisePicker" hidden role="dialog" aria-modal="true" aria-label="Wybierz partię ciała lub ćwiczenie"><div class="pick-wrap"><div class="pick-head"><button type="button" onclick="pickerBack()" aria-label="Wstecz">←</button><h2 id="pickTitle">Wybierz partię ciała</h2><span></span></div><div class="pick-search"><span class="search-icon" aria-hidden="true">⌕</span><input id="pickSearch" type="search" autocomplete="off" placeholder="Wyszukaj ćwiczenie..." oninput="pickerRender()" aria-label="Wyszukaj ćwiczenie"><button id="pickSort" type="button" onclick="pickerSortToggle()" aria-label="Zmień sortowanie">☰</button></div><div id="pickTiles" class="pick-tiles"></div><div id="pickResults" class="pick-results" hidden></div></div></div></main>
 <script src="./calisthenics-library.js?v=1"></script>
-<script src="./exercise-technique-library.js?v=1"></script><script src="./calisthenics-icons.js?v=2"></script><script src="./exercise-graphics.js?v=1"></script><script src="./exercise-catalog-shared.js?v=1"></script><script>
+<script src="./exercise-technique-library.js?v=1"></script><script src="./calisthenics-icons.js?v=2"></script><script src="./exercise-graphics.js?v=1"></script><script src="./exercise-catalog-shared.js?v=1"></script><script src="./modules/storage-recovery.js"></script><script>
 let pickerGroup=null;
 let pickerOrder='recent';
 let pickerContext='workout';
@@ -264,18 +264,23 @@ const backupKey=key+'-previous-valid',corruptKey=key+'-unreadable';
 function validState(v){return v&&Array.isArray(v.exercises)&&Array.isArray(v.active)&&Array.isArray(v.sessions)} // bootstrap path remains synchronous until full state migration
 function readState(raw){if(!raw)return null;try{const parsed=JSON.parse(raw);return validState(parsed)?parsed:null}catch(e){console.error('Nieprawidłowy zapis treningów',e);return null}}
 // Fail closed when existing data cannot be read safely.
-let storageRecoveryBlocked=false;
-let originalRaw=null,backupRaw=null;
-try{originalRaw=localStorage.getItem(key);backupRaw=localStorage.getItem(backupKey);}
-catch(error){storageRecoveryBlocked=true;console.error('Odczyt pamięci nieudany',error);}
-let state=readState(originalRaw);
-if(!state){
- const backup=readState(backupRaw);
- if(originalRaw!==null||backupRaw!==null)storageRecoveryBlocked=true;
- if(originalRaw!==null){try{if(localStorage.getItem(corruptKey)===null)localStorage.setItem(corruptKey,originalRaw);}catch(error){console.error('Nie można zabezpieczyć uszkodzonego zapisu',error);}}
- state=backup||{exercises:seeds,active:[],sessions:[]};
+const recoverySnapshot=MojaStorageRecovery.inspect(localStorage,key,readState,seeds);
+let storageRecoveryBlocked=recoverySnapshot.blocked;
+let state=recoverySnapshot.state;
+function restoreRecoveryBackup(){
+ if(!storageRecoveryBlocked||!confirm('Przywrócić poprzednią kopię? Najnowsze zmiany mogą nie być w niej dostępne.'))return false;
+ try{MojaStorageRecovery.restore(localStorage,key,readState,recoverySnapshot);location.reload();return true;}
+ catch(error){alert('Nie udało się przywrócić kopii. Dane pozostają zabezpieczone.');return false;}
 }
-if(storageRecoveryBlocked)window.addEventListener('load',()=>alert('Tryb odzyskiwania: zapis zablokowany. Nie usuwaj danych aplikacji. Jeśli widzisz swoje dane, wyeksportuj kopię JSON. Uruchom aplikację ponownie po usunięciu problemu z pamięcią.'));
+if(storageRecoveryBlocked)window.addEventListener('load',()=>{
+ const panel=document.createElement('section');panel.id='storageRecoveryPanel';panel.setAttribute('role','alert');panel.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#102b3b;color:white;padding:24px;overflow:auto';
+ const heading=document.createElement('h2');heading.textContent='Tryb odzyskiwania danych';panel.append(heading);
+ const info=document.createElement('p');info.textContent='Zapis zablokowany. Nie usuwaj danych aplikacji.';panel.append(info);
+ function action(label,fn){const button=document.createElement('button');button.type='button';button.textContent=label;button.style.display='block';button.style.margin='12px 0';button.addEventListener('click',fn);panel.append(button);}
+ if(recoverySnapshot.source==='backup')action('Przywróć poprawną kopię',restoreRecoveryBackup);
+ action('Eksportuj odczytane dane',()=>{const blob=new Blob([JSON.stringify({primary:recoverySnapshot.primary,backup:recoverySnapshot.backup})],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='moja-silownia-odzyskiwanie.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+ action('Ponów odczyt pamięci',()=>location.reload());document.body.append(panel);
+});
 if(!Array.isArray(state.plans))state.plans=[];if(!('activePlan' in state))state.activePlan=null;state.restSettings??={};state.startedAt??=null;state.restUntil??=null;state.bodyWeight??=100.6;if(state.profile==null)state.profile={heightCm:null,weightHistory:[]};state.preWorkout??=null;state.activeSessionMode=MojaSessionMode.normalize(state.activeSessionMode);state.pendingWorkout??=null;state.workoutSwaps??={};state.planRowCounts??={};state.hiddenWorkoutSlots??=[];
 // Aktualizacja katalogu bez utraty własnych ćwiczeń, planów ani historii.
 window.MojaCardioCatalog.normalizeState(state);state.exercises=window.MojaCardioCatalog.mergeExercises(state.exercises);
