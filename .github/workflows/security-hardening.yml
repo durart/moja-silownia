@@ -8,6 +8,7 @@ on:
       - 'preview/index.html'
       - 'tests/security-import.test.mjs'
       - 'tests/security-real-documents.test.mjs'
+      - 'tests/security-browser.cjs'
       - '.github/workflows/security-hardening.yml'
   workflow_dispatch:
 permissions:
@@ -62,6 +63,9 @@ jobs:
               z.writestr('word/document.xml','<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>TRENING 1</w:t></w:r></w:p><w:p><w:r><w:t>Bench press</w:t></w:r></w:p></w:body></w:document>')
           PY
           SECURITY_VENDOR_ROOT="$PWD/dependency-check" node --test tests/security-real-documents.test.mjs
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/security-browser.cjs
       - name: Prepare candidate local libraries and licenses
         run: |
           mkdir -p vendor/pdfjs vendor/mammoth
