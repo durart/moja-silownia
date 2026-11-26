@@ -1,4 +1,4 @@
-name: Moja Silownia 2.0.0 production and recovery staging regression
+name: Moja Silownia production and staging regression
 
 on:
   pull_request:
@@ -19,92 +19,28 @@ jobs:
           node-version: '22'
       - name: Verify progression, profile and existing regression tests
         run: node --test tests/production-progression-v2.test.cjs tests/progression-v2.test.cjs tests/session-mode.test.cjs tests/progression-v2-staging.test.cjs tests/progression-v184.test.cjs tests/advisor-stage3.test.cjs tests/*.test.mjs
-      - name: Verify live progression v2 staging
+      - name: Verify deployed staging and production assets
         if: github.event_name == 'push'
         run: |
           set -euo pipefail
-          PREVIEW='https://durart.github.io/moja-silownia/preview/'
-          PROD='https://durart.github.io/moja-silownia/'
-          for attempt in $(seq 1 10); do
-            curl -fsSL --max-time 25 "$PREVIEW" -o /tmp/staging.html || true
-            if grep -q 'TEST v2.0.0' /tmp/staging.html 2>/dev/null; then
-              break
-            fi
-            sleep 8
+          BASE='https://durart.github.io/moja-silownia/'
+          for prefix in '' 'preview/'; do
+            # Compare with this commit, not historical release numbers.
+            for asset in index.html sw.js muscle-anatomy-art.js profile-core.js profile-ui.js profile.css assistant/session-mode.js assistant/assistant-core.js assistant/assistant-progression.js assistant/equipment-settings-ui.js assistant/assistant-progression-ui.js; do
+              expected="$prefix$asset"
+              actual="$(mktemp)"
+              matched=false
+              for attempt in $(seq 1 24); do
+                if curl -fsSL --max-time 25 "$BASE$expected?verify=${GITHUB_SHA}" -o "$actual" && cmp -s "$expected" "$actual"; then
+                  matched=true
+                  break
+                fi
+                sleep 6
+              done
+              if [ "$matched" != true ]; then
+                echo "Deployed asset does not match commit: $expected"
+                exit 1
+              fi
+              rm -f "$actual"
+            done
           done
-          grep -q 'Moja Siłownia TEST v2.0.0' /tmp/staging.html
-          grep -q 'moja-silownia-preview-v01' /tmp/staging.html
-          grep -q 'id="profileContent"' /tmp/staging.html
-          for asset in profile-core.js profile-ui.js sw.js; do
-            curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
-              "$PREVIEW$asset" -o "/tmp/$asset"
-            node --check "/tmp/$asset"
-          done
-          curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
-            "$PREVIEW""profile.css" -o /tmp/profile.css
-          grep -q 'relativeStrength' /tmp/profile-core.js
-          grep -q 'profileWeightDate' /tmp/profile-ui.js
-          grep -q 'REPS_TREND_CONFIRMED' /tmp/sw.js || true
-          for asset in assistant-progression.js assistant-progression-ui.js equipment-settings-ui.js; do
-            curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
-              "$PREVIEW""assistant/$asset" -o "/tmp/stage-$asset"
-            node --check "/tmp/stage-$asset"
-          done
-          grep -q 'REPS_TREND_CONFIRMED' /tmp/stage-assistant-progression.js
-          grep -q 'equipmentStepKg' /tmp/stage-equipment-settings-ui.js
-          for asset in session-mode.js assistant-core.js; do
-            curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
-              "$PREVIEW""assistant/$asset" -o "/tmp/stage-$asset"
-            node --check "/tmp/stage-$asset"
-          done
-          grep -q 'progressionHistory' /tmp/stage-session-mode.js
-          grep -q 'referenceSessions' /tmp/stage-assistant-core.js
-          grep -q 'id="preRecoveryMode"' /tmp/staging.html
-          grep -q 'id="activeRecoveryMode"' /tmp/staging.html
-          grep -q 'v201-recovery' /tmp/sw.js
-      - name: Verify production release after merge
-        if: github.event_name == 'push'
-        run: |
-          set -euo pipefail
-          PROD='https://durart.github.io/moja-silownia/'
-          for attempt in $(seq 1 24); do
-            curl -fsSL --max-time 25 "$PROD" -o /tmp/production.html || true
-            if grep -q 'assistant/assistant-progression.js?v=201' /tmp/production.html 2>/dev/null; then
-              break
-            fi
-            sleep 6
-          done
-          grep -q 'Moja Siłownia v2.0.0' /tmp/production.html
-          grep -q 'id="profileContent"' /tmp/production.html
-          grep -q "const key='moja-silownia-v01'" /tmp/production.html
-          for asset in profile-core.js profile-ui.js sw.js; do
-            curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
-              "$PROD$asset" -o "/tmp/prod-$asset"
-            node --check "/tmp/prod-$asset"
-          done
-          curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
-            "$PROD""profile.css" -o /tmp/prod-profile.css
-          grep -q 'moja-silownia-shell-v39-progression-2.0.0-guardrails-20261123' /tmp/prod-sw.js
-          grep -q 'profile-core.js?v=190' /tmp/prod-sw.js
-          grep -q 'profile-ui.js?v=190' /tmp/prod-sw.js
-          grep -q 'profile.css?v=190' /tmp/prod-sw.js
-          grep -q 'id="preRecoveryMode"' /tmp/production.html
-          grep -q 'id="activeRecoveryMode"' /tmp/production.html
-          grep -q 'assistant/session-mode.js?v=200' /tmp/production.html
-          grep -q 'assistant/assistant-core.js?v=200' /tmp/production.html
-          grep -q 'assistant/assistant-progression.js?v=201' /tmp/production.html
-          grep -q 'assistant/equipment-settings-ui.js?v=200' /tmp/production.html
-          grep -q 'assistant/assistant-progression-ui.js?v=200' /tmp/production.html
-          for asset in session-mode.js assistant-core.js assistant-progression.js equipment-settings-ui.js assistant-progression-ui.js; do
-            curl -fsSL --retry 3 --retry-all-errors --retry-delay 3 --max-time 25 \
-              "$PROD""assistant/$asset" -o "/tmp/prod-$asset"
-            node --check "/tmp/prod-$asset"
-          done
-          grep -q 'progressionHistory' /tmp/prod-session-mode.js
-          grep -q 'REPS_TREND_CONFIRMED' /tmp/prod-assistant-progression.js
-          grep -q 'equipmentStepKg' /tmp/prod-equipment-settings-ui.js
-          grep -q 'assistant/session-mode.js?v=200' /tmp/prod-sw.js
-          grep -q 'assistant/assistant-core.js?v=200' /tmp/prod-sw.js
-          grep -q 'assistant/assistant-progression.js?v=201' /tmp/prod-sw.js
-          grep -q 'assistant/equipment-settings-ui.js?v=200' /tmp/prod-sw.js
-          grep -q 'assistant/assistant-progression-ui.js?v=200' /tmp/prod-sw.js

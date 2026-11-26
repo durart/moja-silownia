@@ -1,6 +1,6 @@
 # Moja Siłownia — instrukcja użytkownika
 
-Wersja dokumentacji: 1.2 | Aplikacja: 3.3.1 | Aktualizacja: 25.11.2026
+Wersja dokumentacji: 1.3 | Aplikacja: 3.3.2 | Aktualizacja: 26.11.2026
 
 [Aplikacja](https://durart.github.io/moja-silownia/)
 
@@ -47,7 +47,7 @@ Przygotowuje wartości startowe kolejnego treningu na podstawie wcześniejszych 
 Wybierz partię mięśniową lub wyszukaj nazwę. Przełącz sortowanie między ostatnio używanymi i alfabetycznym. Dla dostępnych pozycji otwórz informacje o technice. Aby dodać własne ćwiczenie, rozwiń Dodaj własne ćwiczenie, wpisz nazwę, wybierz grupę i zapisz.
 
 ## 11. Zakończenie treningu
-Wybierz Zakończ trening. Sprawdź podsumowanie: czas, ćwiczenia, serie, powtórzenia, objętość, szacowane kalorie i rekordy, zależnie od dostępnych danych. Możesz przygotować graficzne podsumowanie do zapisania lub udostępnienia.
+Wybierz Zakończ trening. Sprawdź podsumowanie: czas, ćwiczenia, serie, powtórzenia, objętość, szacowane kalorie i rekordy, zależnie od dostępnych danych. Możesz przygotować graficzne podsumowanie do zapisania lub udostępnienia. Karta PNG i Pełny PNG pokazują orientacyjne zaangażowanie mięśni: czerwony oznacza partie główne, żółty pomocnicze. Po aktualizacji do 3.3.2 można ponownie wygenerować obraz także dla wcześniej zapisanego treningu.
 
 ## 12. Historia
 Przeglądaj ostatni trening, zakończone sesje i statystyki aktywności. Wybierz okres 6, 12 lub 26 tygodni oraz metrykę: czas, objętość lub powtórzenia. Objętość obciążenia to suma iloczynów ciężaru i powtórzeń zapisanych serii.
