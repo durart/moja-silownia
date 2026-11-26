@@ -21,8 +21,23 @@ function guidance(result){
   default:return {label:'Potrzebujemy więcej danych',tone:'neutral'};
  }
 }
+function makeTimedCard(exerciseId,options){
+ const prepared=options.prepared;
+ const messages={timed_initial:['Zacznij od celu czasowego','Brak porównywalnej historii. Wybierz czas z planu i zachowaj technikę.'],timed_increase:['Możliwa progresja czasu','Wykonano wszystkie porównywalne serie. Cel wzrasta o maksymalnie 5 s.'],timed_maintain:['Utrzymaj cel czasowy','Nie ma podstaw do zwiększenia celu. Zapisz rzeczywisty czas każdej serii.'],timed_at_limit:['Osiągnięto górny limit','Utrzymaj cel lub rozważ trudniejszy wariant po opanowaniu techniki.'],timed_recovery:['Trening regeneracyjny','Nie zwiększaj czasu ani dodatkowego obciążenia.'],timed_review:['Sprawdź technikę','Ból, technika lub sprzęt wymagają oceny przed progresją. Nie forsuj pozycji.'],timed_readiness:['Ostrożnie z progresją','Dzisiejszy sen lub samopoczucie ograniczają zwiększanie celu.']};
+ const [heading,body]=messages[prepared?.reason]||['Ćwiczenie na czas','Zapisuj rzeczywisty czas w sekundach, bez RIR.'];
+ const box=document.createElement('section');box.className='advisor-progression advisor-'+(prepared?.reason==='timed_increase'?'progress':/review|readiness/.test(prepared?.reason||'')?'caution':'steady');
+ box.setAttribute('aria-label','Wskazówka progresji czasowej');
+ const eyebrow=document.createElement('span');eyebrow.className='advisor-progression-overline';eyebrow.textContent='ASYSTENT · PROGRESJA CZASU';
+ const title=document.createElement('strong');title.textContent=heading;
+ const reason=document.createElement('p');reason.textContent=body;
+ box.append(eyebrow,title,reason);
+ const goals=(prepared?.rows||[]).filter(row=>row.setType!=='R'&&Number.isInteger(row.targetDurationSeconds)).map(row=>row.targetDurationSeconds);
+ if(goals.length){const goal=document.createElement('small');goal.textContent='Cel serii roboczych: '+goals.map(s=>s+' s').join(' / ');box.append(goal);}
+ return box;
+}
 function makeCard(exerciseId,options={}){
  const exercise=state.exercises?.find(item=>String(item.id)===String(exerciseId));
+ if(window.MojaTimedWorkout?.isTimed(exerciseId))return makeTimedCard(exerciseId,options);
  const equipmentLabel=exercise?.equipmentType||exercise?.equipment;
  const supported=['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg'];
  const result=window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,{
@@ -37,17 +52,14 @@ function makeCard(exerciseId,options={}){
  const lowSleepScore=pre.sleepScore!=null&&pre.sleepScore!==''&&Number(pre.sleepScore)<50;
  const cautionToday=lowFeeling||shortSleep||lowBattery||lowSleepScore;
  const prepared=options.prepared;
- const reasons={recovery:'Trening regeneracyjny: nie zwiększam obciążenia. Gdy nie ma porównywalnej sesji regeneracyjnej, wybierz lekki ciężar samodzielnie.',review:'Ból, technika lub zmiana sprzętu wymagają ręcznej weryfikacji obciążenia.',readiness:'Dzisiejsze samopoczucie lub sen ograniczają progresję.',plan:'Brak porównywalnej historii. Uzupełniam tylko znane parametry planu.',history:'Wykorzystuję faktycznie zapisane ciężary, powtórzenia i RIR. Nie wymuszam realizacji nieosiągniętego celu.'};
+ const reasons={recovery:'Trening regeneracyjny: nie zwiększam obciążenia. Gdy nie ma porównywalnej sesji regeneracyjnej, wybierz lekki ciężar samodzielnie.',review:'Ból, technika lub zmiana sprzętu wymagają ręcznej weryfikacji obciążenia.',readiness:'Dzisiejsze samopoczucie lub sen ograniczają progresję.',plan:'Brak porównywalnej historii. Uzupełniam tylko znane parametry planu.',history:'Wykorzystuję porównywalne, zakończone serie. Zachowuję układ ciężarów.'};
  const meta=prepared&&reasons[prepared.reason]?{label:prepared.reason==='recovery'?'Trening regeneracyjny':prepared.reason==='review'?'Sprawdź obciążenie':'Przygotowanie serii',tone:prepared.reason==='review'||prepared.reason==='readiness'?'caution':'steady'}:guidance(result),box=document.createElement('section');
  box.className='advisor-progression advisor-'+meta.tone;box.setAttribute('aria-label','Wskazówka progresji treningowej');
  const eyebrow=document.createElement('span');eyebrow.className='advisor-progression-overline';eyebrow.textContent='ASYSTENT · PROGRESJA';
  const title=document.createElement('strong');title.textContent=meta.label;
- const reason=document.createElement('p');reason.textContent=prepared&&reasons[prepared.reason]?reasons[prepared.reason]:result.reason;
+ const reason=document.createElement('p');reason.textContent=prepared&&reasons[prepared.reason]?reasons[prepared.reason]+' '+result.reason:result.reason;
  box.append(eyebrow,title,reason);
- if(prepared?.reason==='progression'){
-  const info=document.createElement('small');info.textContent='Progresję obciążenia przygotowano w edytowalnych seriach. Jeśli ciężar jest za duży, zmień go lub wykonaj mniej powtórzeń.';box.append(info);
- }
- if(result.action==='consider_increase'&&Number.isFinite(result.increment)&&!prepared){
+ if(result.action==='consider_increase'&&Number.isFinite(result.increment)&&(!prepared||prepared.reason==='progression')){
   const detail=document.createElement('small');
   detail.textContent='Ścieżka: '+({FAST_TRACK_1_SESSION:'szybka',ACCELERATED_2_SESSIONS:'przyspieszona',E1RM_TREND_CONFIRMED:'trend e1RM',REPS_TREND_CONFIRMED:'trend powtórzeń',STANDARD_3_SESSIONS:'standardowa'}[result.path]||'standardowa')+' • sugerowany skok: +'+result.increment+' kg';
   box.append(detail);
@@ -114,7 +126,7 @@ function decorate(root,mode){
   const cardNode=makeCard(id,{...numberRange(target),prepared});
   if(window.MojaTrainerDrafts?.active(state)){
    if(!window.MojaTrainerDrafts.settings(state).explanation)continue;
-   const label=document.createElement('small');label.textContent='Asystent przygotował edytowalne serie. RIR wpisz po wykonaniu.';cardNode.prepend(label);
+   const label=document.createElement('small');label.textContent=window.MojaTimedWorkout?.isTimed(id)?'Asystent przygotował edytowalne cele czasowe. Zapisz faktyczny czas.':'Asystent przygotował edytowalne serie. RIR wpisz po wykonaniu.';cardNode.prepend(label);
   }
   const heading=card.querySelector('.sport-exercise-title-row');
   if(heading)heading.insertAdjacentElement('afterend',cardNode);

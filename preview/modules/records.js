@@ -2,7 +2,7 @@
 export const isWorkingSet = set => set?.setType !== 'R' && set?.type !== 'warmup';
 export function detectRecords({exerciseId,weight,reps,completedSessions=[],activeSets=[],exclude=null}){
  const prior=[...completedSessions.flatMap(s=>Array.isArray(s?.sets)?s.sets:[]),...activeSets]
-  .filter(s=>s&&s.exerciseId===exerciseId&&s!==exclude&&isWorkingSet(s));
+  .filter(s=>s&&s.exerciseId===exerciseId&&s!==exclude&&s.measurementType!=='duration'&&isWorkingSet(s));
  if(!prior.length)return [];
  const w=Number(weight),r=Number(reps);
  if(!Number.isFinite(w)||w<0||!Number.isInteger(r)||r<1)return [];

@@ -14,6 +14,12 @@
   const blankRow = () => ({weight:null,reps:null,rir:null,targetRir:null,setType:'W',edited:false});
   const key = (id,slot) => Number.isInteger(slot) && slot >= 0 ? 'slot:'+slot : 'exercise:'+String(id);
   function normalizeRow(row) {
+    if(row?.measurementType==='duration'||row?.durationSeconds!=null||row?.targetDurationSeconds!=null) return {
+      measurementType:'duration',weight:validNumber(row?.weight,0,10000)?row.weight:null,
+      durationSeconds:validNumber(row?.durationSeconds,1,86400,true)?row.durationSeconds:null,
+      targetDurationSeconds:validNumber(row?.targetDurationSeconds,1,86400,true)?row.targetDurationSeconds:null,
+      setType:row?.setType==='R'?'R':'W',edited:row?.edited===true
+    };
     return {
       weight:validNumber(row?.weight,0,10000) ? row.weight : null,
       reps:validNumber(row?.reps,1,10000,true) ? row.reps : null,
@@ -47,19 +53,23 @@
   function ensure(state,id,slot,target,completed=[]) {
     if (!active(state)) return {entry:null,changed:false};
     const existing=get(state,id,slot);
-    if (existing) return {entry:existing,changed:false};
+    if (existing && (existing.rows.every(r=>r?.measurementType==='duration') || !preparation.isTimedExercise(state.exercises?.find(e=>e.id===id)))) return {entry:existing,changed:false};
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return {entry:null,changed:false};
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
       preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot});
     const prefs=settings(state);
     const legacyCount=Number.isInteger(Number(target?.sets))&&Number(target.sets)>0?Math.min(MAX_ROWS,Number(target.sets)):Number.isInteger(slot)?3:1;
-    const count=Math.min(MAX_ROWS,Math.max(completed.length,prefs.sets?prepared.rows.length:legacyCount));
+    const count=Math.min(MAX_ROWS,Math.max(completed.length,existing?.rows.length||0,prefs.sets?prepared.rows.length:legacyCount));
     const rows=Array.from({length:count},(_,i)=>{
-      const row=normalizeRow(prepared.rows[i]);
+      const row=normalizeRow(prepared.rows[i]??(prepared.rows[0]?.measurementType==='duration'?prepared.rows.at(-1):undefined));
       if (!prefs.weights) row.weight=null;
-      if (!prefs.reps) row.reps=null;
-      if (completed[i]) return {...normalizeRow(completed[i]),edited:true};
+      if (!prefs.reps) {if(row.measurementType==='duration')row.durationSeconds=null;else row.reps=null;}
+      if (completed[i]) return {...normalizeRow(row.measurementType==='duration'?{...completed[i],measurementType:'duration'}:completed[i]),edited:true};
+      if (existing?.rows[i]?.edited && row.measurementType==='duration') {
+        const prior=existing.rows[i];return {...row,weight:validNumber(prior.weight,0,10000)?prior.weight:row.weight,
+          ...(validNumber(prior.durationSeconds,1,86400,true)?{durationSeconds:prior.durationSeconds}:{}),edited:true};
+      }
       return row;
     });
     const entry={exerciseId:id,reason:prepared.reason,mode:state.activeSessionMode||'standard',rows};
@@ -77,12 +87,14 @@
   function change(state,id,slot,index,field,value) {
     const entry=get(state,id,slot);
     const prior=row(state,id,slot,index);
-    if (!entry||!prior||!['weight','reps','rir','setType'].includes(field)) return false;
+    if (!entry||!prior||!['weight','reps','rir','setType','durationSeconds'].includes(field)) return false;
+    if (prior.measurementType==='duration'&&['reps','rir'].includes(field))return false;
+    if (prior.measurementType!=='duration'&&field==='durationSeconds')return false;
     if (field==='setType') { if (!['W','R'].includes(value)) return false; }
     else if (value===''||value==null) value=null;
     else {
       if (typeof value==='string') value=Number(value);
-      const limits=field==='weight'?[0,10000,false]:field==='reps'?[1,10000,true]:[0,5,true];
+      const limits=field==='weight'?[0,10000,false]:field==='reps'?[1,10000,true]:field==='durationSeconds'?[1,86400,true]:[0,5,true];
       if (!validNumber(value,...limits)) return false;
     }
     entry.rows[index]={...prior,[field]:value,edited:true};return true;
@@ -90,14 +102,16 @@
   function capture(state,id,slot,index,actual) {
     const entry=get(state,id,slot);
     if (!entry||!row(state,id,slot,index)) return false;
-    entry.rows[index]={...normalizeRow({...actual,targetRir:entry.rows[index]?.targetRir}),edited:true};
+    const previous=row(state,id,slot,index);
+    entry.rows[index]={...normalizeRow(previous.measurementType==='duration'?{...actual,measurementType:'duration'}:{...actual,targetRir:previous.targetRir}),edited:true};
     return true;
   }
   function append(state,id,slot,previous) {
     const entry=get(state,id,slot);
     if (!entry||entry.rows.length>=MAX_ROWS) return false;
-    const last=normalizeRow(previous??entry.rows.at(-1));
-    entry.rows.push({...last,rir:null,edited:true});return true;
+    const tail=normalizeRow(entry.rows.at(-1));
+    const last=normalizeRow(tail.measurementType==='duration'&&previous?.measurementType!=='duration'?tail:previous??tail);
+    entry.rows.push(last.measurementType==='duration'?{...last,edited:true}:{...last,rir:null,edited:true});return true;
   }
   function removeRow(state,id,slot,index) {
     const entry=get(state,id,slot);
@@ -115,9 +129,9 @@
     entry.rows=entry.rows.map((value,i)=>{
       const prior=normalizeRow(value);
       if (completed[i]||prior.edited) return prior;
-      const next=normalizeRow(prepared.rows[i]);
+      const next=normalizeRow(prepared.rows[i]??(prepared.rows[0]?.measurementType==='duration'?prepared.rows.at(-1):undefined));
       if (!prefs.weights) next.weight=null;
-      if (!prefs.reps) next.reps=null;
+      if (!prefs.reps) {if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;}
       return next;
     });
     entry.mode=state.activeSessionMode;entry.reason=prepared.reason;return true;

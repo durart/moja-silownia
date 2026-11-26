@@ -93,10 +93,10 @@
       const group = visible[i];
       const y = 1457 + i * 72;
       roundBox(ctx, 70, y, 940, 64, 13, C.panel);
-      text(ctx, group.name, 87, y + 12, 29, C.text, 750, 670);
-      const series = group.count + ' ser.';
-      text(ctx, series, 855, y + 15, 25, C.green, 750, 130);
-      if (group.records) text(ctx, 'PR', 798, y + 15, 23, C.gold, 800);
+      text(ctx, group.name, 87, y + 12, 29, C.text, 750, group.timedSeconds?600:670);
+      const series = group.timedSeconds?group.count+' ser. · '+fmt(group.timedSeconds)+' s':group.count+' ser.';
+      text(ctx, series, group.timedSeconds?755:855, y + 15, 25, C.green, 750, group.timedSeconds?235:130);
+      if (group.records) text(ctx, 'PR', group.timedSeconds?695:798, y + 15, 23, C.gold, 800);
     }
     const hidden = model.groups.length - visible.length;
     if (hidden > 0) {
