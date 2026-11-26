@@ -12,7 +12,7 @@ export function publicPath(path) {
   return parts.length > 1 ? directories.has(parts[0]) : /\.(html|js|mjs|css|png|svg|webmanifest|txt)$/.test(path) || path === 'INSTRUKCJA_UZYTKOWNIKA.md';
 }
 export function precachePath(asset) {
-  const relative = asset.replace(/^\.\//,'').split('?')[0];
+  const relative = asset.replace(/^\.\//,'').split('?')[0] || 'index.html';
   return relative === '' && asset.startsWith('./') ? 'index.html' : relative;
 }
 export function validateReleaseSha(requested, actual) {
