@@ -1,9 +1,8 @@
+import '../modules/storage-recovery.js';
 const APP="moja-silownia";
 const VERSION=1;
 export function validateState(data){
- if(!data || typeof data!=="object" || !Array.isArray(data.exercises) || !Array.isArray(data.active) || !Array.isArray(data.sessions) || !data.exercises.every(e=>typeof e?.id==="string" && typeof e?.name==="string"))throw new Error("Nieprawidłowe dane treningowe.");
- if(data.sessions.some(s=>!s || typeof s!=="object" || (s.sessionMode!=null && !["standard","recovery"].includes(s.sessionMode))))throw new Error("Nieprawidłowa historia treningów.");
- if(data.activeSessionMode!=null && !["standard","recovery"].includes(data.activeSessionMode))throw new Error("Nieprawidłowy tryb treningu.");
+ if(!globalThis.MojaStorageRecovery.validState(data))throw new Error("Nieprawidłowe dane treningowe.");
  return data;
 }
 export function createBackup(data,now=new Date()){
