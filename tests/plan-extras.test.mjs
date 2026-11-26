@@ -35,7 +35,7 @@ function setup(){
  const ctx={
   state,workoutSelectors,structuredClone,manualDrafts:{},planExtraInputDrafts:{},restOptions:[30,90,120],
   window:{matchMedia:()=>({matches:false})},
-  document:{querySelectorAll:()=>[],getElementById:id=>elements[id]||null},
+  document:{addEventListener:()=>{},querySelectorAll:()=>[],getElementById:id=>elements[id]||null},
   note:message=>calls.messages.push(message),confirm:()=>calls.confirm,
   save:()=>{if(store.fail)throw Error('Storage full');store.value=JSON.stringify(state);return true},
   renderPlanWorkout:()=>{},renderToday:()=>{},render:()=>{},tick:()=>{},
@@ -51,6 +51,9 @@ function setup(){
  // Browser loads profile-core.js before the inline workout logic; mirror that dependency in VM tests.
  vm.runInContext(readFileSync(new URL('../profile-core.js',import.meta.url),'utf8'),ctx);
  vm.runInContext(readFileSync(new URL('../assistant/session-mode.js',import.meta.url),'utf8'),ctx);
+ for(const module of ['timed-exercise-core.js','timed-workout-ui.js']) vm.runInContext(readFileSync(new URL('../modules/'+module,import.meta.url),'utf8'),ctx);
+ ctx.window.MojaTimedExercise=ctx.MojaTimedExercise;ctx.window.MojaTimedWorkoutUI=ctx.MojaTimedWorkoutUI;
+ vm.runInContext(readFileSync(new URL('../modules/timed-workout-integration.js',import.meta.url),'utf8'),ctx);
  vm.runInContext(code+'\nthis.api={normalizePlanExtraIds,planExtraStatus,addPlanExtraExercise,removePlanExtraExercise,renderPlanExtraExercises,saveManualRow,removeManualRow,detachPlanExtrasToManual,finishWorkout,togglePlanRow,savePlanRow,planSets,manualSetRows,toggleManualRow};',ctx);
  return {state,store,calls,elements,api:ctx.api};
 }
