@@ -41,7 +41,9 @@ function assertTimedSet(set, seconds) {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ headless:true, args:['--no-sandbox'] });
   try {
-    for (const width of [360, 390, 1100]) {
+    for (const [width, preview] of [[360,false],[390,false],[1100,false],[390,true]]) {
+      const storageKey=preview?'moja-silownia-preview-v01':'moja-silownia-v01';
+      const otherKey=preview?'moja-silownia-v01':'moja-silownia-preview-v01';
       const context = await browser.newContext({ viewport:{ width, height:844 } });
       try {
         const page = await context.newPage();
@@ -54,12 +56,12 @@ function assertTimedSet(set, seconds) {
           plans:[{id:17,name:'Plan testowy',exerciseIds:['seed-14','bench-test'],
             targets:[{sets:2,reps:'45–60 s',weight:0},{sets:1,reps:'10',weight:40}]}],
           active:[],sessions:[] };
-        await page.addInitScript(seed => {
-          if (!localStorage.getItem('moja-silownia-v01'))
-            localStorage.setItem('moja-silownia-v01', JSON.stringify(seed));
-          localStorage.setItem('moja-silownia-preview-v01','preview-sentinel');
-        }, seed);
-        await page.goto('http://127.0.0.1:' + server.address().port + '/');
+        await page.addInitScript(({seed,storageKey,otherKey}) => {
+          if (!localStorage.getItem(storageKey)) localStorage.setItem(storageKey,JSON.stringify(seed));
+          if (!localStorage.getItem(otherKey)) localStorage.setItem(otherKey,'isolation-sentinel');
+        }, {seed,storageKey,otherKey});
+        await page.goto('http://127.0.0.1:' + server.address().port + (preview?'/preview/':'/'));
+        assert.match(await page.title(),preview?/TEST v3\.4\.0/:/v3\.4\.0/);
         await page.waitForFunction(() => !!window.MojaTimedWorkout && !!document.getElementById('compactWorkoutDock'));
         await page.evaluate(() => { startPlan(0); confirmWorkoutStart(); });
         const plank = page.locator('#planWorkout [data-workout-slot="0"]');
@@ -164,9 +166,10 @@ function assertTimedSet(set, seconds) {
         await page.reload({ waitUntil:'domcontentloaded' });
         await openCard(manual);
         assertTimedSet(await page.evaluate(() => state.active[0]),42);
-        assert.equal(await page.evaluate(() => localStorage.getItem('moja-silownia-preview-v01')),'preview-sentinel');
+        assert.equal(await page.evaluate(key => localStorage.getItem(key),otherKey),'isolation-sentinel');
+        assert.ok((await page.evaluate(()=>caches.keys())).includes(preview?'moja-silownia-preview-shell-v50-isometric-3.4.0':'moja-silownia-shell-v50-isometric-3.4.0'));
         assert.deepEqual(errors,[]);
-        console.log('Timed workout smoke passed at width ' + width);
+        console.log('Timed workout smoke passed at width '+width+' ('+(preview?'preview':'candidate')+')');
       } finally { await context.close(); }
     }
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
