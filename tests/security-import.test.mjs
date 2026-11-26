@@ -51,3 +51,22 @@ for (const prefix of ['', 'preview/']) {
     assert.throws(() => context.impParse('x'.repeat(1048577), 'plan.txt'), /rozmiar/);
   });
 }
+
+for (const prefix of ['', 'preview/']) {
+  test(prefix + 'DOCX preflight rejects malformed and oversized ZIP metadata', async () => {
+    const source = await readFile(new URL('../' + prefix + 'plan-importer.js', import.meta.url), 'utf8');
+    const context = vm.createContext({});
+    vm.runInContext(source, context);
+    assert.throws(() => context.impCheckDocxArchive(new ArrayBuffer(10)), /archiwum DOCX/);
+    const buffer = new ArrayBuffer(68);
+    const view = new DataView(buffer);
+    view.setUint32(0, 0x02014b50, true);
+    view.setUint16(10, 8, true);
+    view.setUint32(24, 17 * 1024 * 1024, true);
+    view.setUint32(46, 0x06054b50, true);
+    view.setUint16(54, 1, true);
+    view.setUint16(56, 1, true);
+    view.setUint32(58, 46, true);
+    assert.throws(() => context.impCheckDocxArchive(buffer), /archiwum DOCX/);
+  });
+}
