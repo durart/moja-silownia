@@ -11,6 +11,10 @@ export function publicPath(path) {
   if (parts.some(p => !p || p.startsWith('.') || p.includes('\\'))) return false;
   return parts.length > 1 ? directories.has(parts[0]) : /\.(html|js|mjs|css|png|svg|webmanifest|txt)$/.test(path) || path === 'INSTRUKCJA_UZYTKOWNIKA.md';
 }
+export function precachePath(asset) {
+  const relative = asset.replace(/^\.\//,'').split('?')[0];
+  return relative === '' && asset.startsWith('./') ? 'index.html' : relative;
+}
 export function validateReleaseSha(requested, actual) {
   if (!/^[a-f0-9]{40}$/.test(requested ?? '') || requested !== actual) throw new Error('Release SHA mismatch');
 }
@@ -38,7 +42,7 @@ export async function buildArtifact(sha, target) {
     const paths = [...assets[1].matchAll(/['"]([^'"]+)['"]/g)].map(m=>m[1]);
     if (!paths.length) throw new Error('Empty precache list');
     for (const asset of paths) {
-      const relative = asset.replace(/^\.\//,'').split('?')[0];
+      const relative = precachePath(asset);
       if (!publicPath(prefix+relative)) throw new Error('Invalid precache path: '+asset);
       await readFile(join(target,prefix+relative));
     }
