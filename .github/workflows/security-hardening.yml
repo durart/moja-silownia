@@ -1,0 +1,52 @@
+name: Security hardening checks
+on:
+  pull_request:
+    paths:
+      - 'plan-importer.js'
+      - 'preview/plan-importer.js'
+      - 'index.html'
+      - 'preview/index.html'
+      - 'tests/security-import.test.mjs'
+      - '.github/workflows/security-hardening.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check plan-importer.js && node --check preview/plan-importer.js
+      - run: node --test tests/*.test.mjs
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Resolve pinned libraries and audit
+        run: |
+          mkdir dependency-check
+          cd dependency-check
+          npm init -y
+          npm install --ignore-scripts --save-exact pdfjs-dist@6.5.438 mammoth@1.9.0
+          npm audit --omit=dev --audit-level=high
+      - name: Prepare candidate local libraries and licenses
+        run: |
+          mkdir -p vendor/pdfjs vendor/mammoth
+          cp dependency-check/node_modules/pdfjs-dist/legacy/build/pdf.min.mjs vendor/pdfjs/
+          cp dependency-check/node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs vendor/pdfjs/
+          cp dependency-check/node_modules/pdfjs-dist/LICENSE vendor/pdfjs/
+          cp dependency-check/node_modules/mammoth/mammoth.browser.min.js vendor/mammoth/
+          cp dependency-check/node_modules/mammoth/LICENSE vendor/mammoth/
+          cp dependency-check/package-lock.json vendor/
+          (cd vendor && find . -type f -print0 | sort -z | xargs -0 sha256sum) > vendor.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-import-libraries
+          path: |
+            vendor/
+            vendor.sha256
