@@ -39,6 +39,14 @@
   ABDUCTORS:'Nogi',
   CALVES:'Łydki'
  });
+ const SUMMARY_COLORS=Object.freeze({
+  main:Object.freeze({fill:'#f52f35',opacity:.41}),
+  secondary:Object.freeze({fill:'#f6c13d',opacity:.37})
+ });
+ function summaryRole(roles,muscle){
+  const score=Number(roles?.[muscle]);
+  return Number.isFinite(score)&&score>0?(score>=.8?'main':'secondary'):'none';
+ }
  const esc=value=>String(value==null?'':value).replace(/[&<>"']/g,char=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
  }[char]));
@@ -92,8 +100,7 @@
    const chosen=selected===muscle;
    const item=byName.get(muscle);
    const score=normalizedScore(item);
-   const roleScore=Number(roles&&roles[muscle]);
-   const summary=Number.isFinite(roleScore)&&roleScore>0?(roleScore>=.8?'main':'secondary'):'none';
+   const summary=summaryRole(roles,muscle);
    const desc=esc(muscle+', '+score+' na 100');
    return '<path id="'+esc(id)+'" class="mm-muscle muscle-region" d="'+esc(part.d)+'" data-muscle="'+esc(muscle)+'" data-level="'+level(score)+'" data-selected="'+String(chosen)+'" data-summary="'+summary+'"'+
     (mode==='atlas'?' role="button" tabindex="0" aria-pressed="'+String(chosen)+'" aria-label="'+desc+'"':'')+
@@ -124,7 +131,9 @@
   if(!ctx||typeof ctx.drawImage!=='function')throw new TypeError('Canvas context required');
   if(!Number.isFinite(Number(width))||Number(width)<=0)throw new RangeError('Positive width required');
   if(typeof Image==='undefined')throw new Error('Browser image API unavailable');
-  const svg=renderSession(roles,width);
+  // Rasterize the neutral portrait first; SVG blend modes are not reliable
+  // across SVG-image and Canvas implementations.
+  const svg=renderSession({},width);
   const img=new Image();
   await new Promise((resolve,reject)=>{
    img.onload=resolve;
@@ -132,6 +141,25 @@
    img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
   });
   ctx.drawImage(img,x,y,width,width*HEIGHT/WIDTH);
+  ctx.save();
+  try{
+   ctx.translate(x,y);
+   ctx.scale(width/WIDTH,width/WIDTH);
+   ctx.globalCompositeOperation='source-over';
+   for(const view of ['front','back']){
+    ctx.save();
+    try{
+     if(view==='back')ctx.translate(FIGURE_WIDTH+GAP,0);
+     for(const part of assets.diagrams[view].muscles){
+      const paint=SUMMARY_COLORS[summaryRole(roles,GROUP_NAMES[part.group])];
+      if(!paint)continue;
+      ctx.globalAlpha=paint.opacity;
+      ctx.fillStyle=paint.fill;
+      ctx.fill(new Path2D(part.d));
+     }
+    }finally{ctx.restore();}
+   }
+  }finally{ctx.restore();}
  }
  return Object.freeze({REGIONS,renderAtlas,renderSession,drawSession,aspectRatio:HEIGHT/WIDTH,source:assets.source});
 });

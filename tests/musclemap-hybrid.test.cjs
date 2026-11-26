@@ -48,25 +48,31 @@ test('summary uses the same MuscleMap art with separate primary and secondary gr
 });
 test('PNG renderer embeds images rather than relying on cross-origin images',async()=>{
  const OriginalImage=global.Image;
+ const OriginalPath2D=global.Path2D;
+ global.Path2D=class {constructor(d){this.d=d;}};
  let svgData='';
  global.Image=class {
   set src(value){svgData=value;queueMicrotask(()=>this.onload());}
  };
  try {
-  const calls=[];
-  await art.drawSession({drawImage:(...args)=>calls.push(args)},{'Nogi':1},20,30,400);
+  const calls=[],fills=[];
+  const ctx={drawImage:(...args)=>calls.push(args),save(){},restore(){},translate(){},scale(){},fill(path){fills.push({path,color:this.fillStyle,opacity:this.globalAlpha});}};
+  await art.drawSession(ctx,{'Nogi':1,'Barki':.5},20,30,400);
+  assert.ok(fills.some(fill=>fill.color==='#f52f35'&&fill.opacity===.41));
+  assert.ok(fills.some(fill=>fill.color==='#f6c13d'&&fill.opacity===.37));
+  assert.equal(fills.length,art.REGIONS.filter(region=>['Nogi','Barki'].includes(region.muscle)).length);
   assert.equal(calls.length,1);
   assert.equal(calls[0][1],20);
   assert.equal(calls[0][2],30);
   assert.equal(calls[0][3],400);
   assert.equal(calls[0][4],400*art.aspectRatio);
   assert.match(decodeURIComponent(svgData),/data:image\/webp;base64,/);
- } finally{global.Image=OriginalImage;}
+ } finally{global.Image=OriginalImage;global.Path2D=OriginalPath2D;}
 });
 test('staging mirrors feature assets without changing training storage',()=>{
  for(const asset of ['musclemap-hybrid-assets.js','muscle-anatomy-art.js','muscle-atlas-ui.js']){
   assert.equal(read(asset),read('preview/'+asset),asset);
-  const v=asset==='musclemap-hybrid-assets.js'?'1':'40';
+  const v=asset==='musclemap-hybrid-assets.js'?'1':asset==='muscle-anatomy-art.js'?'41':'40';
   for(const index of ['index.html','preview/index.html'])assert.ok(read(index).includes('./'+asset+'?v='+v),asset+' '+index);
   for(const sw of ['sw.js','preview/sw.js'])assert.ok(read(sw).includes('./'+asset+'?v='+v),asset+' '+sw);
  }
