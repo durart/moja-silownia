@@ -58,7 +58,32 @@
     }
     return parts.join(' · ');
   }
-  function renderCard(exerciseId,position,{draft={},activity=null,timer=null,now=Date.now(),blocked=false}={}) {
+  function recommendationHtml(recommendation) {
+    if(!recommendation)return '';
+    const reasons={
+      'no-history':'Pierwsza aktywność. Ustaw komfortowe tempo.',
+      'recovery':'Sesja regeneracyjna – bez zwiększania obciążenia. Dostosuj intensywność do samopoczucia.',
+      'history-gap':'Dłuższa przerwa lub nieprawidłowa data – bez automatycznej progresji.',
+      'high-rpe':'Ostatni wysiłek był bardzo wysoki – rozważ lżejszą aktywność.',
+      'need-two-sessions':'Potrzebne są dwie porównywalne sesje z różnych dni.',
+      'missing-rpe':'Brak oceny wysiłku – pozostawiam ostatnie parametry.',
+      'effort':'Ostatnie sesje nie były lekkie – utrzymaj parametry.',
+      'not-comparable':'Ostatnie aktywności różnią się obciążeniem – bez zwiększania.',
+      'duration':'Dwie porównywalne sesje o niskim RPE – wydłuż czas.',
+      'incline':'Dwie porównywalne sesje o niskim RPE – zwiększ nachylenie.',
+      'speed':'Dwie porównywalne sesje o niskim RPE – zwiększ prędkość.',
+      'at-limit':'Osiągnięto domyślny limit automatycznej progresji.'
+    };
+    const target=recommendation.target||{},parts=[];
+    if(target.durationSeconds!=null)parts.push(clock(target.durationSeconds));
+    if(target.speedKmh!=null)parts.push(metricInputValue('speedKmh',target.speedKmh)+' km/h');
+    if(target.inclinePercent!=null)parts.push(metricInputValue('inclinePercent',target.inclinePercent)+'%');
+    return '<aside class="cardio-recommendation"><strong>Asystent kardio'+(recommendation.action==='increase'?' · Progresja':'')+'</strong>'+
+      (parts.length?'<p>Cel: '+escape(parts.join(' · '))+'</p>':'')+
+      '<p class="hint">'+escape(reasons[recommendation.reason]||'Dostosuj parametry do swoich możliwości.')+'</p>'+
+      '<p class="hint">Cel nie jest zapisem wykonanego czasu. Parametry możesz zmienić.</p></aside>';
+  }
+  function renderCard(exerciseId,position,{draft={},activity=null,timer=null,now=Date.now(),blocked=false,recommendation=null}={}) {
     const ex=catalog.getExercise(exerciseId);
     if(!ex)return '';
     const own=timer?.exerciseId===exerciseId;
@@ -72,10 +97,10 @@
     }).join('');
     return '<div class="exercise-card hevy-card cardio-card" data-exercise-id="'+escape(ex.id)+'" data-cardio-id="'+escape(ex.id)+'">'+
       '<div class="sport-exercise-title-row"><span class="sport-exercise-art">'+thumbnail(ex.id)+'</span><div class="sport-exercise-title-text"><h2>'+escape(position+'. '+ex.name)+'</h2><span class="sport-muscle-chip">Kardio'+(activity?' · Wykonane':'')+'</span></div></div>'+
-      '<div class="cardio-body"><div class="cardio-clock" aria-live="off" data-cardio-clock>'+clock(seconds)+'</div>'+
+      '<div class="cardio-body">'+(activity?'':recommendationHtml(recommendation))+'<div class="cardio-clock" aria-live="off" data-cardio-clock>'+clock(seconds)+'</div>'+
       '<div class="toolbar cardio-timer-actions">'+(activity?btn('undo','Cofnij zapis',blocked):active?btn('pause','Pauza')+btn('stop','Zatrzymaj'):paused?btn('resume','Wznów')+btn('stop','Zatrzymaj'):btn('start','Uruchom stoper',blocked||!!timer)+btn('remove','Usuń ćwiczenie',blocked||!!timer))+'</div>'+
       '<div class="cardio-fields">'+inputs+'</div>'+
       (activity?'<p class="hint">✓ Aktywność zapisana</p>':btn('save','Zapisz kardio',!!timer||blocked,'cardio-save'))+'</div></div>';
   }
-  return Object.freeze({fields,clock,metricInputValue,parseMetric,draftFromHistory,thumbnail,activityLabel,renderCard,escape});
+  return Object.freeze({fields,clock,metricInputValue,parseMetric,draftFromHistory,thumbnail,activityLabel,recommendationHtml,renderCard,escape});
 });
