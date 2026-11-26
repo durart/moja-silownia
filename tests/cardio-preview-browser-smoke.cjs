@@ -38,7 +38,7 @@ async function verify(card,id){
    },{storageKey,otherKey});
    await page.goto('http://127.0.0.1:'+server.address().port+(production?'/':'/preview/'));
    await page.waitForFunction(()=>!!window.MojaCardioWorkout&&!!document.getElementById('compactWorkoutDock'));
-   assert.match(await page.title(),production?/v3\.5\.0 — Kardio/:/Kardio r2/);
+   assert.match(await page.title(),production?/v3\.5\.0 — Kardio/:/TEST v3\.5\.1 — Zamiana ćwiczeń/);
    assert.equal(await page.evaluate(()=>state.plans[0].exerciseIds[0]),'cardio-elliptical');
    await page.evaluate(()=>{tab('catalog');uiCatalogChoose('__cardio__');});
    const rows=page.locator('#catalogList .catalog-exercise-main');
@@ -72,6 +72,37 @@ async function verify(card,id){
    await page.reload();await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
    await context.setOffline(true);await page.reload({waitUntil:'domcontentloaded'});
    await verify(page.locator('#today [data-cardio-id="cardio-elliptical"]'),'cardio-elliptical');
+   if(!production){
+    // Exercise swap must use the existing picker, even with the installed app offline.
+    await page.evaluate(()=>{pickerOpen();document.getElementById('pickSearch').value='Wyciskanie sztangi na ławce płaskiej';pickerRender();});
+    await page.locator('#pickResults .pick-exercise[data-pick-id="seed-0"]').click();
+    await page.evaluate(()=>openSwap('manual',null,'seed-0'));
+    const atlas=page.locator('#swapAtlas'),similar=page.locator('#swapSimilar');
+    assert.equal(await atlas.evaluate(el=>el.open),false);
+    assert.equal(await similar.evaluate(el=>el.open),false);
+    await similar.locator('summary').click();
+    const option=similar.locator('button[data-swap-id]').first();
+    await option.waitFor({state:'visible'});
+    assert.equal(await option.locator('.swap-thumb').count(),1);
+    assert.equal(await option.locator('.swap-thumb img,.swap-thumb svg,.swap-thumb .ui-thumb-sprite,.swap-thumb .ui-thumb-fallback').count(),1);
+    assert.match(await option.locator('.swap-score').innerText(),/dopasowania/);
+    await atlas.locator('summary').click();
+    await page.waitForFunction(()=>document.getElementById('swapAtlas').open&&!document.getElementById('swapSimilar').open&&!document.getElementById('exercisePicker').hidden);
+    const next=await page.evaluate(()=>state.exercises.find(e=>e.group==='Plecy'&&!manualIds().includes(e.id)));
+    assert.ok(next,'a replacement from another muscle group exists');
+    await page.locator('#pickSearch').fill(next.name);
+    const replacement=page.locator('#pickResults .pick-exercise').filter({hasText:next.name}).first();
+    assert.equal(await replacement.getAttribute('data-pick-id'),next.id);
+    await replacement.click();
+    await page.waitForFunction(()=>document.getElementById('swapOverlay').classList.contains('hidden'));
+    assert.equal(await page.evaluate(id=>manualIds().includes(id),next.id),true);
+    assert.equal(await page.evaluate(()=>manualIds().includes('seed-0')),false);
+    assert.equal(await page.evaluate(()=>state.plans[0].exerciseIds[0]),'cardio-elliptical');
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.waitForFunction(id=>typeof manualIds==='function'&&manualIds().includes(id),next.id);
+    assert.equal(await page.evaluate(()=>manualIds().includes('seed-0')),false);
+    console.log('Offline exercise swap, thumbnail, collapsible sections and persistence verified.');
+   }
    assert.equal(await page.evaluate(key=>localStorage.getItem(key),otherKey),'production-sentinel');
    assert.deepEqual(errors,[]);
    console.log('All six cardio atlas icons, saved plan cards, picker and offline state verified.');
