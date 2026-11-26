@@ -2,7 +2,7 @@
 (function(root){
   'use strict';
   const catalog=root.MojaCardioCatalog,core=root.MojaCardioCore,ui=root.MojaCardioUI;
-  const isId=id=>!!catalog.getExercise(id);
+  const isId=id=>!!catalog.getExercise(id); // Only canonical cardio identifiers can be saved.
   const list=()=>Array.isArray(state.activeCardio)?state.activeCardio:[];
   const timer=()=>state.cardioTimer||null;
   const progression=root.MojaCardioProgression,plans=root.MojaCardioPlans;

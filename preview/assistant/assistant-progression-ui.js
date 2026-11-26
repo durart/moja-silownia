@@ -104,7 +104,7 @@ function makeCard(exerciseId,options={}){
 }
 function decorate(root,mode){
  if(!root||!window.MojaAdvisorProgression||typeof state==='undefined')return;
- const cards=[...root.querySelectorAll('.exercise-card')];
+ const cards=[...root.querySelectorAll('.exercise-card')].filter(card=>!window.MojaCardioCatalog?.isCardio(state.exercises.find(e=>e.id===card.dataset.exerciseId)));
  for(const card of cards){
   if(card.querySelector('.advisor-progression'))continue;
   let id=card.dataset.exerciseId;
