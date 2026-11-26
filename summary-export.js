@@ -67,8 +67,8 @@
       model.activeKcal == null ? '—' : fmt(model.activeKcal) + ' kcal', 38);
 
     roundBox(ctx, 70, 603, 940, 92, 19, '#203e35');
-    text(ctx, '🏆', 95, 620, 44, C.gold, 700);
-    text(ctx, model.prCount
+    text(ctx, model.cardioSeconds?'◷':'🏆', 95, 620, 44, C.gold, 700);
+    text(ctx, model.cardioSeconds?'Kardio: '+root.MojaCardioUI.clock(model.cardioSeconds)+(model.cardioActiveKcal!=null?' · '+fmt(model.cardioActiveKcal)+' kcal aktyw.':'')+(model.prCount?' · PR: '+model.prCount:''):model.prCount
       ? model.prCount + (model.prCount === 1 ? ' seria z rekordem' : ' serie z rekordami')
       : 'Podsumowanie bez nowych rekordów', 164, 623, 34, C.green, 790, 813);
 
@@ -88,11 +88,14 @@
     text(ctx, 'CZERWONY: GŁÓWNE      ŻÓŁTY: POMOCNICZE', 70, 1342, 23, C.muted, 580);
 
     text(ctx, 'WYKONANE ĆWICZENIA', 70, 1403, 32, C.text, 800);
-    const visible = model.groups.slice(0, 5);
+    const cardioGroups=model.groups.filter(g=>g.measurementType==='cardio');
+    const strengthGroups=model.groups.filter(g=>g.measurementType!=='cardio');
+    const visible=[...strengthGroups.slice(0,Math.max(0,5-cardioGroups.length)),...cardioGroups.slice(0,5)];
     for (let i = 0; i < visible.length; i++) {
       const group = visible[i];
       const y = 1457 + i * 72;
       roundBox(ctx, 70, y, 940, 64, 13, C.panel);
+      if(group.measurementType==='cardio'){text(ctx,group.name,87,y+12,29,C.text,750,620);text(ctx,root.MojaCardioUI.clock(group.durationSeconds),760,y+15,25,C.green,750,235);continue;}
       text(ctx, group.name, 87, y + 12, 29, C.text, 750, group.timedSeconds?600:670);
       const series = group.timedSeconds?group.count+' ser. · '+fmt(group.timedSeconds)+' s':group.count+' ser.';
       text(ctx, series, group.timedSeconds?755:855, y + 15, 25, C.green, 750, group.timedSeconds?235:130);
