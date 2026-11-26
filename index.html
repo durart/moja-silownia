@@ -1123,7 +1123,7 @@ async function exportWorkoutPNG(id){
  const session=state.sessions.find(x=>x.id===id);if(!session)return;
  try{
   const {renderWorkoutPNG}=await import('./modules/workout-png.js?v=3');
-  await renderWorkoutPNG(session,{drawAnatomyPNG,estimateCalories,formatTime,note,document,navigator,URL,File});
+  await renderWorkoutPNG(session,{drawAnatomyPNG,estimateCalories,formatTime,note,document,navigator,URL,File,cardioLabel:window.MojaCardioUI.activityLabel,cardioName:id=>window.MojaCardioCatalog.getExercise(id)?.name});
  }catch(error){
   if(error?.name==='AbortError')return;
   console.error('Eksport PNG nieudany',error);
