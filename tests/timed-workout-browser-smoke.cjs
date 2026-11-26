@@ -61,7 +61,7 @@ function assertTimedSet(set, seconds) {
           if (!localStorage.getItem(otherKey)) localStorage.setItem(otherKey,'isolation-sentinel');
         }, {seed,storageKey,otherKey});
         await page.goto('http://127.0.0.1:' + server.address().port + (preview?'/preview/':'/'));
-        assert.match(await page.title(),preview?/TEST v3\.(?:4|5)\.0/:/v3\.(?:4|5)\.0/);
+        assert.match(await page.title(),preview?/TEST v3\.5\.1/:/v3\.5\.1/);
         await page.waitForFunction(() => !!window.MojaTimedWorkout && !!document.getElementById('compactWorkoutDock'));
         await page.evaluate(() => { startPlan(0); confirmWorkoutStart(); });
         const plank = page.locator('#planWorkout [data-workout-slot="0"]');
