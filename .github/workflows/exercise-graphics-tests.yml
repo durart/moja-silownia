@@ -4,6 +4,8 @@ on:
     branches: [feature/exercise-graphics-library]
   pull_request:
     paths: ['modules/exercise-graphics.mjs', 'tests/exercise-graphics.test.mjs', 'assets/graphics-r6/**']
+permissions:
+  contents: read
 jobs:
   registry:
     runs-on: ubuntu-24.04
@@ -13,3 +15,8 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/exercise-graphics.test.mjs
+
+      - run: node --test tests/*.test.mjs tests/*.test.js
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/exercise-graphics-browser.cjs
