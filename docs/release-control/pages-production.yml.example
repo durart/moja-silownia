@@ -1,0 +1,58 @@
+# Inactive template. Requires explicit approval and Pages source migration.
+name: Authorized Pages production
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact approved main commit SHA
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: pages-publication
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' && vars.PAGES_RELEASE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - env:
+          REQUESTED: ${{ inputs.release_sha }}
+          CURRENT: ${{ github.sha }}
+        run: |
+          test "$REQUESTED" = "$CURRENT"
+          test "$(git rev-parse HEAD)" = "$CURRENT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/*.test.mjs
+      - run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/site"
+          rm -rf "$RUNNER_TEMP/site/.github" "$RUNNER_TEMP/site/tests" "$RUNNER_TEMP/site/scripts" "$RUNNER_TEMP/site/docs"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED: ${{ github.sha }}
+        run: |
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$EXPECTED"
+      - id: deployment
+        uses: actions/deploy-pages@v4

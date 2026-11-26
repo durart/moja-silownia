@@ -1,0 +1,12 @@
+# Independent release authorization — proposed configuration
+Status: inactive. No settings changes or publication authorized.
+
+The PR gate is not a trusted security boundary while its own implementation can be changed by a PR. Prefer an independently administered required workflow/ruleset if supported by the account. Otherwise use a separately controlled reviewer identity and CODEOWNERS for /.github/, /scripts/release-gate.mjs and /tests/release-gate.test.mjs, with required code-owner reviews, dismissal of stale approvals and no bypass. A single identity that can edit rules and approve its own changes cannot provide independent enforcement. Do not claim otherwise.
+
+Pages template is deliberately outside .github/workflows. Before activation verify Pages source, supported environment protection and reviewer identity; pin actions to verified commit SHAs; confirm the artifact file allowlist against the existing deployed site; require full browser/security regression for the exact release SHA (the template runs only Node regression). Configure github-pages required reviewers and deployment branch main, disable administrator bypass if available, then set PAGES_RELEASE_ENABLED only after verification. Never expose a deploy token to PR code.
+
+The template publishes the whole site, including preview. Switching Pages from branch publishing to Actions changes the staging process: a preview-only merge must not publish unapproved production files. Until a trusted staging publisher compares production bytes against the last approved deployed artifact, use the same manual approval for all Pages publications. Alternatively separate staging hosting with explicit owner approval. Do not activate automatic staging publishing yet.
+
+Manual dispatch binds requested SHA to workflow SHA; deployment rechecks main after approval. This is not an atomic lock against concurrent main updates; the uploaded artifact remains tied to the original run. Approval is of that immutable run/artifact, not of whatever main contains later. Test stale SHA, missing reviewer, rejection, cancellation, branch mismatch, artifact integrity and concurrent updates in a non-production environment. No live deployment tests have been run.
+
+Bootstrap: the existing PR gate intentionally fails for its own infrastructure changes. Do not require its status until a trusted bootstrap and environment configuration have been explicitly approved. Never bypass an active rule silently.
