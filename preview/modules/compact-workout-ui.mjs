@@ -21,6 +21,7 @@ function collectCards() {
   const root = state.activePlan ? planRoot : manualRoot;
   return Array.from(root.querySelectorAll('.exercise-card')).map(card => {
     const slot = card.dataset.workoutSlot;
+    if(card.dataset.cardioId){const completed=!!window.MojaCardioWorkout?.activityFor(card.dataset.cardioId);return {card,key:'exercise:'+card.dataset.cardioId,total:1,done:completed?1:0,cardio:true};}
     const rows = Array.from(card.querySelectorAll(':scope > .hevy-set'));
     return {card, key:slot != null ? 'slot:'+slot : 'exercise:'+card.dataset.exerciseId,
       total:rows.length, done:rows.filter(row=>row.classList.contains('hevy-done')).length};
@@ -36,7 +37,7 @@ function setText(node, value) {
   if (node.textContent !== value) node.textContent = value;
 }
 function decorateCard(record) {
-  const {card, key:cardKey, done, total} = record;
+  const {card, key:cardKey, done, total, cardio} = record;
   const heading = card.querySelector('.sport-exercise-title-row');
   const title = heading?.querySelector('.sport-exercise-title-text');
   if (!heading || !title) return;
@@ -64,7 +65,7 @@ function decorateCard(record) {
   button.setAttribute('aria-expanded', String(open));
   button.setAttribute('aria-label',(open?'Zwiń ':'Rozwiń ')+(title.querySelector('h2')?.textContent || 'ćwiczenie'));
   setText(button, open ? '⌃' : '⌄');
-  setText(status, (complete?'✓ ':'')+done+'/'+total+' serii');
+  setText(status, cardio?(complete?'✓ Kardio wykonane':'Kardio · do wykonania'):(complete?'✓ ':'')+done+'/'+total+' serii');
 }
 function decorateAdvisors(cards) {
   for (const {card} of cards) {

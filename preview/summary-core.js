@@ -71,6 +71,15 @@
         records: isPR ? set.pr.map(String) : []
       });
     }
+    let cardioSeconds=0;
+    const activities=Array.isArray(session.cardio)?session.cardio:[];
+    for(const activity of activities){
+      if(!activity||!Number.isInteger(activity.durationSeconds)||activity.durationSeconds<=0)continue;
+      const ex=root.MojaCardioCatalog?.getExercise(activity.exerciseId);
+      if(!ex)continue;
+      cardioSeconds+=activity.durationSeconds;
+      groups.push({key:'cardio-'+String(activity.id),id:ex.id,name:ex.name,measurementType:'cardio',durationSeconds:activity.durationSeconds,activity:{...activity},count:0,sets:[],records:0});
+    }
     let calories = session.calories;
     if (!calories || !Number.isFinite(Number(calories.active))) {
       calories = typeof options?.estimateCalories === 'function'
@@ -85,7 +94,7 @@
       fileDate: filenameDate(session.date),
       duration: duration(session.durationSeconds),
       exerciseCount: groups.length, setCount: validSets,
-      reps, volume, ...(timedSeconds?{timedSeconds}:{}), prCount: records, activeKcal, groups
+      reps, volume, ...(timedSeconds?{timedSeconds}:{}), ...(cardioSeconds?{cardioSeconds,cardioActiveKcal:calories?.cardio?.active??null}:{}), prCount: records, activeKcal, groups
     };
   }
   root.SportSummaryCore = Object.freeze({ build, duration, dateLabel, filenameDate });

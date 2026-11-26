@@ -163,6 +163,7 @@
     if (completed(context)) return;
     const snapshot = structuredClone(state);
     if (action === 'start') {
+      if(root.MojaCardioWorkout?.busy())return;
       const result = ui.startTimer(state.timedTimer,context,Date.now());
       if (result.status !== 'started') return;
       state.timedTimer = result.timer;
