@@ -1,4 +1,4 @@
-/* Stable catalog identifiers; approved anatomical art is separate. */
+/* Stable catalog identifiers; anatomical art is separate. */
 window.CALISTHENICS_LIBRARY=[
   {
     "id": "cali-01",
@@ -1079,5 +1079,282 @@ window.CALISTHENICS_LIBRARY=[
     "harder": "Węższy rozstaw stóp, jeśli stabilność pozostaje dobra.",
     "query": "plank alternating arm reach",
     "measurementType": "duration"
+  },
+  {
+    "id": "cali-53",
+    "name": "Krążenia ramion",
+    "group": "Kalistenika",
+    "groups": [
+      "Barki"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Barki i stabilizatory łopatek",
+    "steps": [
+      "Stań prosto i wyciągnij ramiona na boki na wysokości barków.",
+      "Wykonuj małe, kontrolowane krążenia w przód.",
+      "Zmień kierunek, a w wariancie ekspresowym zwiększ zakres po 10 sekundach."
+    ],
+    "errors": "Szarpanie, unoszenie barków do uszu.",
+    "easier": "Mniejsze krążenia.",
+    "harder": "Nie zwiększaj zakresu ponad komfort.",
+    "query": "arm circles",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-54",
+    "name": "Krążenia barków",
+    "group": "Kalistenika",
+    "groups": [
+      "Barki",
+      "Plecy"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Mięśnie obręczy barkowej",
+    "steps": [
+      "Stań prosto z rozluźnionymi rękami.",
+      "Powoli unieś, cofnij i opuść oba barki, wykonując pełne koło.",
+      "Powtórz w przeciwnym kierunku."
+    ],
+    "errors": "Napinanie szyi, szybkie szarpanie.",
+    "easier": "Mniejsze krążenia.",
+    "harder": "Płynne większe krążenia bez bólu.",
+    "query": "shoulder rolls",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-55",
+    "name": "Skręty tułowia na stojąco",
+    "group": "Kalistenika",
+    "groups": [
+      "Brzuch",
+      "Plecy"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Mięśnie skośne brzucha i tułowia",
+    "steps": [
+      "Rozstaw stopy na szerokość barków, rozluźnij ramiona.",
+      "Obracaj tułów łagodnie w lewo i prawo.",
+      "Pozwól ramionom naturalnie podążać za ruchem."
+    ],
+    "errors": "Gwałtowne skręty, wymuszanie zakresu.",
+    "easier": "Mniejszy zakres.",
+    "harder": "Płynny kontrolowany ruch.",
+    "query": "standing torso twists",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-56",
+    "name": "Krążenia bioder",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi",
+      "Brzuch"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Okolica bioder i stabilizatory miednicy",
+    "steps": [
+      "Stań stabilnie, dłonie oprzyj na biodrach.",
+      "Wykonuj powolne koła miednicą, utrzymując równowagę.",
+      "Zmień kierunek po zadanej liczbie powtórzeń."
+    ],
+    "errors": "Zbyt duży zakres, szarpanie tułowiem.",
+    "easier": "Małe koła.",
+    "harder": "Stopniowo zwiększaj zakres.",
+    "query": "hip circles standing",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-57",
+    "name": "Wymachy nóg",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Zginacze bioder, pośladki i tylna część uda",
+    "steps": [
+      "Stań bokiem do ściany, oprzyj dłoń dla równowagi.",
+      "Swobodnie poruszaj zewnętrzną nogą w przód i tył, bez wymuszania wysokości.",
+      "Po serii zmień nogę."
+    ],
+    "errors": "Wymuszanie zakresu, utrata równowagi.",
+    "easier": "Małe wymachy.",
+    "harder": "Zwiększ zakres tylko przy zachowanej stabilności.",
+    "query": "front back leg swings wall support",
+    "measurementType": "reps",
+    "repetitionUnit": "perSide"
+  },
+  {
+    "id": "cali-58",
+    "name": "Przyciąganie kolana do klatki piersiowej w staniu",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Biodra i pośladki",
+    "steps": [
+      "Stań stabilnie; w razie potrzeby skorzystaj z podparcia.",
+      "Unieś kolano i delikatnie przytrzymaj przez sekundę.",
+      "Opuść nogę, zmień stronę."
+    ],
+    "errors": "Ciągnięcie na siłę, pochylanie tułowia.",
+    "easier": "Niższe unoszenie kolana.",
+    "harder": "Nie wymuszaj dodatkowego zakresu.",
+    "query": "standing knee hug",
+    "measurementType": "reps",
+    "repetitionUnit": "perSide"
+  },
+  {
+    "id": "cali-59",
+    "name": "Skłon w przód w staniu",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi",
+      "Plecy"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Tylna część ud i dolna część pleców (rozciąganie)",
+    "steps": [
+      "Ustaw stopy na szerokość bioder.",
+      "Zegnij się w biodrach, pozwól tułowiowi i rękom swobodnie opaść.",
+      "Ugnij kolana w potrzebnym zakresie, oddychaj spokojnie."
+    ],
+    "errors": "Sprężynowanie, wymuszanie dotknięcia podłogi.",
+    "easier": "Oprzyj dłonie na udach lub ugnij kolana.",
+    "harder": "Pozostań w komfortowym zakresie.",
+    "query": "standing forward fold",
+    "measurementType": "duration"
+  },
+  {
+    "id": "cali-60",
+    "name": "Rozciąganie czworogłowego uda w staniu",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Przednia część uda (rozciąganie)",
+    "steps": [
+      "Stań przy stabilnym podparciu.",
+      "Ugnij kolano, chwyć stopę za sobą i delikatnie przyciągnij piętę do pośladka.",
+      "Utrzymuj kolana blisko siebie, następnie zmień nogę."
+    ],
+    "errors": "Wypychanie bioder, ciągnięcie stopy na siłę.",
+    "easier": "Mniejszy zakres z podparciem.",
+    "harder": "Bez zwiększania napięcia do bólu.",
+    "query": "standing quadriceps stretch",
+    "measurementType": "duration",
+    "durationMode": "perSide"
+  },
+  {
+    "id": "cali-61",
+    "name": "Rozciąganie typu „czwórka”",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Pośladki i okolica biodra (rozciąganie)",
+    "steps": [
+      "Połóż się na plecach, ugnij kolana.",
+      "Załóż kostkę jednej nogi na przeciwległe kolano.",
+      "Obejmij rękami udo nogi podporowej i delikatnie przyciągnij je do klatki, następnie zmień stronę."
+    ],
+    "errors": "Nacisk na kolano, unoszenie głowy, ciągnięcie na siłę.",
+    "easier": "Pozostaw stopę nogi podporowej na podłożu.",
+    "harder": "Nie pogłębiaj poza komfort.",
+    "query": "supine figure four stretch",
+    "measurementType": "duration",
+    "durationMode": "perSide"
+  },
+  {
+    "id": "cali-62",
+    "name": "Otwieranie klatki piersiowej przy ścianie",
+    "group": "Kalistenika",
+    "groups": [
+      "Klatka piersiowa",
+      "Barki"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Klatka piersiowa i przednia część ramienia (rozciąganie)",
+    "steps": [
+      "Stań przy ścianie, oprzyj na niej dłoń.",
+      "Łagodnie obróć tułów od ściany, aż poczujesz lekkie rozciąganie.",
+      "Oddychaj spokojnie i zmień stronę."
+    ],
+    "errors": "Wymuszanie skrętu, nacisk na bark.",
+    "easier": "Mniejszy obrót, niższe ustawienie dłoni.",
+    "harder": "Pozostań w bezbolesnym zakresie.",
+    "query": "wall chest stretch",
+    "measurementType": "duration",
+    "durationMode": "perSide"
+  },
+  {
+    "id": "cali-63",
+    "name": "Rotacja tułowia w leżeniu",
+    "group": "Kalistenika",
+    "groups": [
+      "Plecy",
+      "Brzuch"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Dolna część pleców i mięśnie tułowia (rozciąganie)",
+    "steps": [
+      "Połóż się na plecach i rozłóż ramiona na boki.",
+      "Ugnij kolano i pozwól mu łagodnie opaść przez środek ciała na przeciwną stronę.",
+      "Spójrz w kierunku przeciwległego barku, oddychaj i zmień stronę."
+    ],
+    "errors": "Dociskanie kolana siłą, gwałtowny ruch.",
+    "easier": "Podeprzyj kolano poduszką.",
+    "harder": "Nie wymuszaj głębszego skrętu.",
+    "query": "supine spinal twist",
+    "measurementType": "duration",
+    "durationMode": "perSide"
+  },
+  {
+    "id": "cali-64",
+    "name": "Głębokie oddechy",
+    "group": "Kalistenika",
+    "groups": [
+      "Brzuch"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Przepona i mięśnie oddechowe",
+    "steps": [
+      "Połóż się na plecach, ułóż dłonie na brzuchu.",
+      "Weź spokojny wdech nosem i swobodny wydech ustami.",
+      "Powtórz pięć razy, nie wstrzymując oddechu i nie wymuszając jego głębokości."
+    ],
+    "errors": "Zbyt szybkie oddechy, napinanie szyi.",
+    "easier": "Naturalny, płytki oddech.",
+    "harder": "Spokojnie wydłuż wydech, jeśli jest komfortowy.",
+    "query": "supine diaphragmatic breathing",
+    "measurementType": "reps",
+    "repetitionUnit": "breaths"
   }
 ];

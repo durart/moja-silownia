@@ -108,7 +108,7 @@ function transition(event){
   const saved=persist(result,next.status==='done');
   if(!saved){render();return;}
   if(old.status==='rest'&&next.status!=='rest'){if(event.type==='skipRest')audio.stop();else if(!audio.getScheduledUntil())audio.beep();}
-  if(old.status==='running'&&next.status!=='running'&&next.status!=='paused')audio.beep();
+  if(event.type==='skipPhase')audio.stop();else if(old.status==='running'&&next.status!=='running'&&next.status!=='paused')audio.beep();
   if(next.status==='rest'){audio.unlock();audio.schedule(next.deadline);}
   render();
   if(next.status==='done'&&saved.lastId!=null){if(!window.openSportSummary?.(saved.lastId))tab('history');}
@@ -144,7 +144,7 @@ function renderOverview(parent,steps,records,position){
   if(block!==s.block||round!==s.round||phase!==(s.phase??null)){block=s.block;round=s.round;phase=s.phase??null;add(details,'h4',phase==='warmup'?'Rozgrzewka':phase==='cooldown'?'Schładzanie':'Blok '+block+' · runda '+round);}
   const row=add(details,'p',null,'program-overview-row');
   add(row,'span',(done.has(i)?'✓ ':i===position?'→ ':'○ ')+s.name+(s.side?' · '+s.side:''));
-  add(row,'strong',done.has(i)?(s.unit==='breaths'?done.get(i).actual+' oddechów':history.resultLabel(s,done.get(i).actual)):'Cel: '+target(s));
+  add(row,'strong',done.has(i)?(s.unit==='breaths'?done.get(i).actual+' oddechów':history.resultLabel(s,done.get(i).actual)):(position===-1&&s.phase?'Pominięto':'Cel: '+target(s)));
  }
 }
 function renderRun(v){
