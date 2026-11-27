@@ -17,13 +17,15 @@
           r.setType!=='R'&&r.type!=='warmup'&&r.type!=='R');
         if(!rows.length) return null;
         const indices=rows.map(r=>r.planSetIndex);
-        const valid=rows.length===targets.length&&indices.every((n,i)=>Number.isInteger(n)&&n===i)&&
+        const expected=targets.map((t,i)=>t?.index ?? i);
+        const valid=rows.length===targets.length&&indices.every((n,i)=>Number.isInteger(n)&&n===expected[i])&&
           rows.every(r=>r.reliable!==false&&r.unreliable!==true);
         return {...s,sets:valid?rows:[],invalid:!valid};
       }).filter(Boolean).filter(s=>typeof s.date==='string'&&Number.isFinite(Date.parse(s.date))&&Date.parse(s.date)<=now)
       .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
     if(history.slice(0,5).some(s=>['pain','equipment','technique'].includes(s.exerciseNotes?.[exerciseId]?.flag))) return null;
     const standard=history.filter(s=>s.sessionMode!=='recovery');
+    if(!standard.length || now-Date.parse(standard[0].date)>42*86400000) return null;
     const boundary=standard.findIndex(s=>s.invalid);
     const result=evidence.analyze(boundary<0?standard:standard.slice(0,boundary),exerciseId,{expectedWorkingSets:targets.length,now});
     if(result.status!=='comparable') return null;
