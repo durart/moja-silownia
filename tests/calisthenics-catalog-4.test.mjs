@@ -61,6 +61,7 @@ for(const prefix of ['', 'preview/']){
   const fatigue=require('../'+prefix+'muscle-fatigue-core.js');
   for(const e of load(prefix).slice(22)){
    assert.equal(timed.measurementType(e),e.id==='cali-27'?'duration':'reps');
+   assert.ok(Object.hasOwn(fatigue.SPECIFIC,e.id),e.id);
    assert.ok(fatigue.profile(e).every(([muscle,weight])=>muscle!=='Inne'&&weight>0&&weight<=1));
   }
   assert.equal(timed.measurementType(load(prefix).find(e=>e.id==='cali-27')),'duration');

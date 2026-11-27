@@ -35,6 +35,9 @@ const root=path.resolve(__dirname,'..'),key='moja-silownia-v01';
   assert.ok(await page.locator('#techContent .tech-steps li').count()>=3);
   assert.match(await page.locator('#techContent .tech-tip').innerText(),/Łatwiej:.*Trudniej:/s);
  }
+ assert.equal(await page.evaluate(()=>defaultBodyweightLoad(state.exercises.find(e=>e.id==='cali-23'))),0);
+ assert.equal(await page.evaluate(()=>window.MojaTimedWorkout.isTimed('cali-27')),true);
+ assert.equal(await page.evaluate(()=>window.MojaTimedWorkout.isTimed('cali-23')),false);
  await page.evaluate(()=>{closeTechnique();tab('catalog');selectMuscle('Klatka piersiowa');});
  await page.locator('#catalogList .r6-exercise-art').first().waitFor({state:'visible'});
  await page.locator('#catalogList .r6-exercise-art').first().evaluate(img=>img.decode());
