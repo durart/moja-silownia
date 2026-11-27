@@ -58,7 +58,7 @@ function workingSets(session, exerciseId) {
     .map(row => ({
       weight: Number(row.weight),
       reps: Number(row.reps),
-      rir: numeric(row.rir) && Number(row.rir) >= 0 && Number(row.rir) <= 5
+      rir: numeric(row.rir) && Number.isInteger(Number(row.rir)) && Number(row.rir) >= 0 && Number(row.rir) <= 5
         ? Number(row.rir) : null
     }));
 }
@@ -137,6 +137,21 @@ function suggest(sessions, exerciseId, options = {}) {
       return result('maintain', 'Brak kompletu zaplanowanych serii roboczych.');
     if (latest.rows.some(row => row.weight !== weight))
       return result('maintain', 'Piramida ciężaru wymaga osobnej oceny serii.');
+    const recent = history.slice(0, 3);
+    const comparableDecline = recent.length === 3 && recent.every(item =>
+      item.rows.length === expected && item.rows.every(row =>
+        row.weight === weight && Number.isInteger(row.rir)));
+    if (comparableDecline) {
+      const totals = recent.map(item => item.rows.reduce((sum, row) => sum + row.reps, 0));
+      const repeatedMiss = recent.slice(0, 2).every(item =>
+        item.rows.some(row => row.reps < low && row.rir <= targetRir));
+      if (repeatedMiss && totals[0] < totals[1] && totals[1] < totals[2]) {
+        const loading = calculateNextWeight(weight, options.equipmentType || options.equipment, options.equipmentStepKg);
+        const step = loading?.increment;
+        if (Number.isFinite(step) && step > 0 && step / weight <= 0.1 && weight > step)
+          return result('consider_decrease', 'Dwa kolejne spadki i nieosiągnięty dolny zakres. Rozważ mniejszy ciężar.', {trend:'declining', suggestedWeight:Number((weight-step).toFixed(2))});
+      }
+    }
     if (latest.rows.some(row => row.reps < low))
       return result('review', 'Nie osiągnięto dolnego zakresu powtórzeń.');
     if (latest.rows.some(row => row.rir === null || !Number.isInteger(row.rir) || row.rir < targetRir))
