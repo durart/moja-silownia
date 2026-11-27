@@ -64,7 +64,7 @@ function assertTimedSet(set, seconds) {
           {id:'seed-93',name:'Plank boczny',group:'Brzuch',equipment:'Masa ciała'},
           {id:'bench-test',name:'Wyciskanie testowe',group:'Klatka piersiowa',equipment:'Sztanga'}],
           plans:[{id:17,name:'Plan testowy',exerciseIds:['seed-14','bench-test'],
-            targets:[{sets:2,reps:'45–60 s',weight:0},{sets:1,reps:'10',weight:40}]}],
+            targets:[{sets:2,reps:'45–60 s',weight:0},{sets:1,reps:'10',weight:40,rest:'120',notes:'Kontroluj ruch'}]}],
           active:[],sessions:[] };
         await page.addInitScript(({seed,storageKey,otherKey}) => {
           if (!localStorage.getItem(storageKey)) localStorage.setItem(storageKey,JSON.stringify(seed));
@@ -118,6 +118,10 @@ function assertTimedSet(set, seconds) {
         await bench.locator('#r_1_0_r').blur();
         await rejectedWrite(page,storageKey,bench.locator('button[onclick^="togglePlanRow"]'));
         await bench.locator('button[onclick^="togglePlanRow"]').click();
+        const restSnapshot=await page.evaluate(()=>({remaining:state.restUntil-Date.now(),global:state.restSettings['bench-test']??null}));
+        assert.ok(restSnapshot.remaining>115000 && restSnapshot.remaining<=120000,'planned rest must start a 120 second countdown');
+        assert.equal(restSnapshot.global,null,'plan must not overwrite global rest preference');
+        assert.match(await bench.textContent(),/Kontroluj ruch/);
         assert.equal(await page.evaluate(()=>state.active.length),3);
         assert.equal(await page.evaluate(() => state.active[2].reps),10);
         assert.equal(await page.evaluate(() => Object.hasOwn(state.active[2],'durationSeconds')),false);
