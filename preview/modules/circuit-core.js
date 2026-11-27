@@ -27,7 +27,7 @@
  function valid(run){
   if(!run||run.version!==1||!Array.isArray(run.steps)||!run.steps.length||run.steps.length>2000||!integer(run.position,0,run.steps.length)||!Array.isArray(run.records)||run.records.length>run.steps.length||!['ready','running','paused','rest','done'].includes(run.status)||!integer(run.startedAt,0,Number.MAX_SAFE_INTEGER))return false;
   if(!run.steps.every(x=>x&&integer(x.target,1,3600)&&(x.kind==='rest'||(x.kind==='exercise'&&typeof x.name==='string'&&['reps','duration'].includes(x.type)))))return false;
-  if(!run.records.every(x=>x&&integer(x.position,0,run.steps.length-1)&&integer(x.actual,1,3600)&&run.steps[x.position]?.kind==='exercise'))return false;
+  if(!run.records.every(x=>x&&integer(x.position,0,run.steps.length-1)&&integer(x.actual,1,3600)&&run.steps[x.position]?.kind==='exercise'&&validAlternative(run.steps[x.position],x)))return false;
   if(new Set(run.records.map(x=>x.position)).size!==run.records.length||run.records.some(x=>x.position>=run.position))return false;
   if(run.status==='done')return run.position===run.steps.length&&run.deadline===null;
   if(run.position>=run.steps.length)return false;
@@ -41,9 +41,11 @@
   if(run.status==='running'||run.status==='rest')return Math.max(0,Math.ceil((run.deadline-now)/1000));
   return run.steps[run.position]?.target||0;
  }
- function next(run,at,actual){
+ function actualStep(step,record){return record?.alternative===true&&step?.alternative?{...step,...step.alternative}:step;}
+ function validAlternative(step,record){return record?.alternative===undefined||(record.alternative===true&&step?.type==='reps'&&!!step.alternative);}
+ function next(run,at,actual,alternative=false){
   const step=run.steps[run.position];
-  const records=step.kind==='exercise'?[...run.records,{position:run.position,actual,completedAt:at}]:run.records;
+  const records=step.kind==='exercise'?[...run.records,{position:run.position,actual,completedAt:at,...(alternative?{alternative:true}:{})}]:run.records;
   const position=run.position+1,following=run.steps[position];
   if(!following)return {...run,position,records,status:'done',deadline:null,remainingMs:null,finishedAt:at};
   return {...run,position,records,status:following.kind==='rest'?'rest':'ready',deadline:following.kind==='rest'?at+following.target*1000:null,remainingMs:null};
@@ -69,12 +71,12 @@
     const actual=Math.floor((s.target*1000-left)/1000);
     return actual>=1?next(r,now,Math.min(s.target,actual)):r;
    }
-   case 'reps':return r.status==='ready'&&s.type==='reps'&&integer(event.actual,1,3600)?next(r,now,event.actual):r;
+   case 'reps':return r.status==='ready'&&s.type==='reps'&&integer(event.actual,1,3600)&&validAlternative(s,event)?next(r,now,event.actual,event.alternative===true):r;
    case 'manual':return r.status==='ready'&&s.type==='duration'&&integer(event.actual,1,3600)?next(r,now,event.actual):r;
    case 'skipRest':return r.status==='rest'?next(r,now):r;
    case 'tick':return r;
    default:return r;
   }
  }
- return Object.freeze({build,create,valid,remaining,act});
+ return Object.freeze({build,create,valid,remaining,act,actualStep,validAlternative});
 });
