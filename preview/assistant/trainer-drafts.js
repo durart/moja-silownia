@@ -50,6 +50,12 @@
     const value=state?.trainerSettings;
     return {weights:value?.weights!==false,reps:value?.reps!==false,sets:value?.sets!==false,explanation:value?.explanation!==false};
   }
+  function assessmentPlan(state) {
+    const plan=state.plans?.find(p=>p.id===state.activePlan);
+    if(!Array.isArray(plan?.exerciseIds)) return null;
+    return {...plan,exerciseIds:plan.exerciseIds.map((id,i)=>
+      (state.hiddenWorkoutSlots||[]).includes(i)||(state.workoutSwaps?.[i]&&state.workoutSwaps[i]!==id)?null:id)};
+  }
   function ensure(state,id,slot,target,completed=[]) {
     if (!active(state)) return {entry:null,changed:false};
     const existing=get(state,id,slot);
@@ -57,7 +63,7 @@
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return {entry:null,changed:false};
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
-      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:state.plans?.find(p=>p.id===state.activePlan)});
+      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state)});
     const prefs=settings(state);
     const legacyCount=Number.isInteger(Number(target?.sets))&&Number(target.sets)>0?Math.min(MAX_ROWS,Number(target.sets)):Number.isInteger(slot)?3:1;
     const count=Math.min(MAX_ROWS,Math.max(completed.length,existing?.rows.length||0,prefs.sets?prepared.rows.length:legacyCount));
@@ -124,7 +130,7 @@
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return false;
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
-      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:state.plans?.find(p=>p.id===state.activePlan)});
+      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state)});
     const prefs=settings(state);
     entry.rows=entry.rows.map((value,i)=>{
       const prior=normalizeRow(value);
