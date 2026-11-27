@@ -71,7 +71,7 @@ const assert=require('node:assert/strict');
   assert.equal(await page.evaluate(()=>typeof globalThis.MojaAdaptiveRecovery?.prescribe),'function');
   assert.equal(await page.evaluate(()=>globalThis.MojaAdaptiveTrends.classify([20,20,20,20].map(reps=>({reps,reserve:4}))).status),'stagnation');
   assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),'adaptive-browser-sentinel');
-  assert.ok(await page.evaluate(async()=> (await caches.keys()).includes('moja-silownia-preview-shell-v61-4.1.0-alpha5')));
+  assert.ok(await page.evaluate(async()=> (await caches.keys()).includes('moja-silownia-preview-shell-v62-4.1.0-rc1')));
   console.log('Adaptive browser, manual edit, offline reload and production storage sentinel passed');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -1,4 +1,4 @@
-/* Conservative per-set prescription candidate; not connected to workout drafts. */
+/* Conservative per-set prescription for adaptive workout drafts. */
 (function(root, factory) {
   const common = typeof module === 'object' && module.exports;
   const api = factory(common ? require('./assistant-progression.js') : root.MojaAdvisorProgression);
