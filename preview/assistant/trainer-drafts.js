@@ -132,9 +132,13 @@
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
       preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state)});
     const prefs=settings(state);
-    entry.rows=entry.rows.map((value,i)=>{
+    const desired=prefs.sets?prepared.rows.length:entry.rows.length;
+    const protectedCount=entry.rows.reduce((n,r,i)=>r?.edited||completed[i]?i+1:n,completed.length);
+    const count=Math.min(MAX_ROWS,Math.max(desired,protectedCount));
+    entry.rows=Array.from({length:count},(_,i)=>{
+      const value=entry.rows[i];
       const prior=normalizeRow(value);
-      if (completed[i]||prior.edited) return prior;
+      if (completed[i]||prior.edited||(!prepared.rows[i]&&value)) return prior;
       const next=normalizeRow(prepared.rows[i]??(prepared.rows[0]?.measurementType==='duration'?prepared.rows.at(-1):undefined));
       if (!prefs.weights) next.weight=null;
       if (!prefs.reps) {if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;}
