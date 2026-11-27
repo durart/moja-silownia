@@ -35,7 +35,7 @@ test('data key and profile 1.9 remain unchanged while 2.0 gets a new PWA shell',
   assert.match(index, /id="profileContent"/);
   assert.match(index, /profile-core\.js\?v=190/);
   assert.match(index, /profile-ui\.js\?v=310/);
-  assert.match(sw, /moja-silownia-shell-v57-4\.0\.0-programs/);
+  assert.match(sw, /moja-silownia-shell-v58-4\.1\.0-alpha2/);
   assert.match(sw, /profile-core\.js\?v=190/);
   assert.match(sw, /modules\/state-storage\.js/);
   assert.match(index, /state\.profile/);
@@ -75,7 +75,7 @@ test('production recovery recommendations preserve strength and fatigue semantic
 
 test('staging continues to use independent data and cache', () => {
   assert.match(read('preview/index.html'),/const key='moja-silownia-preview-v01'/);
-  assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-v56-3\.9\.0-progression-programs-4\.0\.0-rc1/);
+  assert.match(read('preview/sw.js'),/moja-silownia-preview-shell-v58-4\.1\.0-alpha2/);
   assert.doesNotMatch(sw,/moja-silownia-preview-shell-/);
   assert.equal(read('assistant/session-mode.js'),read('preview/assistant/session-mode.js'));
 });
