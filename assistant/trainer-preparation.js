@@ -124,7 +124,7 @@
       if (!previous && !range && !hasTimedTarget) reps = null;
       return { weight: kg, reps, setType: isWarmup ? 'R' : 'W', targetRir: isWarmup || isRecovery ? 4 : targetRir };
     });
-    return { rows, action: advice.action, reason: recentFlag || flags.has(activeFlag) ? 'review' : isRecovery ? 'recovery' : caution ? 'readiness' : mayIncrease ? 'progression' : reference ? 'history' : 'plan' };
+    return { rows, advice, action: advice.action, reason: recentFlag || flags.has(activeFlag) ? 'review' : isRecovery ? 'recovery' : caution ? 'readiness' : mayIncrease || advice.action === 'consider_decrease' ? 'progression' : reference ? 'history' : 'plan' };
   }
   return Object.freeze({ prepare, repRange, readinessCaution, isTimedExercise:exercise=>timedCore?.measurementType(exercise)==='duration' });
 });
