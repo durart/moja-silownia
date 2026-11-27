@@ -87,3 +87,20 @@ test('RIR zero is valid evidence but does not justify increasing weight at failu
  const result=adapter.evaluate({sessions:history,exerciseId:'bench',planId:'A',slotIndex:0,targets:[{index:1,min:8,max:12,rir:0},{index:2,min:8,max:12,rir:0}],equipmentType:'barbell',now});
  assert.ok(result);assert.equal(result.recommendations[0].weight,70);assert.equal(result.recommendations[1].reps,10);
 });
+
+test('manual removal survives ordinary recovery and return to standard',()=>{
+ const drafts=require('../assistant/trainer-drafts.js');
+ const state={startedAt:'test',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise],sessions};
+ const before=JSON.stringify(sessions);drafts.initialize(state);drafts.ensure(state,'bench',0,input.target);
+ assert.equal(drafts.removeRow(state,'bench',0,2),true);
+ for(const mode of ['recovery','standard']){state.activeSessionMode=mode;drafts.refreshMode(state,'bench',0,input.target);assert.equal(drafts.get(state,'bench',0).rows.length,2);}
+ assert.equal(JSON.stringify(sessions),before);
+});
+test('swapping exercise in a plan slot never reuses the previous draft',()=>{
+ const drafts=require('../assistant/trainer-drafts.js');const replacement={id:'replacement',equipmentType:'barbell'};
+ const state={startedAt:'test',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise,replacement],sessions};
+ drafts.initialize(state);drafts.ensure(state,'bench',0,input.target);state.workoutSwaps={0:'replacement'};
+ assert.equal(drafts.get(state,'replacement',0),null);
+ const entry=drafts.ensure(state,'replacement',0,{sets:2,reps:'8-12',rir:2}).entry;
+ assert.equal(entry.exerciseId,'replacement');assert.ok(entry.rows.every(r=>r.weight===null&&!r.explanation));
+});

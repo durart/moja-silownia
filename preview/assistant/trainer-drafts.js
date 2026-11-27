@@ -124,7 +124,7 @@
   function removeRow(state,id,slot,index) {
     const entry=get(state,id,slot);
     if (!entry||!row(state,id,slot,index)) return false;
-    entry.rows.splice(index,1);return true;
+    entry.rows.splice(index,1);entry.manualSetCount=true;return true;
   }
   function refreshMode(state,id,slot,target,completed=[]) {
     const entry=get(state,id,slot);
@@ -134,13 +134,16 @@
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
       preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state),adaptiveRecovery:state.preWorkout?.adaptiveRecovery===true});
     const prefs=settings(state);
-    const desired=prefs.sets?prepared.rows.length:entry.rows.length;
+    const adaptiveResize=state.preWorkout?.adaptiveRecovery===true||entry.adaptiveResized===true;
+    const desired=prefs.sets&&adaptiveResize&&!entry.manualSetCount?prepared.rows.length:entry.rows.length;
+    if(desired!==entry.rows.length)entry.adaptiveResized=state.activeSessionMode==='recovery';
     const protectedCount=entry.rows.reduce((n,r,i)=>r?.edited||completed[i]?i+1:n,completed.length);
     const count=Math.min(MAX_ROWS,Math.max(desired,protectedCount));
     entry.rows=Array.from({length:count},(_,i)=>{
       const value=entry.rows[i];
       const prior=normalizeRow(value);
-      if (completed[i]||prior.edited||(!prepared.rows[i]&&value)) return prior;
+      if (completed[i]||prior.edited) return prior;
+      if(!prepared.rows[i]&&value){delete prior.explanation;return prior;}
       const next=normalizeRow(prepared.rows[i]??(prepared.rows[0]?.measurementType==='duration'?prepared.rows.at(-1):undefined));
       if (!prefs.weights) {next.weight=null;delete next.explanation;}
       if (!prefs.reps) {delete next.explanation;if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;}
