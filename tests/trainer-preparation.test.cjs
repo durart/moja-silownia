@@ -97,3 +97,24 @@ test('individual RIR targets zero, one and three govern explicit progression',()
     assert.equal(result.rows[0].targetRir,rir);
   }
 });
+
+test('explicit plan detects stagnation and repeated decline without reducing after one miss',()=>{
+ const target={sets:3,reps:'5–8',rir:'2'};
+ const history=groups=>groups.map((g,i)=>session(g.map(n=>row(75,n,2)),{date:'2026-11-'+(20+i)+'T12:00:00Z'}));
+ const suggest=groups=>require('../assistant/assistant-progression.js').suggest(history(groups),'bench',{minReps:5,maxReps:8,targetRir:2,expectedWorkingSets:3,equipmentType:'barbell'});
+ assert.equal(suggest([[7,7,7],[7,7,7],[7,7,7]]).trend,'stagnation');
+ assert.equal(suggest([[8,8,7],[7,7,7],[6,6,6]]).trend,'declining');
+ assert.equal(suggest([[8,8,7],[7,7,7],[4,4,4]]).action,'review');
+ assert.equal(suggest([[8,8,7],[5,4,4],[4,3,3]]).suggestedWeight,72.5);
+ assert.equal(prepare({exercise,target,sessions:history([[8,8,7],[5,4,4],[4,3,3]])}).rows[0].weight,72.5);
+});
+test('cross-plan history uses a single unambiguous slot',()=>{
+ const target={sets:3,reps:'5–8',rir:'2'};
+ const rows=[0,1,2].map(i=>({...row(75,8,2),planId:2,planSlotIndex:0,planSetIndex:i}));
+ assert.equal(make(rows,{target,planId:1,slotIndex:0}).rows[0].weight,77.5);
+ rows[2].planSlotIndex=1;
+ assert.equal(make(rows,{target,planId:1,slotIndex:0}).rows[0].weight,null);
+});
+test('fractional RIR cannot confirm weight progression',()=>{
+ assert.equal(make([row(75,8,2.5),row(75,8,2),row(75,8,2)],{target:{sets:3,reps:'5–8',rir:'2'}}).rows[0].weight,75);
+});
