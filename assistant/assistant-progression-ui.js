@@ -16,6 +16,7 @@ function currentSession(exerciseId){
 function guidance(result){
  switch(result.action){
   case 'consider_increase':return {label:'Możliwa progresja ciężaru',tone:'progress'};
+  case 'consider_decrease':return {label:'Rozważ mniejszy ciężar',tone:'caution'};
   case 'maintain':return {label:'Utrzymaj obecny ciężar',tone:'steady'};
   case 'review':return {label:'Sprawdź wykonanie serii',tone:'caution'};
   default:return {label:'Potrzebujemy więcej danych',tone:'neutral'};
@@ -40,7 +41,7 @@ function makeCard(exerciseId,options={}){
  if(window.MojaTimedWorkout?.isTimed(exerciseId))return makeTimedCard(exerciseId,options);
  const equipmentLabel=exercise?.equipmentType||exercise?.equipment;
  const supported=['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg'];
- const result=window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,{
+ const result=options.prepared?.advice || window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,{
   ...options,
   equipmentType:supported.includes(equipmentLabel)?equipmentLabel:'unknown',
   equipmentStepKg:exercise?.equipmentStepKg
@@ -80,6 +81,9 @@ function makeCard(exerciseId,options={}){
     apply.textContent='Ustawiono '+result.suggestedWeight+' kg';apply.disabled=true;
    });box.append(apply);
   }
+ }
+ if(result.action==='consider_decrease'&&Number.isFinite(result.suggestedWeight)){
+  const detail=document.createElement('small');detail.textContent='Sugerowany ciężar: '+result.suggestedWeight+' kg';box.append(detail);
  }
  if(result.needsEquipment){
   const info=document.createElement('small');info.textContent='Wybierz rodzaj sprzętu, aby otrzymać poprawną propozycję ciężaru.';box.append(info);

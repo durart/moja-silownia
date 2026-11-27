@@ -76,3 +76,63 @@ test('completed out-of-order plan rows retain their intended pyramid order',()=>
 test('a missed repetition goal does not force a heavier or unachieved prescription',()=>{const result=make([row(70,6,0),row(70,7,1)],{target:{sets:2,reps:'8–12'}});assert.deepEqual(result.rows.map(r=>r.weight),[70,70]);assert.deepEqual(result.rows.map(r=>r.reps),[6,7]);});
 test('free workouts can progress repetitions with reserve, even without an explicit goal',()=>{const result=make([row(70,10,2)],{target:null});assert.equal(result.rows[0].weight,70);assert.equal(result.rows[0].reps,11);});
 test('free bodyweight sets progress repetitions without inventing load',()=>{const result=make([row(0,12,3)],{target:null,exercise:{id:'bench',equipment:'Masa ciała'}});assert.equal(result.rows[0].weight,0);assert.equal(result.rows[0].reps,13);});
+
+test('explicit double progression requires every planned working set and target RIR',()=>{
+  const target={sets:3,reps:'5–8',rir:'2'};
+  for(const [reps,rirs,expected] of [
+    [[7,6,5],[2,2,2],75],[[8,7,6],[2,2,2],75],
+    [[8,8,7],[2,2,2],75],[[8,8,8],[2,2,2],77.5],
+    [[8,8,8],[2,1,0],75],[[8,8,8],[2,null,2],75],
+    [[8,8],[2,2],75]
+  ]){
+    const result=make(reps.map((n,i)=>row(75,n,rirs[i])),{target});
+    assert.equal(result.rows[0].weight,expected);
+    assert.equal(result.rows[0].targetRir,2);
+  }
+});
+test('individual RIR targets zero, one and three govern explicit progression',()=>{
+  for(const rir of [0,1,3]){
+    const result=make([row(75,8,rir),row(75,8,rir),row(75,8,rir)],{target:{sets:3,reps:'5–8',rir:String(rir)}});
+    assert.equal(result.rows[0].weight,77.5);
+    assert.equal(result.rows[0].targetRir,rir);
+  }
+});
+
+test('explicit plan detects stagnation and repeated decline without reducing after one miss',()=>{
+ const target={sets:3,reps:'5–8',rir:'2'};
+ const history=groups=>groups.map((g,i)=>session(g.map(n=>row(75,n,2)),{date:'2026-11-'+(20+i)+'T12:00:00Z'}));
+ const suggest=groups=>require('../assistant/assistant-progression.js').suggest(history(groups),'bench',{minReps:5,maxReps:8,targetRir:2,expectedWorkingSets:3,equipmentType:'barbell'});
+ assert.equal(suggest([[7,7,7],[7,7,7],[7,7,7]]).trend,'stagnation');
+ assert.equal(suggest([[8,8,7],[7,7,7],[6,6,6]]).trend,'declining');
+ assert.equal(suggest([[8,8,7],[7,7,7],[4,4,4]]).action,'review');
+ assert.equal(suggest([[8,8,7],[5,4,4],[4,3,3]]).suggestedWeight,72.5);
+ assert.equal(prepare({exercise,target,sessions:history([[8,8,7],[5,4,4],[4,3,3]])}).rows[0].weight,72.5);
+});
+test('cross-plan history uses a single unambiguous slot',()=>{
+ const target={sets:3,reps:'5–8',rir:'2'};
+ const rows=[0,1,2].map(i=>({...row(75,8,2),planId:2,planSlotIndex:0,planSetIndex:i}));
+ assert.equal(make(rows,{target,planId:1,slotIndex:0}).rows[0].weight,77.5);
+ rows[2].planSlotIndex=1;
+ assert.equal(make(rows,{target,planId:1,slotIndex:0}).rows[0].weight,null);
+});
+test('fractional RIR cannot confirm weight progression',()=>{
+ assert.equal(make([row(75,8,2.5),row(75,8,2),row(75,8,2)],{target:{sets:3,reps:'5–8',rir:'2'}}).rows[0].weight,75);
+});
+
+test('explicit unreliable rows cannot confirm progression',()=>{
+ const target={sets:3,reps:'5–8',rir:'2'};
+ for(const flag of [{reliable:false},{unreliable:true}]){
+  const result=make([row(75,8,2),row(75,8,2),{...row(75,8,2),...flag}],{target});
+  assert.equal(result.rows[0].weight,75);
+ }
+});
+test('higher repetition history does not authorize a heavier prescription',()=>{
+ const target={sets:3,reps:'5–8',rir:'2'};
+ assert.equal(make([row(75,12,2),row(75,12,2),row(75,12,2)],{target}).rows[0].weight,75);
+});
+test('boolean and fractional RIR do not authorize progression',()=>{
+ const target={sets:3,reps:'5–8',rir:'0'};
+ for(const rir of [true,false,2.5,' ']){
+  assert.equal(make([row(75,8,rir),row(75,8,rir),row(75,8,rir)],{target}).rows[0].weight,75);
+ }
+});
