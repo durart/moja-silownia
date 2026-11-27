@@ -86,6 +86,8 @@
     const rows = Array.from({length: count}, (_, i) => {
       const detail = target?.setDetails?.[i];
       const previous = prior[i];
+      const plannedRir = number(detail?.rir ?? target?.rir);
+      const targetRir = plannedRir !== null && Number.isInteger(plannedRir) && plannedRir >= 0 && plannedRir <= 5 ? plannedRir : 2;
       const isWarmup = detail?.setType === 'R' || detail?.type === 'warmup' || (detail?.setType !== 'W' && detail?.type !== 'working' && warmup(previous));
       const range = targetRange(target, i);
       let kg = weight(previous?.weight) ?? weight(detail?.weight) ?? weight(target?.weight);
@@ -106,7 +108,7 @@
         reps = Math.min(range?.max ?? 30, Number(previous.reps) + 1);
       }
       if (!previous && !range && !hasTimedTarget) reps = null;
-      return { weight: kg, reps, setType: isWarmup ? 'R' : 'W', targetRir: isWarmup || isRecovery ? 4 : 2 };
+      return { weight: kg, reps, setType: isWarmup ? 'R' : 'W', targetRir: isWarmup || isRecovery ? 4 : targetRir };
     });
     return { rows, action: advice.action, reason: recentFlag || flags.has(activeFlag) ? 'review' : isRecovery ? 'recovery' : caution ? 'readiness' : mayIncrease ? 'progression' : reference ? 'history' : 'plan' };
   }
