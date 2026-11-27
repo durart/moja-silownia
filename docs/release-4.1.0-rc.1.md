@@ -20,3 +20,6 @@ Adaptacyjna progresja per seria, porównywalna historia planu i pozycji, trendy,
 6. Zachować raport incydentu i kopie; nie przywracać automatycznie starszej kopii kosztem nowych treningów.
 
 Ryzyko rezydualne: heurystyki wymagają obserwacji w rzeczywistych treningach; aktywacja SW może wymagać zamknięcia wszystkich kart. Test rollbacku pozostaje do wykonania.
+
+## Weryfikacja rollbacku
+Dodano test lokalny: zapis nowej serii w RC.1, powrót do kodu 4.0.0 z odrębnym cache, porównanie danych i odczyt offline. Wynik oczekuje na CI.
