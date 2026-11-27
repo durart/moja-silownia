@@ -4,6 +4,21 @@ const assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true});
  try {
+  for(const accepted of [true,false]){
+   const choiceContext=await browser.newContext();
+   try{
+    const choicePage=await choiceContext.newPage();
+    await choicePage.goto('http://127.0.0.1:8765/preview/');
+    await choicePage.evaluate(()=>openPreWorkout('manual',null));
+    await choicePage.locator('#preSleep').fill('4');
+    const dialogPromise=choicePage.waitForEvent('dialog').then(async dialog=>{
+      assert.match(dialog.message(),/Asystent zaleca trening regeneracyjny/);
+      if(accepted) await dialog.accept(); else await dialog.dismiss();
+    });
+    await Promise.all([dialogPromise,choicePage.locator('#preWorkout button[onclick="confirmWorkoutStart()"]').click()]);
+    assert.equal(await choicePage.locator('#activeRecoveryMode').isChecked(),accepted);
+   }finally{await choiceContext.close();}
+  }
   const context=await browser.newContext({serviceWorkers:'allow'});
   const page=await context.newPage();
   const base='http://127.0.0.1:8765';
