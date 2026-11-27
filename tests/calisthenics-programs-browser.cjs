@@ -104,8 +104,11 @@ const root=path.resolve(__dirname,'..');
     }
     await host.getByRole('button',{name:'Pomiń resztę schładzania'}).click();
     await page.locator('#summaryContent .sp2-title').waitFor();
-    assert.equal(await page.evaluate(()=>state.sessions[0].sets.length),15);
-    assert.equal(await page.evaluate(()=>state.sessions[0].program.auxiliary.completedSteps),1);
+    assert.match(await page.locator('#summaryContent .sp2-title').innerText(),/Dzień 2/);
+    const completed=await page.evaluate(()=>state.sessions.find(s=>s.program?.day===2));
+    assert.equal(completed.sets.length,15);
+    assert.equal(completed.program.auxiliary.completedSteps,1);
+    assert.equal(await page.evaluate(()=>state.sessions.length),2);
     assert.equal(await page.evaluate(()=>state.programTraining.progress['military-calisthenics-56'].nextDay),3);
     assert.deepEqual(errors,[]);
    }finally{await context.close();}
