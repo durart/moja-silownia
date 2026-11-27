@@ -77,7 +77,7 @@ test('corrupt saved run rejected; ready timer does not run on its own',()=>{
 });
 test('preview assets and cache use same version and production remains distinct',()=>{
  const html=fs.readFileSync('preview/index.html','utf8'),sw=fs.readFileSync('preview/sw.js','utf8'),prod=fs.readFileSync('index.html','utf8');
- for(const name of ['modules/circuit-core.js?v=2','modules/programs-data.js?v=2','modules/programs-ui.mjs?v=4','styles/programs.css?v=2','modules/program-history.js?v=3','modules/program-preparation.js?v=1']){
+ for(const name of ['modules/circuit-core.js?v=2','modules/programs-data.js?v=2','modules/programs-ui.mjs?v=5','styles/programs.css?v=3','modules/calisthenics-progression.js?v=1','modules/program-history.js?v=3','modules/program-preparation.js?v=1']){
   assert.ok(html.includes(name));assert.ok(sw.includes(name));assert.ok(!prod.includes(name));
  }
  assert.match(sw,/moja-silownia-preview-shell/);assert.match(html,/moja-silownia-preview-v01/);
@@ -222,4 +222,60 @@ test('new mobility entries have descriptions and draft art registered offline',(
   assert.ok(e.steps.length>=3&&e.errors&&e.easier);assert.ok(sw.includes(file));assert.ok(fs.statSync('preview/'+file).size>1000);
   assert.equal(timed.measurementType(e),i>=59&&i<=63?'duration':'reps');
  }
+});
+
+const progression=require('../preview/modules/calisthenics-progression.js');
+function progressionFixture(move,kind='training'){
+ const def={kind,blocks:[{rounds:2,rest:60,moves:[move]}]};
+ const program={days:[{...def,day:1},{...def,day:2}],blockRest:75};
+ const completed=(day,values,alternative=false)=>({day,finishedAt:day*1000,blockCount:1,records:[0,2].map((position,i)=>({position,actual:values[i],...(alternative?{alternative:true}:{})}))});
+ return {program,completed,index:rows=>progression.collect(program,rows,core,history,3000)};
+}
+const movement={id:'cali-02',name:'Pompki',type:'reps',target:10,note:'',alternative:{id:'cali-29',name:'Pompki na kolanach',target:12}};
+test('no history produces baseline; one deficient day recommends the lowest actually completed round',()=>{
+ const f=progressionFixture(movement);
+ assert.equal(progression.advise(movement,f.index([])).status,'baseline');
+ const a=progression.advise(movement,f.index([f.completed(1,[9,7])]));
+ assert.equal(a.status,'build');assert.equal(a.suggested,7);assert.equal(a.observations,1);assert.equal(a.last.count,2);
+});
+test('repeated deficits recommend defined easier movement; a completed alternative is not proof of base mastery',()=>{
+ const f=progressionFixture(movement);
+ const a=progression.advise(movement,f.index([f.completed(1,[9,8]),f.completed(2,[8,7])]));
+ assert.equal(a.status,'caution');assert.equal(a.alternative,true);assert.equal(a.suggested,12);
+ const b=progression.advise(movement,f.index([f.completed(1,[12,12],true)]));
+ assert.equal(b.alternative,true);assert.equal(b.last,null);
+});
+test('two completed days meeting current target never increase the original schedule',()=>{
+ const f=progressionFixture(movement),rows=[f.completed(1,[12,12]),f.completed(2,[11,12])];
+ const before=JSON.stringify(rows),a=progression.advise(movement,f.index(rows));
+ assert.equal(a.status,'ready');assert.equal(a.suggested,10);
+ assert.equal(progression.advise({...movement,target:14},f.index(rows)).suggested,11);
+ assert.equal(JSON.stringify(rows),before);
+});
+test('time, sides, pause and circuit position remain distinct; recovery and incomplete records excluded',()=>{
+ const f=progressionFixture(movement),idx=f.index([f.completed(1,[10,10])]);
+ for(const m of [{...movement,type:'duration'},{...movement,perSide:true},{...movement,pauseSeconds:2},{...movement,block:2},{...movement,note:'Powoli.'}]){
+  assert.equal(progression.advise(m,idx).status,'baseline');
+ }
+ assert.equal(progression.advise({...movement,phase:'warmup'},idx),null);
+ assert.equal(progression.advise(movement,f.index([{...f.completed(1,[10,10]),records:[]}])).status,'baseline');
+ const recovery=progressionFixture(movement,'recovery');
+ assert.equal(progression.advise(movement,recovery.index([recovery.completed(1,[10,10])])).status,'baseline');
+ assert.equal(progression.advise(movement,f.index([{...f.completed(1,[10,10]),finishedAt:4000}])).status,'baseline');
+});
+test('estimated fatigue overrides readiness and never increases load',()=>{
+ const f=progressionFixture(movement),idx=f.index([f.completed(1,[12,12]),f.completed(2,[12,12])]);
+ const a=progression.advise(movement,idx,{muscle:'Klatka piersiowa',value:65});
+ assert.equal(a.status,'caution');assert.equal(a.suggested,8);
+ assert.equal(progression.advise(movement,idx,{muscle:'Klatka piersiowa',value:64}).status,'ready');
+ const model=require('../preview/muscle-fatigue-core.js');
+ const profile=[{id:'cali-29',group:'Kalistenika'}];
+ assert.deepEqual(progression.relevantFatigue({id:'cali-29'},profile,model,{'Klatka piersiowa':20,Triceps:70,Barki:30,Brzuch:100}),{muscle:'Triceps',value:70});
+ assert.equal(progression.relevantFatigue({id:'unknown'},profile,model,{}),null);
+});
+test('duration guidance preserves seconds and original timer target',()=>{
+ const timed={id:'seed-14',name:'Deska',type:'duration',target:40};
+ const f=progressionFixture(timed),idx=f.index([f.completed(1,[25,20])]);
+ const a=progression.advise(timed,idx);
+ assert.equal(a.suggested,20);assert.equal(a.target,40);assert.equal(timed.target,40);
 });

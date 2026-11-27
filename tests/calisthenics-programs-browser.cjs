@@ -28,8 +28,10 @@ const root=path.resolve(__dirname,'..');
     const host=page.locator('#programsContent');
     await host.getByText('Kalistenika — 56 dni',{exact:true}).waitFor();
     assert.equal(await host.locator('.program-week').count(),8);
+    await host.getByText('Asystent progresji kalistenicznej',{exact:true}).waitFor();
     await host.getByRole('button',{name:'Rozpocznij dzień'}).click();
     assert.equal(await page.evaluate(()=>state.programTraining.active.run.position),0);
+    await host.getByText('Asystent progresji kalistenicznej',{exact:true}).waitFor();
     await host.getByText('Wszystkie ćwiczenia i wyniki',{exact:true}).waitFor();
     assert.equal(await host.locator('.program-overview-row').count(),15);
     // Verify ordinary workout entry points cannot conflict.
@@ -110,6 +112,26 @@ const root=path.resolve(__dirname,'..');
     assert.equal(completed.program.auxiliary.completedSteps,1);
     assert.equal(await page.evaluate(()=>state.sessions.length),2);
     assert.equal(await page.evaluate(()=>state.programTraining.progress['military-calisthenics-56'].nextDay),3);
+    // Complete recovery day with real UI, then verify actionable advice on day 4.
+    await page.locator('#summaryContent [data-sp2="program"]').click();
+    await host.getByRole('button',{name:'Rozpocznij dzień'}).click();
+    for(let i=0;i<20;i++){
+     const step=await page.evaluate(()=>{const a=state.programTraining.active;return a?.run?.steps[a.run.position]??null;});
+     if(!step)break;
+     await host.getByRole('button',{name:step.kind==='rest'?'Pomiń przerwę':step.type==='duration'?'Zapisz czas ręcznie':'✓ Zatwierdź powtórzenia'}).click();
+    }
+    await page.locator('#summaryContent [data-sp2="program"]').click();
+    await page.evaluate(()=>{const original=Date.now.bind(Date);Date.now=()=>original()+120000;});
+    await host.getByLabel('Rozgrzewka (opcjonalna)').selectOption('none');
+    await host.getByLabel('Schładzanie — ok. 5 min').uncheck();
+    await host.getByRole('button',{name:'Rozpocznij dzień'}).click();
+    assert.equal(await page.evaluate(()=>state.programTraining.active.day),4);
+    const before=await page.evaluate(()=>JSON.stringify(state.programTraining.active.run));
+    await host.getByRole('button',{name:'Ustaw zalecaną wartość'}).click();
+    assert.equal(await host.locator('.program-active input[type=number]').inputValue(),'9');
+    assert.equal(await page.evaluate(()=>JSON.stringify(state.programTraining.active.run)),before);
+    await host.getByRole('button',{name:'✓ Zatwierdź powtórzenia'}).click();
+    assert.equal(await page.evaluate(()=>state.programTraining.active.run.records[0].actual),9);
     assert.deepEqual(errors,[]);
    }finally{await context.close();}
   }

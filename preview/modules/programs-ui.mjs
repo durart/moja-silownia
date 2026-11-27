@@ -3,6 +3,7 @@ import {createRestAudio} from './rest-audio.js?v=1';
 const core=window.MojaCircuitCore;
 const history=window.MojaProgramHistory;
 const preparation=window.MojaProgramPreparation;
+const progression=window.MojaCalisthenicsProgression;
 const programs=window.MojaProgramsData;
 const host=document.getElementById('programsContent');
 const defaultState=()=>({version:1,progress:{},active:null});
@@ -147,6 +148,30 @@ function renderOverview(parent,steps,records,position){
   add(row,'strong',done.has(i)?(s.unit==='breaths'?done.get(i).actual+' oddechów':history.resultLabel(s,done.get(i).actual)):(position===-1&&s.phase?'Pominięto':'Cel: '+target(s)));
  }
 }
+function progressionContext(p,v){
+ const now=Date.now(),completed=progress(v,p).completed;
+ return {index:progression.collect(p,completed,core,history,now),fatigue:MuscleFatigueCore.fatigue(state.sessions,state.exercises,now)};
+}
+function recommendation(s,context){
+ return progression.advise(s,context.index,progression.relevantFatigue(s,state.exercises,MuscleFatigueCore,context.fatigue));
+}
+function adviceText(s,a){
+ if(a.alternative)return 'Rozważ '+s.alternative.name+' — '+a.suggested+' powt. Zmień wariant tylko jeśli technika pozostaje komfortowa.';
+ if(a.status==='caution')return a.suggested<s.target?'Rozważ krótszą serię: '+target({...s,target:a.suggested})+'. Nie ćwicz przez ból.':'Zachowaj ostrożność; w razie trudności skróć serię lub pomiń bloki bonusowe.';
+ if(a.status==='build')return 'Zacznij od '+target({...s,target:a.suggested})+' i nie wymuszaj realizacji wyższego celu.';
+ if(a.status==='ready')return 'Dwa poprzednie porównywalne treningi osiągnęły obecny cel. Zachowaj plan; zwiększaj trudność dopiero zgodnie z harmonogramem i przy dobrej technice.';
+ if(a.status==='maintain')return 'Kontynuuj cel programu, jeśli technika i samopoczucie na to pozwalają.';
+ return 'Brak porównywalnych wyników. Zacznij od celu programu w komfortowym zakresie.';
+}
+function renderAdvice(parent,s,a){
+ const box=add(parent,'div',null,'program-advice');
+ add(box,'strong','Asystent progresji kalistenicznej');
+ if(a.last)add(box,'p','Ostatni porównywalny dzień: '+a.last.day+' · najniższy wynik '+target({...s,target:a.last.minimum})+' · '+a.last.count+' serii.');
+ if(a.fatigue?.value>=65)add(box,'p','Wysokie szacowane obciążenie: '+a.fatigue.muscle+' '+a.fatigue.value+'/100. To model, nie pomiar regeneracji.','program-warning');
+ add(box,'p',adviceText(s,a));
+ if(s.type==='duration'&&a.suggested<s.target)add(box,'p','Timer zachowuje cel planu. Możesz zakończyć wcześniej lub zapisać faktyczny czas ręcznie.','muted');
+ return box;
+}
 function renderRun(v){
  const a=v.active,p=programFor(a.programId),day=dayFor(p,a.day,a.scheduleRevision??1),r=a.run,s=r.steps[r.position];
  add(host,'h2','Dzień '+day.day+' — '+day.title);
@@ -162,6 +187,8 @@ function renderRun(v){
   add(card,'h2',s.name+(s.side?' — '+s.side+' strona':''));
   add(card,'p','Cel: '+target(s));
   if(s.note)add(card,'p',s.note,'muted');
+  const advice=day.kind==='training'&&!s.phase?recommendation(s,progressionContext(p,v)):null;
+  const adviceBox=advice?renderAdvice(card,s,advice):null;
   if(!s.id)add(card,'p','Ćwiczenie bez powiązanej grafiki w katalogu.','muted');else picture(card,s);
   if(s.type==='duration'){
    const out=add(card,'output',fmt(core.remaining(r,Date.now())),'program-clock');out.id='programClock';out.setAttribute('aria-label','Pozostały czas ćwiczenia');
@@ -173,8 +200,16 @@ function renderRun(v){
   if(r.status==='ready'){
    const label=add(card,'label',s.type==='duration'?'Wykonano (s)':s.unit==='breaths'?'Wykonano oddechów':'Wykonano '+(s.perSide?'na stronę':'powtórzeń'));
    const input=add(label,'input');input.type='number';input.inputMode='numeric';input.min='1';input.max='3600';input.step='1';input.value=String(s.target);
-   let selectedAlternative=false;
-   if(s.alternative){const optionLabel=add(card,'label','Wariant ćwiczenia');const select=add(optionLabel,'select');const standard=add(select,'option',s.name);standard.value='standard';const easier=add(select,'option',s.alternative.name);easier.value='alternative';select.addEventListener('change',()=>{selectedAlternative=select.value==='alternative';input.value=String(selectedAlternative?s.alternative.target:s.target);});button(card,'Technika wariantu',()=>openTechnique(s.alternative.id));}
+   let selectedAlternative=false,variantSelect=null;
+   if(s.alternative){const optionLabel=add(card,'label','Wariant ćwiczenia');const select=add(optionLabel,'select');variantSelect=select;const standard=add(select,'option',s.name);standard.value='standard';const easier=add(select,'option',s.alternative.name);easier.value='alternative';select.addEventListener('change',()=>{selectedAlternative=select.value==='alternative';input.value=String(selectedAlternative?s.alternative.target:s.target);});button(card,'Technika wariantu',()=>openTechnique(s.alternative.id));}
+   if(adviceBox&&advice&&(advice.alternative||advice.suggested<s.target)){
+    button(adviceBox,advice.alternative?'Wybierz zalecany wariant':'Ustaw zalecaną wartość',()=>{
+     if(advice.alternative&&variantSelect){variantSelect.value='alternative';selectedAlternative=true;}
+     else if(variantSelect){variantSelect.value='standard';selectedAlternative=false;}
+     input.value=String(advice.suggested);
+     note('Ustawiono zalecenie. Zatwierdź dopiero rzeczywiście wykonany wynik.');
+    });
+   }
    button(card,s.type==='duration'?'Zapisz czas ręcznie':s.unit==='breaths'?'✓ Zatwierdź oddechy':'✓ Zatwierdź powtórzenia',()=>{const n=Number(input.value);if(!validInt(n,1,3600)){note('Podaj prawidłową liczbę.');return;}audio.unlock();transition({type:s.type==='duration'?'manual':'reps',actual:n,...(selectedAlternative?{alternative:true}:{})});},s.type==='reps'?'program-primary':'secondary');
   }
  }
@@ -209,6 +244,16 @@ function renderList(v){
     for(const m of b.moves)add(details,'p',m.name+' — '+target(m)+(m.note?' · '+m.note:'')+(m.unresolved?' · wymaga wyjaśnienia':''));
    }
    if(day.kind==='training'){
+    const context=progressionContext(p,v),moves=core.build(day.blocks,selectedCount,p.blockRest).filter(s=>s.kind==='exercise');
+    const unique=new Map();
+    for(const s of moves){const k=progression.key(s);if(!unique.has(k))unique.set(k,s);}
+    const adviceList=[...unique.values()].map(s=>[s,recommendation(s,context)]).filter(([,a])=>a);
+    const details=add(card,'details',null,'program-advice');details.open=true;
+    add(details,'summary','Asystent progresji kalistenicznej');
+    add(details,'p','Cel programu pozostaje niezmieniony. Zalecenia bazują na porównywalnych ukończonych dniach i szacowanym obciążeniu mięśni.');
+    const caution=adviceList.some(([,a])=>a.status==='caution');
+    if(caution){add(details,'p','Rozważ samą główną misję, jeśli czujesz zmęczenie lub masz trudność z wykonaniem ćwiczeń.','program-warning');if(selectedCount>1)button(details,'Wybierz tylko główną misję',()=>{selectedCount=1;render();});}
+    for(const [s,a] of adviceList){const row=add(details,'p');add(row,'strong',s.name+(s.side?' · '+s.side:''));add(row,'span',' — '+adviceText(s,a));}
     const warm=add(card,'label','Rozgrzewka (opcjonalna)');const choice=add(warm,'select');
     for(const [id,title] of [['none','Bez rozgrzewki'],['express','Ekspresowa — ok. 2 min'],['standard','Standardowa — ok. 5 min']]){const opt=add(choice,'option',title);opt.value=id;}
     choice.value=selectedWarmup;choice.addEventListener('change',()=>{selectedWarmup=choice.value;render();});
