@@ -26,6 +26,11 @@ const fixture={exercises:[{id:'seed-13',name:'Pompki',group:'Klatka piersiowa',e
  await page.goto('http://127.0.0.1:'+server.address().port+'/');await verify();
  assert.ok(await page.evaluate(key=>localStorage.getItem(key+'-before-exercise-identity-v1'),key));
  await page.reload();await verify();
+ await page.evaluate(()=>openTechnique('cali-02'));
+ await page.locator('#techOverlay').waitFor();
+ await page.locator('#techContent .r6-tech-art').evaluate(img=>img.decode());
+ assert.ok(await page.locator('#techContent .tech-steps li').count()>0);
+ await page.evaluate(()=>closeTechnique());
  await page.evaluate(async fixture=>{const input=document.createElement('input');const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(fixture)],'backup.json',{type:'application/json'}));input.files=transfer.files;await importData({target:input});},fixture);
  await verify();assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

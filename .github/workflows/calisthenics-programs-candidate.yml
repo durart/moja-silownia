@@ -29,3 +29,4 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node tests/calisthenics-programs-browser.cjs
       - run: TEST_RELEASE_ROOT=1 node tests/calisthenics-programs-browser.cjs
+      - run: node tests/storage-recovery-browser.cjs
