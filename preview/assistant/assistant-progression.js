@@ -17,7 +17,7 @@ const EQUIPMENT_LABELS = Object.freeze({
   'Sztanga': 'barbell', 'Hantle': 'dumbbell',
   'Maszyna': 'machine_stack', 'Wyciąg': 'machine_stack'
 });
-const numeric = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+const numeric = value => (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) && Number.isFinite(Number(value));
 const isWarmup = row => row?.setType === 'R' || row?.type === 'warmup' || row?.type === 'R';
 const flagNeedsReview = flag => ['pain', 'equipment', 'technique'].includes(flag);
 const sessionMode = typeof MojaSessionMode !== 'undefined'
@@ -53,7 +53,7 @@ function calculateNextWeight(weight, equipmentType, equipmentStepKg) {
 function workingSets(session, exerciseId) {
   return (Array.isArray(session?.sets) ? session.sets : [])
     .filter(row => row && String(row.exerciseId) === String(exerciseId) && !isWarmup(row)
-      && numeric(row.weight) && Number(row.weight) >= 0
+      && row.reliable !== false && row.unreliable !== true && numeric(row.weight) && Number(row.weight) >= 0
       && numeric(row.reps) && Number.isInteger(Number(row.reps)) && Number(row.reps) > 0)
     .map(row => ({
       weight: Number(row.weight),
@@ -135,6 +135,8 @@ function suggest(sessions, exerciseId, options = {}) {
     const expected = Number(options.expectedWorkingSets);
     if (!Number.isSafeInteger(expected) || expected < 1 || latest.rows.length !== expected)
       return result('maintain', 'Brak kompletu zaplanowanych serii roboczych.');
+    if (latest.rows.some(row => row.reps > high))
+      return result('maintain', 'Historia wykracza poza docelowy zakres powtórzeń.');
     if (latest.rows.some(row => row.weight !== weight))
       return result('maintain', 'Piramida ciężaru wymaga osobnej oceny serii.');
     const recent = history.slice(0, 3);
