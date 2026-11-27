@@ -45,12 +45,14 @@
     });
     return trends.summarize(entries);
   }
-  function suggest(input={}) {
+  function evaluate(input={}) {
     const samples=collect(input);
     if(!samples) return null;
     const {targets,equipmentType,equipmentStepKg}=input;
     const trend=trends?.classify(samples);
-    return prescription.prescribe({samples:samples.map(s=>s.rows),targets,equipmentType,equipmentStepKg,caution:!trend||trend.confidence==='low'||trend.status==='declining'||trend.status==='observe'});
+    const recommendations=prescription.prescribe({samples:samples.map(s=>s.rows),targets,equipmentType,equipmentStepKg,caution:!trend||trend.confidence==='low'||trend.status==='declining'||trend.status==='observe'});
+    return recommendations?{recommendations,observations:samples.length,trend}:null;
   }
-  return Object.freeze({suggest,assessPlan});
+  function suggest(input={}) { return evaluate(input)?.recommendations ?? null; }
+  return Object.freeze({suggest,evaluate,assessPlan});
 });
