@@ -61,7 +61,7 @@
     return (sleep !== null && sleep < 6) || (battery !== null && battery < 30) ||
       (score !== null && score < 50) || /^(bad|poor|low|slabo|słabo|zle|źle|tired|1|2)$/i.test(String(pre?.feeling ?? ''));
   }
-  function prepare({sessions, exercise, target = null, sessionMode = 'standard', preWorkout, activeFlag, planId, slotIndex, plan} = {}) {
+  function prepare({sessions, exercise, target = null, sessionMode = 'standard', preWorkout, activeFlag, planId, slotIndex, plan, adaptiveRecovery = false} = {}) {
     if (!exercise?.id) return { rows: [], reason: 'missing_exercise' };
     if (timedCore?.measurementType(exercise)==='duration') return timed.prepare({sessions,exercise,target,sessionMode,activeFlag,planId,slotIndex,cautionToday:readinessCaution(preWorkout)});
     const history = historyFor(sessions, exercise.id, {planId, slotIndex});
@@ -113,7 +113,7 @@
       else if (isRecovery && kg !== null && kg > 0) {
         const normal = weight(standardRows[i]?.weight);
         // Do not invent equipment-compatible weights when no recovery reference exists.
-        if (!recovery.length && !isWarmup && equipmentType!=='unknown' && normal!==null && normal>0) {
+        if (adaptiveRecovery === true && !recovery.length && !isWarmup && equipmentType!=='unknown' && normal!==null && normal>0) {
           const config=progression.EQUIPMENT_CONFIG[progression.resolveEquipmentType(equipmentType,normal)];
           const step=number(exercise.equipmentStepKg)??config?.step;
           kg=recoveryEngine?.prescribe({rows:[{setType:'W',weight:normal,reps:integer(standardRows[i]?.reps)}],step})?.[0]?.weight??null;
@@ -151,7 +151,7 @@
       }
     });
     // Only remove a trailing working-set suffix; never shift original plan indices.
-    if(isRecovery && !recentFlag && !flags.has(activeFlag) && !bodyweight && !hasTimedTarget && equipmentType!=='unknown' && standardRows.length && rows.every(r=>r.weight!==null)){
+    if(adaptiveRecovery === true && isRecovery && !recentFlag && !flags.has(activeFlag) && !bodyweight && !hasTimedTarget && equipmentType!=='unknown' && standardRows.length && rows.every(r=>r.weight!==null)){
       const working=rows.filter(r=>r.setType==='W').length;
       let remove=working-Math.ceil(working*0.75);
       while(remove>0&&rows.at(-1)?.setType==='W'){rows.pop();remove--;}
