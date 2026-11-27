@@ -125,3 +125,16 @@ test('manually appended and captured rows survive mode transitions',()=>{
  for(const mode of ['recovery','standard']){state.activeSessionMode=mode;drafts.refreshMode(state,'bench',0,input.target);assert.equal(drafts.get(state,'bench',0).rows.length,4);assert.equal(drafts.row(state,'bench',0,3).weight,60);assert.equal(drafts.row(state,'bench',0,1).rir,0);}
  assert.equal(JSON.stringify(sessions),before);
 });
+
+test('legacy version-one workout draft survives candidate normalization and mode change',()=>{
+ const drafts=require('../assistant/trainer-drafts.js');
+ const state={startedAt:'legacy-start',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise],sessions,trainerSettings:{weights:true,reps:true,sets:true,explanation:false}};
+ drafts.initialize(state);drafts.ensure(state,'bench',0,input.target);
+ drafts.change(state,'bench',0,1,'weight',67.5);
+ const legacy=JSON.parse(JSON.stringify(state));
+ for(const entry of Object.values(legacy.trainerWorkout.entries)){delete entry.adaptiveResized;delete entry.manualSetCount;for(const row of entry.rows)delete row.explanation;}
+ const before=JSON.stringify({sessions:legacy.sessions,settings:legacy.trainerSettings});
+ assert.equal(legacy.trainerWorkout.version,1);assert.equal(drafts.ensure(legacy,'bench',0,input.target).changed,false);
+ legacy.activeSessionMode='recovery';drafts.refreshMode(legacy,'bench',0,input.target);
+ assert.equal(drafts.row(legacy,'bench',0,1).weight,67.5);assert.equal(JSON.stringify({sessions:legacy.sessions,settings:legacy.trainerSettings}),before);
+});
