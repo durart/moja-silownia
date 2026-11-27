@@ -33,7 +33,8 @@ test('source checkpoints and unresolved labels are preserved',()=>{
  assert.equal(p.days[54].blocks[0].rounds,5);
  assert.equal(p.days[40].blocks[1].rest,40);
  assert.equal(p.days[2].blocks[1].moves[0].target,900);
- assert.equal(p.days.flatMap(d=>d.blocks.flatMap(b=>b.moves.filter(m=>m.unresolved))).length,5);
+ assert.equal(p.days.flatMap(d=>d.blocks.flatMap(b=>b.moves.filter(m=>m.unresolved||!m.id))).length,0);
+ assert.equal(p.legacyDays.flatMap(d=>d.blocks.flatMap(b=>b.moves.filter(m=>m.unresolved))).length,5);
 });
 test('round and block rest placement; bilateral timed steps are separate',()=>{
  const steps=core.build([{rounds:2,rest:60,moves:[e('reps',10),e('duration',25)]},{rounds:1,rest:45,moves:[e('duration',20,{perSide:true})]}],2);
@@ -76,7 +77,7 @@ test('corrupt saved run rejected; ready timer does not run on its own',()=>{
 });
 test('preview assets and cache use same version and production remains distinct',()=>{
  const html=fs.readFileSync('preview/index.html','utf8'),sw=fs.readFileSync('preview/sw.js','utf8'),prod=fs.readFileSync('index.html','utf8');
- for(const name of ['modules/circuit-core.js?v=1','modules/programs-data.js?v=1','modules/programs-ui.mjs?v=2','styles/programs.css?v=2','modules/program-history.js?v=1']){
+ for(const name of ['modules/circuit-core.js?v=2','modules/programs-data.js?v=2','modules/programs-ui.mjs?v=3','styles/programs.css?v=2','modules/program-history.js?v=2']){
   assert.ok(html.includes(name));assert.ok(sw.includes(name));assert.ok(!prod.includes(name));
  }
  assert.match(sw,/moja-silownia-preview-shell/);assert.match(html,/moja-silownia-preview-v01/);
@@ -116,4 +117,64 @@ test('summary counts bilateral repetitions and keeps exercise variants distingui
  s.sets.push({...s.sets[0],name:'Wariant z pauzą'});
  const result=sandbox.SportSummaryCore.build(s,{estimateCalories:()=>{throw Error('Historical weight unknown');}});
  assert.equal(result.reps,36);assert.equal(result.exerciseCount,3);assert.equal(result.timedSeconds,45);assert.equal(result.activeKcal,null);
+});
+
+test('revision 2 retains structure and targets of every legacy day',()=>{
+ assert.equal(p.scheduleRevision,2);
+ for(const [i,d] of p.days.entries()){
+  const old=p.legacyDays[i];assert.equal(d.kind,old.kind);
+  for(const [j,b] of d.blocks.entries()){
+   const prev=old.blocks[j];assert.equal(b.rounds,prev.rounds);assert.equal(b.rest,prev.rest);
+   assert.deepEqual(b.moves.map(m=>[m.target,m.type,m.perSide]),prev.moves.map(m=>[m.target,m.type,m.perSide]));
+   assert.ok(b.moves.every(m=>ids.has(m.id)&&!m.unresolved));
+   for(const m of b.moves)if(m.alternative)assert.ok(ids.has(m.alternative.id));
+  }
+ }
+ assert.equal(history.definitionFor(p,3,undefined),p.legacyDays[2]);
+ assert.equal(history.definitionFor(p,3,2),p.days[2]);assert.equal(history.definitionFor(p,3,99),undefined);
+});
+test('all approved assets and catalog identities are registered and cached',()=>{
+ const list=catalogSandbox.window.CALISTHENICS_LIBRARY;assert.equal(list.length,52);
+ assert.equal(new Set(list.map(e=>e.id)).size,52);
+ const crypto=require('node:crypto'),sw=fs.readFileSync('preview/sw.js','utf8');
+ const expected='c70f76b9ec05fc6db91339854c6f16f3f2535339 d6042726fd2e7b4fca41f58aef01d0f39e2a6270 afb7c0bedc68c0943713f1cca5a02ea8ff41e41b 4e5f8c40c6818dd8a05d93e4a8352ab23db88f51 4f15a7e8ee9d85294e693aeffb8da6d8fc2fd599 d7f2e929ef95476532f8225d0e2fc669a9dd3bc0 9724ce59d5de31d48907ff06f6f4f4233b2352ce f56726f6d6077f3a7a54c2324daa35fcc5c55c1f e05415e0dadf1125738a5caf6df7ecaae1399ef5 1e78b6278d3684c110d647aaa938b88d21098136 123b1732c052aa1c14faf61ef5f0d2ff026a6bc5 e2afcdc33c47661ef67ed13ca698a74c76daad72'.split(' ');
+ const timed=require('../preview/modules/timed-exercise-core.js');
+ const fatigue=require('../preview/muscle-fatigue-core.js');
+ for(const [i,sha] of expected.entries()){
+  const id='cali-'+(41+i),path='assets/graphics-r6/'+id+'.webp',bytes=fs.readFileSync('preview/'+path),ex=list.find(x=>x.id===id);
+  assert.equal(crypto.createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),sha);
+  assert.ok(sw.includes(path));assert.ok(ex.steps.length>=3&&ex.easier&&ex.harder);
+  assert.equal(timed.measurementType(ex),[42,49,51,52].includes(41+i)?'duration':'reps');
+  assert.ok(Object.hasOwn(fatigue.SPECIFIC,id));
+ }
+});
+test('alternative is recorded only where permitted and mapped to actual exercise in history',()=>{
+ const m=p.days[0].blocks[0].moves[1];assert.equal(m.alternative.id,'cali-28');
+ let r=core.create(single([m]),1000);
+ r=core.act(r,{type:'reps',actual:8,alternative:true},2000);
+ assert.equal(r.records[0].alternative,true);assert.equal(core.valid(r),true);
+ assert.equal(core.actualStep(r.steps[0],r.records[0]).id,'cali-28');
+ const definition={title:'Test',kind:'training',blocks:[{rounds:1,rest:60,moves:[m]}]};
+ const s=history.createSession(p,definition,{day:1,blockCount:1,records:r.records,finishedAt:2000,startedAt:1000},core,1);
+ assert.equal(s.sets[0].exerciseId,'cali-28');assert.equal(s.sets[0].reps,8);assert.equal(s.sets[0].programSet.alternative,true);
+ const clean=core.create(single([e('reps',10)]),0);
+ assert.equal(core.act(clean,{type:'reps',actual:8,alternative:true},100),clean);
+});
+test('legacy active steps remain identical and historical records retain original ids',()=>{
+ const old=p.legacyDays[2],fresh=p.days[2];
+ const steps=core.build(old.blocks,1,p.blockRest),run=core.create(steps,1000);
+ assert.equal(core.valid(JSON.parse(JSON.stringify(run))),true);
+ assert.equal(steps.find(m=>m.name==='Koci grzbiet–krowa').id,null);
+ assert.equal(core.build(fresh.blocks,1,p.blockRest).find(m=>m.name==='Koci grzbiet–krowa').id,'cali-41');
+ const d={day:3,blockCount:1,finishedAt:2000,records:steps.map((s,i)=>({s,i})).filter(x=>x.s.kind==='exercise').map(x=>({position:x.i,actual:x.s.target,completedAt:2000}))};
+ const session=history.createSession(p,history.definitionFor(p,3),d,core,3);
+ assert.ok(session.sets.some(s=>s.exerciseId.startsWith('program-only-')));
+ assert.equal(session.sets.some(s=>s.exerciseId==='cali-41'),false);
+});
+test('pause metadata is preserved without replacing base identity',()=>{
+ const m=p.days[35].blocks[0].moves[0];
+ assert.equal(m.id,'cali-12');assert.equal(m.pauseSeconds,2);assert.equal(m.pausePosition,'bottom');
+ const d={day:36,blockCount:1,records:[{position:0,actual:10,completedAt:2000}],finishedAt:2000};
+ const s=history.createSession(p,p.days[35],d,core,1);
+ assert.equal(s.sets[0].programSet.pauseSeconds,2);assert.equal(s.sets[0].exerciseId,'cali-12');
 });

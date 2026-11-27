@@ -40,7 +40,7 @@ const root=path.resolve(__dirname,'..');
      await host.locator('input').fill(String(n));
      await host.getByRole('button',{name:'✓ Zatwierdź powtórzenia'}).click();
     }
-    await reps(9);await reps(10);await reps(12);await reps(8);
+    await reps(9);await host.getByLabel('Wariant ćwiczenia').selectOption('alternative');await reps(10);await reps(12);await reps(8);
     assert.equal(await page.evaluate(()=>state.programTraining.active.run.records[0].actual),9);
     await host.getByRole('button',{name:'START',exact:true}).click();
     await host.getByRole('button',{name:'Pauza',exact:true}).click();
@@ -58,7 +58,8 @@ const root=path.resolve(__dirname,'..');
     await host.getByRole('button',{name:'Zapisz czas ręcznie'}).click();
     await page.locator('#summaryContent .sp2-title').waitFor();
     assert.match(await page.locator('#summaryContent .sp2-title').innerText(),/Dzień 1/);
-    assert.equal(await page.locator('#summaryContent .sp2-exercise').count(),5);
+    assert.equal(await page.locator('#summaryContent .sp2-exercise').count(),6);
+    assert.equal(await page.evaluate(()=>state.sessions[0].sets[1].exerciseId),'cali-28');
     assert.equal(await page.evaluate(()=>state.programTraining.progress['military-calisthenics-56'].completed[0].records.length),15);
     assert.equal(await page.evaluate(()=>state.programTraining.active),null);
     assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),'production-sentinel');
@@ -74,13 +75,18 @@ const root=path.resolve(__dirname,'..');
     await host.getByText('Dzień 2 — Górna część ciała',{exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>state.sessions.length),1);
     // Reconstruct alpha.2 data with completed day but no diary session; retain the raw program results.
-    await page.evaluate(()=>{const d=state.programTraining.progress['military-calisthenics-56'].completed[0];delete d.historyId;delete d.startedAt;delete d.bodyWeightKg;state.sessions=[];save();});
+    await page.evaluate(()=>{const d=state.programTraining.progress['military-calisthenics-56'].completed[0];delete d.historyId;delete d.startedAt;delete d.bodyWeightKg;delete d.scheduleRevision;for(const r of d.records)delete r.alternative;state.sessions=[];save();});
     await page.reload();await page.waitForFunction(()=>!!window.MojaPrograms);await show();
     assert.equal(await page.evaluate(()=>state.sessions.length),1);
     assert.equal(await page.evaluate(()=>state.sessions[0].durationSeconds),null);
     assert.equal(await page.evaluate(()=>state.sessions[0].sets.length),15);
     await page.reload();await page.waitForFunction(()=>!!window.MojaPrograms);await show();
     assert.equal(await page.evaluate(()=>state.sessions.length),1);
+    await page.evaluate(()=>{const p=window.MojaProgramsData[0],d=p.legacyDays[1];const run=window.MojaCircuitCore.create(window.MojaCircuitCore.build(d.blocks,1,p.blockRest),Date.now());state.programTraining.active={programId:p.id,day:2,blockCount:1,run};save();});
+    await page.reload();await page.waitForFunction(()=>!!window.MojaPrograms);await show();
+    assert.equal(await page.evaluate(()=>state.programTraining.active.scheduleRevision),undefined);
+    await host.getByRole('button',{name:'✓ Zatwierdź powtórzenia'}).click();
+    assert.equal(await page.evaluate(()=>state.programTraining.active.run.records.length),1);
     assert.deepEqual(errors,[]);
    }finally{await context.close();}
   }
