@@ -11,3 +11,9 @@ test('existing recovery mode is preserved',()=>assert.equal(recommend({assessmen
 test('safety review takes precedence',()=>assert.equal(recommend({assessment,reviewRequired:true}).action,'review'));
 test('malformed broad decline cannot trigger recovery',()=>assert.equal(recommend({assessment:{status:'broad_decline',eligible:2,declining:2}}).action,'none'));
 test('input is not mutated',()=>{const input=Object.freeze({assessment:Object.freeze(assessment)});recommend(input);assert.equal(input.assessment.declining,2);});
+
+const {prescribe}=require('../assistant/adaptive-recovery.js');
+const rows=[{setType:'R',weight:20,reps:10},...Array.from({length:4},()=>({setType:'W',weight:80,reps:10,targetRir:2}))];
+test('recovery retains warmup and reduces working volume and load',()=>{const result=prescribe({rows,step:2.5});assert.equal(result.length,4);assert.deepEqual(result[0],rows[0]);assert.equal(result[1].weight,70);assert.equal(result[1].targetRir,4);assert.equal(rows.length,5);});
+test('unsafe equipment step leaves weight unfilled',()=>assert.equal(prescribe({rows:[{setType:'W',weight:5,reps:8}],step:2.5})[0].weight,null));
+test('unknown step or safety review prevents prescription',()=>{assert.equal(prescribe({rows}),null);assert.equal(prescribe({rows,step:2.5,reviewRequired:true}),null);});
