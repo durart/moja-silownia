@@ -34,7 +34,7 @@
   }
   function validRows(session, id) {
     return (Array.isArray(session?.sets) ? session.sets : []).filter(row =>
-      row?.exerciseId === id && weight(row.weight) !== null && integer(row.reps) !== null);
+      row?.exerciseId === id && row.reliable !== false && row.unreliable !== true && weight(row.weight) !== null && integer(row.reps) !== null);
   }
   function historyFor(sessions, id, context) {
     return (Array.isArray(sessions) ? sessions : [])
@@ -117,7 +117,7 @@
         kg = advice.suggestedWeight;
         if (range) reps = range.min;
         else reps = Math.min(Number(previous.reps), inferred.min);
-      } else if (!caution && !isRecovery && !isWarmup && previous && number(previous.rir) !== null && number(previous.rir) >= (explicitRir ? targetRir + 1 : 2) && advice.action !== 'review' && (range ? Number(previous.reps) < range.max : !target && Number(previous.reps) < 30)) {
+      } else if (!caution && !isRecovery && !isWarmup && previous && Number.isInteger(number(previous.rir)) && number(previous.rir) <= 5 && number(previous.rir) >= (explicitRir ? targetRir + 1 : 2) && advice.action !== 'review' && (range ? Number(previous.reps) < range.max : !target && Number(previous.reps) < 30)) {
         // Progress repetitions from actual performance; never force a missed lower goal.
         reps = Math.min(range?.max ?? 30, Number(previous.reps) + 1);
       }
