@@ -49,3 +49,5 @@ test('adaptive draft preserves manual edits and completed rows across mode chang
 });
 
 test('declining performance holds working sets and preserves warmup',()=>{const history=sessions.map((s,i)=>({...s,sets:s.sets.map(r=>({...r,rir:2+i}))}));const result=prepare({...input,sessions:history});assert.equal(result.rows[0].weight,20);assert.equal(result.rows[1].weight,70);assert.equal(result.rows[2].reps,10);});
+
+test('broad plan decline blocks progression of a stable exercise',()=>{const plan={id:'A',exerciseIds:['bench','b','c'],targets:[input.target,{sets:1},{sets:1}]};const history=sessions.map((s,i)=>({...s,sets:[...s.sets,...['b','c'].map((exerciseId,j)=>({exerciseId,planId:'A',planSlotIndex:j+1,planSetIndex:0,weight:50,reps:8+i*2,rir:2,setType:'W'}))]}));const adapter=require('../assistant/adaptive-adapter.js');assert.equal(adapter.assessPlan({sessions:history,plan}).status,'broad_decline');assert.equal(prepare({...input,sessions:history,plan}).rows[1].weight,70);assert.equal(adapter.assessPlan({sessions:history,plan:{...plan,id:'B'}}).status,'insufficient_data');});
