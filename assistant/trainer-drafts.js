@@ -72,7 +72,7 @@
       }
       return row;
     });
-    const entry={exerciseId:id,reason:prepared.reason,mode:state.activeSessionMode||'standard',rows};
+    const entry={exerciseId:id,reason:prepared.reason,advice:prepared.advice,mode:state.activeSessionMode||'standard',rows};
     state.trainerWorkout.entries[key(id,slot)]=entry;
     return {entry,changed:true};
   }
@@ -134,7 +134,7 @@
       if (!prefs.reps) {if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;}
       return next;
     });
-    entry.mode=state.activeSessionMode;entry.reason=prepared.reason;return true;
+    entry.mode=state.activeSessionMode;entry.reason=prepared.reason;entry.advice=prepared.advice;return true;
   }
   return Object.freeze({active,initialize,clear,get,settings,ensure,removeExercise,row,change,capture,append,removeRow,refreshMode});
 });
