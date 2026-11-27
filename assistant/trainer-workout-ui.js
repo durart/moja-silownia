@@ -18,6 +18,16 @@
     return value?{...value,weight:value.weight??'',...(value.measurementType==='duration'?{}:{reps:value.reps??''})}:null;
   }
   function explanationText(value){return drafts.settings(state).explanation&&!value?.edited?window.MojaAdaptiveExplanation?.label(value?.explanation)||'':'';}
+  function exerciseExplanation(id,slot){
+    if(!drafts.settings(state).explanation)return '';
+    const record=drafts.get(state,id,slot);
+    if(!record)return '';
+    if(flags.has(state.activeExerciseNotes?.[id]?.flag)||['review','timed_review'].includes(record.reason))return 'Sprawdź bezpieczeństwo przed wykonaniem ćwiczenia.';
+    if(record.mode==='recovery')return 'Tryb regeneracyjny — bez automatycznego zwiększania obciążenia.';
+    if(record.reason==='readiness')return 'Ostrożność ze względu na gotowość treningową.';
+    const count=record.rows.filter(r=>!r.edited&&window.MojaAdaptiveExplanation?.normalize(r.explanation)).length;
+    return count?'Zalecenia adaptacyjne dla '+count+' serii. Szczegóły pod seriami.':'';
+  }
   function count(id,slot){return drafts.get(state,id,slot)?.rows.length;}
   function capture(id,slot,index,actual){return drafts.capture(state,id,slot,index,actual);}
   function append(id,slot,previous){return drafts.append(state,id,slot,previous);}
@@ -83,7 +93,8 @@
         if(field)field.value='';
       }
     });
-    if(changed){record.reason='review';card?.querySelectorAll('.adaptive-explanation').forEach(el=>el.remove());save();}
+    if(record.reason!=='review'){record.reason='review';changed=true;}
+    if(changed){card?.querySelectorAll('.adaptive-explanation').forEach(el=>el.remove());const summary=card?.querySelector('.adaptive-exercise-explanation');if(summary)summary.textContent=exerciseExplanation(id,slot);save();}
   }
   function renderSettings(root) {
     if(!root)return;
@@ -112,6 +123,6 @@
       root?.addEventListener('change',onInput);
     }
   }
-  window.MojaTrainerWorkoutUI=Object.freeze({entry,row,explanationText,count,capture,append,removeRow,removeExercise,caution,renderSettings});
+  window.MojaTrainerWorkoutUI=Object.freeze({entry,row,explanationText,exerciseExplanation,count,capture,append,removeRow,removeExercise,caution,renderSettings});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
