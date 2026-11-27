@@ -15,3 +15,5 @@ test('browser globals load without CommonJS',()=>{const vm=require('node:vm');co
 
 test('declining reserve blocks weight increase despite top repetitions',()=>{const sessions=[0,4,8].map((d,i)=>{const s=session(d);s.sets.forEach(r=>r.rir=2+i);return s;});assert.equal(suggest({...input,sessions})[0].weight,70);});
 test('invalid latest evidence cannot be skipped',()=>{const s=session(0);s.sets[0].rir=null;assert.equal(suggest({...input,sessions:[s,...input.sessions]}),null);});
+
+test('latest skipped or substituted slot breaks comparable history',()=>{for(const exerciseId of ['other','replacement']){const latest={...session(0),sets:[{...row(0,70),exerciseId}]};assert.equal(suggest({...input,sessions:[latest,...[1,4,8].map(session)]}),null);}});
