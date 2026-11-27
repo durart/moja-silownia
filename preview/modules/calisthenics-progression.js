@@ -31,7 +31,7 @@
  function relevantFatigue(move,exercises,model,values){
   const ex=exercises.find(e=>e.id===move.id);
   if(!ex||!values||!model)return null;
-  const ranked=model.profile(ex).filter(([m,w])=>m!=='Inne'&&w>=.5&&Number.isFinite(values[m])).map(([muscle])=>({muscle,value:values[m]})).sort((a,b)=>b.value-a.value);
+  const ranked=model.profile(ex).filter(([m,w])=>m!=='Inne'&&w>=.5&&Number.isFinite(values[m])).map(([muscle])=>({muscle,value:values[muscle]})).sort((a,b)=>b.value-a.value);
   return ranked[0]??null;
  }
  function advise(move,index,fatigue=null){
