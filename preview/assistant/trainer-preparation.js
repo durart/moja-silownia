@@ -150,6 +150,12 @@
         rows[t.index] = {...rows[t.index],weight:next.weight,reps:next.reps};
       }
     });
+    // Only remove a trailing working-set suffix; never shift original plan indices.
+    if(isRecovery && !recentFlag && !flags.has(activeFlag) && !bodyweight && !hasTimedTarget && equipmentType!=='unknown' && standardRows.length && rows.every(r=>r.weight!==null)){
+      const working=rows.filter(r=>r.setType==='W').length;
+      let remove=working-Math.ceil(working*0.75);
+      while(remove>0&&rows.at(-1)?.setType==='W'){rows.pop();remove--;}
+    }
     return { rows, advice, action: advice.action, reason: recentFlag || flags.has(activeFlag) ? 'review' : isRecovery ? 'recovery' : caution ? 'readiness' : mayIncrease || advice.action === 'consider_decrease' ? 'progression' : reference ? 'history' : 'plan' };
   }
   return Object.freeze({ prepare, repRange, readinessCaution, isTimedExercise:exercise=>timedCore?.measurementType(exercise)==='duration' });
