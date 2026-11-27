@@ -118,3 +118,21 @@ test('cross-plan history uses a single unambiguous slot',()=>{
 test('fractional RIR cannot confirm weight progression',()=>{
  assert.equal(make([row(75,8,2.5),row(75,8,2),row(75,8,2)],{target:{sets:3,reps:'5–8',rir:'2'}}).rows[0].weight,75);
 });
+
+test('explicit unreliable rows cannot confirm progression',()=>{
+ const target={sets:3,reps:'5–8',rir:'2'};
+ for(const flag of [{reliable:false},{unreliable:true}]){
+  const result=make([row(75,8,2),row(75,8,2),{...row(75,8,2),...flag}],{target});
+  assert.equal(result.rows[0].weight,75);
+ }
+});
+test('higher repetition history does not authorize a heavier prescription',()=>{
+ const target={sets:3,reps:'5–8',rir:'2'};
+ assert.equal(make([row(75,12,2),row(75,12,2),row(75,12,2)],{target}).rows[0].weight,75);
+});
+test('boolean and fractional RIR do not authorize progression',()=>{
+ const target={sets:3,reps:'5–8',rir:'0'};
+ for(const rir of [true,false,2.5,' ']){
+  assert.equal(make([row(75,8,rir),row(75,8,rir),row(75,8,rir)],{target}).rows[0].weight,75);
+ }
+});
