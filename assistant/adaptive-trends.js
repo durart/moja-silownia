@@ -1,4 +1,9 @@
 /* Performance signals, not physiological diagnoses. */
+(function(root,factory){
+  const api=factory();
+  if(typeof module==='object'&&module.exports) module.exports=api;
+  else root.MojaAdaptiveTrends=api;
+})(globalThis,function(){
 'use strict';
 function classify(samples) {
   if(!Array.isArray(samples)||samples.length<3||samples.length>6||!samples.every(s=>s&&Number.isSafeInteger(s.reps)&&s.reps>0&&Number.isSafeInteger(s.reserve)&&s.reserve>=0)) return {status:'insufficient_data',confidence:'low'};
@@ -17,4 +22,5 @@ function summarize(entries) {
   const declining=eligible.filter(x=>x.status==='declining').length;
   return {status:eligible.length>=3&&declining>=2&&declining/eligible.length>=0.5?'broad_decline':declining?'local_decline':eligible.length?'no_decline_detected':'insufficient_data',eligible:eligible.length,declining};
 }
-module.exports=Object.freeze({classify,summarize});
+return Object.freeze({classify,summarize});
+});
