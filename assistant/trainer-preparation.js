@@ -78,7 +78,17 @@
     const topReps = topRows.filter(row => Number(row.weight) === topWeight).map(row => Number(row.reps));
     const inferred = topReps.length ? { min: Math.min(...topReps), max: Math.max(...topReps) } : { min: 8, max: 12 };
     const range = overall ?? inferred;
-    const advice = progression.suggest(history, exercise.id, { minReps: range.min, maxReps: range.max, equipmentType, equipmentStepKg: exercise.equipmentStepKg });
+    const plannedRir = number(target?.rir);
+    const explicitRir = plannedRir !== null && Number.isInteger(plannedRir) && plannedRir >= 0 && plannedRir <= 5;
+    const explicitWarmup = detail => detail?.setType === 'R' || detail?.type === 'warmup';
+    const expectedWorkingSets = count - Array.from({length: count}, (_, i) => target?.setDetails?.[i]).filter(explicitWarmup).length;
+    const uniformTargets = Array.from({length: count}, (_, i) => i).filter(i => !explicitWarmup(target?.setDetails?.[i])).every(i => {
+      const rowRange = targetRange(target, i);
+      return rowRange?.min === overall?.min && rowRange?.max === overall?.max &&
+        number(target?.setDetails?.[i]?.rir ?? target?.rir) === plannedRir;
+    });
+    const advice = progression.suggest(history, exercise.id, { minReps: range.min, maxReps: range.max, equipmentType, equipmentStepKg: exercise.equipmentStepKg,
+      ...(explicitRir ? {targetRir: plannedRir, expectedWorkingSets: overall && uniformTargets ? expectedWorkingSets : 0} : {}) });
     const recentFlag = (Array.isArray(sessions) ? sessions : []).filter(s => typeof s?.date === 'string' && Number.isFinite(Date.parse(s.date)) && (s.exerciseNotes?.[exercise.id] || validRows(s,exercise.id).length)).sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,5).some(s => flags.has(s.exerciseNotes?.[exercise.id]?.flag));
     const caution = recentFlag || flags.has(activeFlag) || readinessCaution(preWorkout);
     const hasTimedTarget = /\b(?:s|sek\.?|sekund|min\.?|maks\.?)\s*$/i.test(String(target?.reps ?? ''));
@@ -103,7 +113,7 @@
         kg = advice.suggestedWeight;
         if (range) reps = range.min;
         else reps = Math.min(Number(previous.reps), inferred.min);
-      } else if (!caution && !isRecovery && !isWarmup && previous && number(previous.rir) >= 2 && advice.action !== 'review' && (range ? Number(previous.reps) < range.max : !target && Number(previous.reps) < 30)) {
+      } else if (!caution && !isRecovery && !isWarmup && previous && number(previous.rir) !== null && number(previous.rir) >= (explicitRir ? targetRir + 1 : 2) && advice.action !== 'review' && (range ? Number(previous.reps) < range.max : !target && Number(previous.reps) < 30)) {
         // Progress repetitions from actual performance; never force a missed lower goal.
         reps = Math.min(range?.max ?? 30, Number(previous.reps) + 1);
       }
