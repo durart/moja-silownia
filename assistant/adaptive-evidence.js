@@ -1,7 +1,11 @@
 /* Read-only trend evidence for comparable strength sessions. */
+(function(root, factory) {
+  const common = typeof module === 'object' && module.exports;
+  const api = factory(common ? require('./assistant-progression.js') : root.MojaAdvisorProgression, common ? require('./session-mode.js') : root.MojaSessionMode);
+  if (common) module.exports = api;
+  else root.MojaAdaptiveEvidence = api;
+})(globalThis, function(progression, sessionMode) {
 'use strict';
-const progression = require('./assistant-progression.js');
-const sessionMode = require('./session-mode.js');
 
 function analyze(sessions, exerciseId, { expectedWorkingSets, now = Date.now() } = {}) {
   const empty = { status: 'insufficient_data', observations: 0, samples: [] };
@@ -24,11 +28,13 @@ function analyze(sessions, exerciseId, { expectedWorkingSets, now = Date.now() }
         item.rows.some((row,i) => row.weight <= 0 || row.weight !== reference[i].weight ||
           row.rir === null)) break;
     dates.add(time);
-    samples.push({ date: item.date, reps: item.rows.reduce((sum,row) => sum + row.reps,0),
+    samples.push({ rows: item.rows, date: item.date, reps: item.rows.reduce((sum,row) => sum + row.reps,0),
       reserve: item.rows.reduce((sum,row) => sum + row.rir,0) });
   }
   // Evidence only: no prescription, no recovery decision, no state writes.
   return { status: samples.length >= 3 ? 'comparable' : 'insufficient_data',
     observations: samples.length, samples };
 }
-module.exports = Object.freeze({ analyze });
+return Object.freeze({ analyze });
+
+});
