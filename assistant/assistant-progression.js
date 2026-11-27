@@ -129,6 +129,22 @@ function suggest(sessions, exerciseId, options = {}) {
     return result('maintain', 'Ćwiczenie bez dodatkowego ciężaru. Porównuj powtórzenia i RIR, zamiast dodawać kilogramy.');
   if (allHistory.slice(0, 5).some(({ session }) => flagNeedsReview(session.exerciseNotes?.[exerciseId]?.flag)))
     return result('review', 'W ostatnich treningach oznaczono ból, zmianę sprzętu lub problem z techniką. Sprawdź wykonanie przed zwiększeniem obciążenia.');
+  if (numeric(options.targetRir) && Number.isInteger(Number(options.targetRir))
+      && Number(options.targetRir) >= 0 && Number(options.targetRir) <= 5) {
+    const targetRir = Number(options.targetRir);
+    const expected = Number(options.expectedWorkingSets);
+    if (!Number.isSafeInteger(expected) || expected < 1 || latest.rows.length !== expected)
+      return result('maintain', 'Brak kompletu zaplanowanych serii roboczych.');
+    if (latest.rows.some(row => row.weight !== weight))
+      return result('maintain', 'Piramida ciężaru wymaga osobnej oceny serii.');
+    if (latest.rows.some(row => row.reps < low))
+      return result('review', 'Nie osiągnięto dolnego zakresu powtórzeń.');
+    if (latest.rows.some(row => row.rir === null || !Number.isInteger(row.rir) || row.rir < targetRir))
+      return result('maintain', 'Brak potwierdzenia docelowego RIR we wszystkich seriach.');
+    if (latest.rows.some(row => row.reps < high))
+      return result('maintain', 'Kontynuuj progresję powtórzeń przy obecnym ciężarze.');
+    return increase('DOUBLE_PROGRESSION', 'Wszystkie zaplanowane serie osiągnęły górny zakres przy docelowym RIR.');
+  }
   if (primary.rows.some(row => row.reps < low))
     return result('review', 'Najcięższa seria robocza nie osiągnęła dolnego zakresu powtórzeń. Sprawdź technikę, przerwy i zmęczenie.');
   const recentHigherLoad = history.slice(1, 4).some(item =>
