@@ -8,3 +8,5 @@
 #programsContent .program-week{padding:10px 12px;border:1px solid #385365;border-radius:10px;margin:10px 0}
 #programsContent .program-warning{color:#f3be75}
 #programsContent details p{margin:8px 0}
+
+.program-overview-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:.9rem}.program-overview-row strong{flex-shrink:0;text-align:right}.program-day-detail{margin:8px 0;padding:8px;border-top:1px solid #385365}.program-day-detail summary{cursor:pointer}
