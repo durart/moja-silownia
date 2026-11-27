@@ -20,7 +20,7 @@ test('candidate shells register identical adaptive assets and isolated cache nam
  const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
  for(const prefix of ['', 'preview/']){
   const html=read(prefix+'index.html'),sw=read(prefix+'sw.js');
-  for(const name of ['adaptive-evidence','adaptive-prescription','adaptive-adapter']){
+  for(const name of ['adaptive-evidence','adaptive-prescription','adaptive-trends','adaptive-adapter']){
    const url='./assistant/'+name+'.js?v=1';
    assert.ok(html.includes(url));assert.ok(sw.includes(url));
    assert.equal(read(prefix+'assistant/'+name+'.js'),read('assistant/'+name+'.js'));
@@ -47,3 +47,5 @@ test('adaptive draft preserves manual edits and completed rows across mode chang
  assert.equal(drafts.row(state,'bench',0,2).reps,9);
  assert.equal(JSON.stringify(sessions),before);
 });
+
+test('declining performance holds working sets and preserves warmup',()=>{const history=sessions.map((s,i)=>({...s,sets:s.sets.map(r=>({...r,rir:2+i}))}));const result=prepare({...input,sessions:history});assert.equal(result.rows[0].weight,20);assert.equal(result.rows[1].weight,70);assert.equal(result.rows[2].reps,10);});
