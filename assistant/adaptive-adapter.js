@@ -7,7 +7,7 @@
   if(common) module.exports=api; else root.MojaAdaptiveAdapter=api;
 })(globalThis,function(evidence,prescription,trends){
   'use strict';
-  function suggest({sessions,exerciseId,planId,slotIndex,targets,equipmentType,equipmentStepKg,
+  function collect({sessions,exerciseId,planId,slotIndex,targets,
     caution=false,sessionMode='standard',now=Date.now()}={}){
     if(!evidence||!prescription||planId==null||!Number.isInteger(slotIndex)||slotIndex<0||
       exerciseId==null||!Array.isArray(targets)||caution!==false||sessionMode!=='standard') return null;
@@ -30,8 +30,26 @@
     const boundary=standard.findIndex(s=>s.invalid);
     const result=evidence.analyze(boundary<0?standard:standard.slice(0,boundary),exerciseId,{expectedWorkingSets:targets.length,now});
     if(result.status!=='comparable') return null;
-    const trend=trends?.classify(result.samples);
-    return prescription.prescribe({samples:result.samples.map(s=>s.rows),targets,equipmentType,equipmentStepKg,caution:!trend||trend.confidence==='low'||trend.status==='declining'||trend.status==='observe'});
+    return result.samples;
   }
-  return Object.freeze({suggest});
+  function assessPlan({sessions,plan,now=Date.now()}={}) {
+    if(!Array.isArray(plan?.exerciseIds)||!Array.isArray(plan.targets)||!trends) return {status:'insufficient_data'};
+    const entries=plan.exerciseIds.flatMap((id,slotIndex)=>{
+      const target=plan.targets[slotIndex];
+      const count=Number(target?.sets);
+      if(!Number.isInteger(count)||count<1||count>30) return [];
+      const targets=Array.from({length:count},(_,index)=>({index})).filter(t=>!['R','warmup'].includes(target.setDetails?.[t.index]?.setType)&&target.setDetails?.[t.index]?.type!=='warmup');
+      const samples=collect({sessions,exerciseId:id,planId:plan.id,slotIndex,targets,now});
+      return samples?[{exerciseId:String(id),samples}]:[];
+    });
+    return trends.summarize(entries);
+  }
+  function suggest(input={}) {
+    const samples=collect(input);
+    if(!samples) return null;
+    const {targets,equipmentType,equipmentStepKg}=input;
+    const trend=trends?.classify(samples);
+    return prescription.prescribe({samples:samples.map(s=>s.rows),targets,equipmentType,equipmentStepKg,caution:!trend||trend.confidence==='low'||trend.status==='declining'||trend.status==='observe'});
+  }
+  return Object.freeze({suggest,assessPlan});
 });
