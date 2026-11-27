@@ -16,7 +16,7 @@
         const rows=s.sets.filter(r=>r&&String(r.exerciseId)===String(exerciseId)&&
           r.planId===planId&&r.planSlotIndex===slotIndex&&
           r.setType!=='R'&&r.type!=='warmup'&&r.type!=='R');
-        if(!rows.length) return null;
+        if(!rows.length) return s.sets.some(r=>r?.planId===planId) ? {...s,sets:[],invalid:true} : null;
         const indices=rows.map(r=>r.planSetIndex);
         const expected=targets.map((t,i)=>t?.index ?? i);
         const valid=rows.length===targets.length&&indices.every((n,i)=>Number.isInteger(n)&&n===expected[i])&&
@@ -35,6 +35,7 @@
   function assessPlan({sessions,plan,now=Date.now()}={}) {
     if(!Array.isArray(plan?.exerciseIds)||!Array.isArray(plan.targets)||!trends) return {status:'insufficient_data'};
     const entries=plan.exerciseIds.flatMap((id,slotIndex)=>{
+      if(id==null) return [];
       const target=plan.targets[slotIndex];
       const count=Number(target?.sets);
       if(!Number.isInteger(count)||count<1||count>30) return [];
