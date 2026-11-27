@@ -1,0 +1,8 @@
+# Release 4.0.0 — candidate / not deployed
+Baseline: cf9d48ce10ae487363d421374ed249c58ef47e07 (production code 3.9.0, accepted preview alpha.6).
+## Scope
+64 calisthenics catalog entries (42 new IDs), 56-day program, circuit countdown, round/block rest, history, optional preparation/cooldown and advisory progression. Preserve all prior plans and user data. No Garmin changes.
+## Release gate
+Exact candidate SHA: all PR checks green; browser migration, offline, storage isolation and backup tests; verify changed files; explicit user approval; merge only then. Verify Pages build and deployed asset hashes and version, cache, history and plans after publication.
+## Rollback
+Before publication export production JSON on device; verify file and store privately. Record baseline and candidate SHA. Stop using app if severe failure; export current state if possible (including new program records). Do not clear site data. Prepare a separate revert PR of the release merge, preserve preview and unrelated changes; assign a fresh production cache version (never reuse 3.9.0 cache key), keep production storage key, rerun regression; obtain explicit approval before revert deployment. Verify deployed root and preview assets and data on device. 3.9.0 cannot display or safely continue a 4.0.0 active program: finish or export it before rollback; do not overwrite a newer backup with an older one. Prefer forward fix for data compatibility. No automatic import/restore; only user-approved restoration after backup verification. If reverting code, keep new program data in JSON for later recovery. Test rollback with synthetic data before use.

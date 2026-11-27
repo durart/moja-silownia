@@ -20,12 +20,14 @@
     const sets = group.sets.map((set, index) => {
       const rir = set.rir == null ? '' : ' · RIR ' + number(set.rir);
       const pr = set.records.length ? '<span class="sp2-record">🏆 PR</span>' : '';
-      const result=set.measurementType==='duration'?(set.durationSeconds?number(set.durationSeconds)+' s':'Brak prawidłowego czasu')+(set.weight?' · '+number(set.weight)+' kg dodatkowo':''):number(set.weight)+' kg × '+number(set.reps)+' powt.'+rir;
-      return '<li><span>'+(index+1)+'. '+result+'</span>'+pr+'</li>';
+      const side=set.programSet?.side?' · '+esc(set.programSet.side)+' strona':'';
+      const result=set.measurementType==='duration'?(set.durationSeconds?number(set.durationSeconds)+' s':'Brak prawidłowego czasu')+(set.weight?' · '+number(set.weight)+' kg dodatkowo':''):(set.programSet?number(set.reps)+' powt.'+(set.programSet.perSide?' / stronę':''):number(set.weight)+' kg × '+number(set.reps)+' powt.'+rir);
+      const position=set.programSet?'Blok '+number(set.programSet.block)+' · runda '+number(set.programSet.round):String(index+1)+'.';
+      return '<li><span>'+position+' · '+result+side+'</span>'+pr+'</li>';
     }).join('');
     return '<details class="sp2-exercise"><summary><span class="sp2-exercise-name">' +
       esc(group.name) + '</span><span class="sp2-exercise-count">' +
-      group.count + ' ser. · ' + (group.timedSeconds?number(group.timedSeconds)+' s izometrii':weights) + '</span><span class="sp2-chevron">⌄</span></summary>' +
+      group.count + ' ser. · ' + (group.timedSeconds?number(group.timedSeconds)+(group.program?' s na czas':' s izometrii'):group.program?'masa ciała':weights) + '</span><span class="sp2-chevron">⌄</span></summary>' +
       '<ol class="sp2-sets">' + sets + '</ol></details>';
   }
   function render(session) {
@@ -50,7 +52,7 @@
       metric('CZAS', model.duration) + metric('ĆWICZENIA', model.exerciseCount) +
       metric('SERIE', model.setCount) + '</div>' +
       '<div class="sp2-metrics sp2-metrics-secondary">' +
-      metric('OBJĘTOŚĆ', number(model.volume) + ' kg') + (model.timedSeconds?metric('CZAS IZOMETRII',number(model.timedSeconds)+' s'):'') +
+      (model.program?metric('POWTÓRZENIA',number(model.reps)):metric('OBJĘTOŚĆ', number(model.volume) + ' kg')) + (model.timedSeconds?metric(model.program?'CZAS ĆWICZEŃ':'CZAS IZOMETRII',number(model.timedSeconds)+' s'):'') +
       metric('KCAL AKTYWNE*', model.activeKcal == null ? '—' : number(model.activeKcal) + ' kcal') + (model.cardioSeconds?metric('CZAS KARDIO',root.MojaCardioUI.clock(model.cardioSeconds)):'') + (model.cardioActiveKcal!=null?metric('KCAL KARDIO*',number(model.cardioActiveKcal)+' kcal'):'') +
       '</div>' +
       (model.prCount ? '<div class="sp2-pr"><span class="sp2-pr-ico">🏆</span><span><strong>' +
@@ -66,7 +68,7 @@
         '<p class="sp2-disclaimer">Brak zapisanych serii.</p>') + '</section></div>' +
       '<div class="sp2-actions"><button type="button" class="sp2-main-action" data-sp2="card">📷 Karta PNG</button>' +
       '<button type="button" data-sp2="full">📋 Pełny PNG</button>' +
-      '<button type="button" data-sp2="history">Historia treningów</button></div>' +
+      '<button type="button" data-sp2="history">Historia treningów</button>'+(model.program?'<button type="button" data-sp2="program">Dalej do programu</button>':'')+'</div>' +
       '<p class="sp2-disclaimer">* Kalorie są szacunkiem, nie pomiarem. Mapa pokazuje orientacyjne zaangażowanie mięśni, a nie pomiar EMG. Zapisane serie i historia pozostają bez zmian.</p>' +
       '<p class="sp2-status" role="status" aria-live="polite"></p></article>';
   }
@@ -83,6 +85,7 @@
   }
   async function handleAction(button) {
     const action = button.dataset.sp2;
+    if(action==='program'){tab('plans');showPlansPanel('programs');return;}
     if (action === 'history') {
       tab('history');
       return;

@@ -1,6 +1,6 @@
 # Moja Siłownia — instrukcja użytkownika
 
-Wersja dokumentacji: 1.6 | Aplikacja: 3.7.0 | Aktualizacja: 26.11.2026
+Wersja dokumentacji: 1.7 | Aplikacja: 4.0.0 | Aktualizacja: 27.11.2026
 
 [Aplikacja](https://durart.github.io/moja-silownia/)
 
@@ -132,8 +132,11 @@ Przed treningiem sprawdź obciążenie mięśni, wybierz plan i opcjonalnie wpis
 Zapisuj rzeczywiste wyniki, wiarygodny RIR, sesje regeneracyjne i notatki. Analizuj trendy. Traktuj asystenta jako wsparcie. Regularnie twórz kopie.
 
 ## Zakres weryfikacji
-Instrukcja opisuje wydanie produkcyjne 3.7.0, w tym kardio (3.5.0), zamianę ćwiczeń (3.5.1), uporządkowanie tożsamości ćwiczeń (3.6.0) i grafiki atlasu (3.7.0). Zakres oparto na wydaniach PR #71, #73 i #74 oraz ich testach regresyjnych. Garmin LIVE pozostaje poza potwierdzonym zakresem produkcji.
+Poprzedni zakres instrukcji obejmuje wydanie 3.7.0, w tym kardio (3.5.0), zamianę ćwiczeń (3.5.1), uporządkowanie tożsamości ćwiczeń (3.6.0) i grafiki atlasu (3.7.0). Zakres oparto na wydaniach PR #71, #73 i #74 oraz ich testach regresyjnych. Garmin LIVE pozostaje poza potwierdzonym zakresem produkcji.
 
 ## Instrukcje techniki — aktualizacja 3.3.1
 W katalogu wybierz przycisk Technika przy ćwiczeniu. Instrukcje 103 ćwiczeń podstawowych są przypisane do identyfikatorów ćwiczeń, nie do podobieństwa nazw. Wybrane ćwiczenia mają nowe ilustracje poglądowe. Odnośniki zewnętrzne wymagają internetu. Ilustracje nie zastępują korekty techniki przez trenera.
 
+
+## 21. Programy treningowe — 4.0.0
+Plany → Programy treningowe → Kalistenika — 56 dni. Wybierz główną misję, bloki bonusowe (15/30/45 min orientacyjnie), opcjonalną rozgrzewkę i schładzanie. Zatwierdzaj rzeczywiste powtórzenia; dla ćwiczeń czasowych naciśnij START. Przerwa uruchamia się po rundzie/bloku. Możesz wstrzymać i wznowić odliczanie. Dni odpoczynku nie tworzą sesji roboczych. Ukończone dni są w Historii i szczegółach programu. Asystent sugeruje trudność; nie zastępuje planu ani oceny samopoczucia. Rozgrzewka i schładzanie nie wchodzą do serii roboczych. Pozycja nr 6 schładzania nie jest dostępna w źródle. Dane testowe nie są automatycznie kopiowane do produkcji.

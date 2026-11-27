@@ -1,5 +1,6 @@
 /* Program UI: uses the same atomic state save and backup as the training diary. */
 import {createRestAudio} from './rest-audio.js?v=1';
+import {canonicalExerciseId} from './exercise-identity.mjs';
 const core=window.MojaCircuitCore;
 const history=window.MojaProgramHistory;
 const preparation=window.MojaProgramPreparation;
@@ -44,6 +45,8 @@ function validate(v){
  return true;
 }
 function enrich(session,day){
+ // Keep program steps stable; use the existing canonical history identity where available.
+ session.sets=session.sets.map(set=>{const id=canonicalExerciseId(set.exerciseId);return id!==set.exerciseId&&state.exercises.some(e=>e.id===id)?{...set,originalExerciseId:set.exerciseId,exerciseId:id}:set;});
  if(Number.isFinite(day.bodyWeightKg)&&day.bodyWeightKg>0)session.bodyWeightKg=day.bodyWeightKg;
  if(session.durationSeconds!=null&&session.bodyWeightKg!=null)session.calories=estimateCalories(day.auxiliary?{...session,durationSeconds:Math.floor((day.auxiliary.mainFinishedAt-day.auxiliary.mainStartedAt)/1000)}:session);
  session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);
@@ -126,7 +129,7 @@ function fmt(seconds){return String(Math.floor(seconds/60)).padStart(2,'0')+':'+
 function target(m){if(m.unit==='breaths')return m.target+' oddechów';return m.type==='duration'?m.target+' s'+(m.perSide?' / stronę':''):m.target+' powt.'+(m.perSide?' / stronę':'');}
 function picture(parent,m){
  if(!m.id)return;
- const e=state.exercises.find(x=>x.id===m.id);
+ const e=state.exercises.find(x=>x.id===m.id)||(window.CALISTHENICS_LIBRARY||[]).find(x=>x.id===m.id);
  if(!e)return;
  // Reuse trusted catalog art; no external image sources or imported HTML.
  const img=add(parent,'img',null,'program-exercise-art');
@@ -153,7 +156,7 @@ function progressionContext(p,v){
  return {index:progression.collect(p,completed,core,history,now),fatigue:MuscleFatigueCore.fatigue(state.sessions,state.exercises,now)};
 }
 function recommendation(s,context){
- return progression.advise(s,context.index,progression.relevantFatigue(s,state.exercises,MuscleFatigueCore,context.fatigue));
+ return progression.advise(s,context.index,progression.relevantFatigue({...s,id:canonicalExerciseId(s.id)},state.exercises,MuscleFatigueCore,context.fatigue));
 }
 function adviceText(s,a){
  if(a.alternative)return 'Rozważ '+s.alternative.name+' — '+a.suggested+' powt. Zmień wariant tylko jeśli technika pozostaje komfortowa.';
