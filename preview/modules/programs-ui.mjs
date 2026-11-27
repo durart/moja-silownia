@@ -2,6 +2,7 @@
 import {createRestAudio} from './rest-audio.js?v=1';
 const core=window.MojaCircuitCore;
 const history=window.MojaProgramHistory;
+const preparation=window.MojaProgramPreparation;
 const programs=window.MojaProgramsData;
 const host=document.getElementById('programsContent');
 const defaultState=()=>({version:1,progress:{},active:null});
@@ -9,7 +10,7 @@ const getState=()=>state.programTraining??defaultState();
 const programFor=id=>programs.find(p=>p.id===id);
 const dayFor=(p,day,revision=p?.scheduleRevision??1)=>history.definitionFor(p,day,revision);
 const validInt=(n,min,max)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
-let selectedProgram=programs[0].id,selectedCount=1,failed=false,errorMessage='';
+let selectedProgram=programs[0].id,selectedCount=1,selectedWarmup='none',selectedCooldown=false,failed=false,errorMessage='';
 const audio=createRestAudio({getRestUntil:()=>getState().active?.run?.status==='rest'?getState().active.run.deadline:null,note,document,window,fetch});
 function validate(v){
  if(v==null)return true;
@@ -21,11 +22,12 @@ function validate(v){
    if(d?.day!==i+1||!validInt(d.finishedAt,0,Number.MAX_SAFE_INTEGER)||!validInt(d.blockCount,0,3)||!Array.isArray(d.records)||d.records.length>2000)throw Error('Nieprawidłowy dzień programu');
    const expected=dayFor(def,d.day,d.scheduleRevision??1);
    if(!expected)throw Error('Nieznana wersja dnia programu');
-   if(expected.kind==='rest'){if(d.blockCount!==0||d.records.length)throw Error('Nieprawidłowy odpoczynek');continue;}
+   if(expected.kind==='rest'){if(d.blockCount!==0||d.records.length||d.auxiliary!=null)throw Error('Nieprawidłowy odpoczynek');continue;}
    if(d.blockCount===0)throw Error('Brak bloku');
    if(d.historyId!=null&&!validInt(d.historyId,0,Number.MAX_SAFE_INTEGER))throw Error('Nieprawidłowy identyfikator historii');
    if(d.startedAt!=null&&(!validInt(d.startedAt,0,d.finishedAt)))throw Error('Nieprawidłowy początek dnia');
    const steps=core.build(expected.blocks,d.blockCount,def.blockRest);
+   if(d.auxiliary!=null){const l=preparation.layout(core,expected.blocks,d.blockCount,def.blockRest,d.auxiliary);if(!preparation.validateAuxiliary(l,d.auxiliary.records,core)||!validInt(d.auxiliary.mainStartedAt,d.startedAt??0,d.finishedAt)||!validInt(d.auxiliary.mainFinishedAt,d.auxiliary.mainStartedAt,d.finishedAt))throw Error('Nieprawidłowy zapis rozgrzewki lub schładzania');}
    const exercises=steps.map((s,i)=>s.kind==='exercise'?i:null).filter(i=>i!==null);
    if(d.records.length!==exercises.length||!d.records.every((r,j)=>r.position===exercises[j]&&validInt(r.actual,1,3600)&&validInt(r.completedAt,0,Number.MAX_SAFE_INTEGER)&&core.validAlternative(steps[r.position],r)))throw Error('Nieprawidłowe wyniki programu');
   }
@@ -33,14 +35,16 @@ function validate(v){
  if(v.active!=null){
   const a=v.active,p=programFor(a.programId),d=dayFor(p,a.day,a.scheduleRevision??1);
   if(!p||!d||d.kind==='rest'||v.progress[p.id]?.nextDay!==a.day||!validInt(a.blockCount,1,d.blocks.length)||!core.valid(a.run))throw Error('Nieprawidłowy aktywny program');
-  const expected=core.build(d.blocks,a.blockCount,p.blockRest);
+  const l=preparation.layout(core,d.blocks,a.blockCount,p.blockRest,a.auxiliary);
+  const expected=l.steps;
+  if(a.auxiliary!=null&&a.run.position>=l.mainOffset&&!validInt(a.mainStartedAt,a.run.startedAt,Number.MAX_SAFE_INTEGER))throw Error('Nieprawidłowy początek misji');
   if(JSON.stringify(expected)!==JSON.stringify(a.run.steps)||expected.some(x=>x.unresolved)||a.run.records.some(x=>!validInt(x.completedAt,0,Number.MAX_SAFE_INTEGER)))throw Error('Nieprawidłowy przebieg programu');
  }
  return true;
 }
 function enrich(session,day){
  if(Number.isFinite(day.bodyWeightKg)&&day.bodyWeightKg>0)session.bodyWeightKg=day.bodyWeightKg;
- if(session.durationSeconds!=null&&session.bodyWeightKg!=null)session.calories=estimateCalories(session);
+ if(session.durationSeconds!=null&&session.bodyWeightKg!=null)session.calories=estimateCalories(day.auxiliary?{...session,durationSeconds:Math.floor((day.auxiliary.mainFinishedAt-day.auxiliary.mainStartedAt)/1000)}:session);
  session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);
  session.fatigueModel=session.sets.some(s=>s.measurementType==='duration')?3:2;
  return session;
@@ -66,17 +70,19 @@ function syncHistory(){
 function active(){return !!state.programTraining?.active;}
 function regularActive(){return !!(state.startedAt||state.activePlan||state.manualStarted||state.active?.length||state.pendingWorkout||window.MojaCardioWorkout?.hasRecords()||window.MojaCardioWorkout?.timer());}
 function progress(v,p){return v.progress[p.id]??{version:p.version,nextDay:1,completed:[]};}
-function startDay(p,day,count){
+function startDay(p,day,count,selection=null){
  if(active()||regularActive()){note('Najpierw zakończ aktywny trening.');return;}
  const v=getState(),pr=progress(v,p);
  if(day.day!==pr.nextDay||day.kind==='rest'||day.blocks.slice(0,count).some(b=>b.moves.some(m=>m.unresolved)))return;
- const run=core.create(core.build(day.blocks,count,p.blockRest),Date.now());
- persist({...v,progress:{...v.progress,[p.id]:pr},active:{programId:p.id,day:day.day,blockCount:count,scheduleRevision:p.scheduleRevision??1,bodyWeightKg:ProfileCore.resolveWorkoutWeight({},ProfileCore.isValidProfile(state.profile)?state.profile:null,state.bodyWeight),run}});
+ const auxiliary=preparation.normalize(selection);
+ const l=preparation.layout(core,day.blocks,count,p.blockRest,auxiliary);
+ const run=core.create(l.steps,Date.now());
+ persist({...v,progress:{...v.progress,[p.id]:pr},active:{programId:p.id,day:day.day,blockCount:count,scheduleRevision:p.scheduleRevision??1,...(auxiliary?{auxiliary,mainStartedAt:l.mainOffset===0?run.startedAt:null}:{}),bodyWeightKg:ProfileCore.resolveWorkoutWeight({},ProfileCore.isValidProfile(state.profile)?state.profile:null,state.bodyWeight),run}});
  render();
 }
-function completeDay(v,p,day,blockCount,records,finishedAt,startedAt,bodyWeightKg,scheduleRevision=p.scheduleRevision??1){
+function completeDay(v,p,day,blockCount,records,finishedAt,startedAt,bodyWeightKg,scheduleRevision=p.scheduleRevision??1,auxiliary=null){
  const pr=progress(v,p);
- return {...v,active:null,progress:{...v.progress,[p.id]:{...pr,nextDay:day+1,completed:[...pr.completed,{day,blockCount,records,finishedAt,scheduleRevision,...(Number.isSafeInteger(startedAt)?{startedAt}:{}),...(Number.isFinite(bodyWeightKg)?{bodyWeightKg}:{})}]}}};
+ return {...v,active:null,progress:{...v.progress,[p.id]:{...pr,nextDay:day+1,completed:[...pr.completed,{day,blockCount,records,finishedAt,scheduleRevision,...(auxiliary?{auxiliary}:{}),...(Number.isSafeInteger(startedAt)?{startedAt}:{}),...(Number.isFinite(bodyWeightKg)?{bodyWeightKg}:{})}]}}};
 }
 function completeRest(p,day){
  if(active()||regularActive())return;
@@ -90,10 +96,15 @@ function transition(event){
  if(!a)return;
  try{
   validate(v);
-  const old=a.run,next=core.act(old,event,Date.now());
+  const old=a.run,now=Date.now(),next=event.type==='skipPhase'?preparation.skipPhase(old,now):core.act(old,event,now);
   if(next===old)return;
   const p=programFor(a.programId);
-  const result=next.status==='done'?completeDay(v,p,a.day,a.blockCount,next.records,next.finishedAt,next.startedAt,a.bodyWeightKg,a.scheduleRevision??1):{...v,active:{...a,run:next}};
+  const definition=dayFor(p,a.day,a.scheduleRevision??1);
+  const l=preparation.layout(core,definition.blocks,a.blockCount,p.blockRest,a.auxiliary);
+  const mainStartedAt=a.auxiliary!=null&&a.mainStartedAt==null&&next.position>=l.mainOffset?now:a.mainStartedAt;
+  const split=preparation.split(l,next.records);
+  const auxiliary=a.auxiliary!=null?{...a.auxiliary,records:split.aux,mainStartedAt,mainFinishedAt:split.main.at(-1)?.completedAt}:null;
+  const result=next.status==='done'?completeDay(v,p,a.day,a.blockCount,split.main,next.finishedAt,next.startedAt,a.bodyWeightKg,a.scheduleRevision??1,auxiliary):{...v,active:{...a,run:next,...(a.auxiliary!=null?{mainStartedAt}:{})}};
   const saved=persist(result,next.status==='done');
   if(!saved){render();return;}
   if(old.status==='rest'&&next.status!=='rest'){if(event.type==='skipRest')audio.stop();else if(!audio.getScheduledUntil())audio.beep();}
@@ -111,7 +122,7 @@ function button(parent,label,action,cls='secondary'){
  const b=add(parent,'button',label,cls);b.type='button';b.addEventListener('click',action);return b;
 }
 function fmt(seconds){return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}
-function target(m){return m.type==='duration'?m.target+' s'+(m.perSide?' / stronę':''):m.target+' powt.'+(m.perSide?' / stronę':'');}
+function target(m){if(m.unit==='breaths')return m.target+' oddechów';return m.type==='duration'?m.target+' s'+(m.perSide?' / stronę':''):m.target+' powt.'+(m.perSide?' / stronę':'');}
 function picture(parent,m){
  if(!m.id)return;
  const e=state.exercises.find(x=>x.id===m.id);
@@ -126,20 +137,20 @@ function renderOverview(parent,steps,records,position){
  const done=new Map(records.map(r=>[r.position,r]));
  const details=add(parent,'details',null,'program-week');details.open=true;
  add(details,'summary','Wszystkie ćwiczenia i wyniki');
- let block=null,round=null;
+ let block=null,round=null,phase=null;
  for(const [i,base] of steps.entries()){
   if(base.kind!=='exercise')continue;
   const s=core.actualStep(base,done.get(i));
-  if(block!==s.block||round!==s.round){block=s.block;round=s.round;add(details,'h4','Blok '+block+' · runda '+round);}
+  if(block!==s.block||round!==s.round||phase!==(s.phase??null)){block=s.block;round=s.round;phase=s.phase??null;add(details,'h4',phase==='warmup'?'Rozgrzewka':phase==='cooldown'?'Schładzanie':'Blok '+block+' · runda '+round);}
   const row=add(details,'p',null,'program-overview-row');
   add(row,'span',(done.has(i)?'✓ ':i===position?'→ ':'○ ')+s.name+(s.side?' · '+s.side:''));
-  add(row,'strong',done.has(i)?history.resultLabel(s,done.get(i).actual):'Cel: '+target(s));
+  add(row,'strong',done.has(i)?(s.unit==='breaths'?done.get(i).actual+' oddechów':history.resultLabel(s,done.get(i).actual)):'Cel: '+target(s));
  }
 }
 function renderRun(v){
  const a=v.active,p=programFor(a.programId),day=dayFor(p,a.day,a.scheduleRevision??1),r=a.run,s=r.steps[r.position];
  add(host,'h2','Dzień '+day.day+' — '+day.title);
- add(host,'p','Blok '+s.block+' / '+a.blockCount+' · runda '+s.round+(s.rounds?' / '+s.rounds:''),'muted');
+ add(host,'p',s.phase==='warmup'?'Rozgrzewka':s.phase==='cooldown'?'Schładzanie':'Blok '+s.block+' / '+a.blockCount+' · runda '+s.round+(s.rounds?' / '+s.rounds:''),'muted');
  const meter=add(host,'progress');meter.max=r.steps.length;meter.value=r.position;meter.setAttribute('aria-label','Postęp treningu');
  const card=add(host,'div',null,'card program-active');
  if(s.kind==='rest'){
@@ -160,13 +171,14 @@ function renderRun(v){
    if(r.status==='paused'||r.status==='running')button(card,'Zakończ wcześniej',()=>transition({type:'finish'}));
   }
   if(r.status==='ready'){
-   const label=add(card,'label',s.type==='duration'?'Wykonano (s)':'Wykonano '+(s.perSide?'na stronę':'powtórzeń'));
+   const label=add(card,'label',s.type==='duration'?'Wykonano (s)':s.unit==='breaths'?'Wykonano oddechów':'Wykonano '+(s.perSide?'na stronę':'powtórzeń'));
    const input=add(label,'input');input.type='number';input.inputMode='numeric';input.min='1';input.max='3600';input.step='1';input.value=String(s.target);
    let selectedAlternative=false;
    if(s.alternative){const optionLabel=add(card,'label','Wariant ćwiczenia');const select=add(optionLabel,'select');const standard=add(select,'option',s.name);standard.value='standard';const easier=add(select,'option',s.alternative.name);easier.value='alternative';select.addEventListener('change',()=>{selectedAlternative=select.value==='alternative';input.value=String(selectedAlternative?s.alternative.target:s.target);});button(card,'Technika wariantu',()=>openTechnique(s.alternative.id));}
-   button(card,s.type==='duration'?'Zapisz czas ręcznie':'✓ Zatwierdź powtórzenia',()=>{const n=Number(input.value);if(!validInt(n,1,3600)){note('Podaj prawidłową liczbę.');return;}audio.unlock();transition({type:s.type==='duration'?'manual':'reps',actual:n,...(selectedAlternative?{alternative:true}:{})});},s.type==='reps'?'program-primary':'secondary');
+   button(card,s.type==='duration'?'Zapisz czas ręcznie':s.unit==='breaths'?'✓ Zatwierdź oddechy':'✓ Zatwierdź powtórzenia',()=>{const n=Number(input.value);if(!validInt(n,1,3600)){note('Podaj prawidłową liczbę.');return;}audio.unlock();transition({type:s.type==='duration'?'manual':'reps',actual:n,...(selectedAlternative?{alternative:true}:{})});},s.type==='reps'?'program-primary':'secondary');
   }
  }
+ if(s.phase)button(card,s.phase==='warmup'?'Pomiń resztę rozgrzewki':'Pomiń resztę schładzania',()=>{if(confirm('Pominąć pozostałe ćwiczenia tego etapu?'))transition({type:'skipPhase'});});
  add(host,'p','Zapisane ćwiczenia: '+r.records.length,'muted');
  renderOverview(host,r.steps,r.records,r.position);
  button(host,'Przerwij dzień bez zaliczenia',()=>{if(confirm('Przerwać bieżący dzień? Zapisane wyniki tego dnia nie zostaną zaliczone.')){audio.stop();persist({...v,active:null});render();}},'danger');
@@ -196,10 +208,18 @@ function renderList(v){
     if(b.rounds>1)add(details,'p','Przerwa po rundzie: '+b.rest+' s','muted');
     for(const m of b.moves)add(details,'p',m.name+' — '+target(m)+(m.note?' · '+m.note:'')+(m.unresolved?' · wymaga wyjaśnienia':''));
    }
+   if(day.kind==='training'){
+    const warm=add(card,'label','Rozgrzewka (opcjonalna)');const choice=add(warm,'select');
+    for(const [id,title] of [['none','Bez rozgrzewki'],['express','Ekspresowa — ok. 2 min'],['standard','Standardowa — ok. 5 min']]){const opt=add(choice,'option',title);opt.value=id;}
+    choice.value=selectedWarmup;choice.addEventListener('change',()=>{selectedWarmup=choice.value;render();});
+    if(selectedWarmup!=='none'){const details=add(card,'details');add(details,'summary','Ćwiczenia rozgrzewkowe');for(const m of preparation.routines[selectedWarmup])add(details,'p',m.name+' — '+target(m));}
+    const cool=add(card,'label');const check=add(cool,'input');check.type='checkbox';check.checked=selectedCooldown;add(cool,'span',' Schładzanie — ok. 5 min');check.addEventListener('change',()=>{selectedCooldown=check.checked;render();});
+    if(selectedCooldown){const details=add(card,'details');add(details,'summary','Ćwiczenia schładzające');for(const m of preparation.routines.cooldown)add(details,'p',m.name+' — '+target(m));add(details,'p','Pozycja nr 6 nie została udokumentowana w dostarczonym materiale.','muted');}
+   }
    const unresolved=day.blocks.slice(0,selectedCount).flatMap(b=>b.moves).filter(m=>m.unresolved);
    if(unresolved.length)add(card,'p','Ten zakres zawiera niejednoznaczne pozycje ze źródła. Wybierz krótszy wariant do czasu ich wyjaśnienia.','program-warning');
    if(regularActive())add(card,'p','Najpierw zakończ zwykły trening.','program-warning');
-   button(card,'Rozpocznij dzień',()=>startDay(p,day,selectedCount),'program-primary').disabled=regularActive()||!!unresolved.length;
+   button(card,'Rozpocznij dzień',()=>startDay(p,day,selectedCount,day.kind==='training'&&(selectedWarmup!=='none'||selectedCooldown)?{version:1,warmup:selectedWarmup,cooldown:selectedCooldown}:null),'program-primary').disabled=regularActive()||!!unresolved.length;
   }
  }else add(host,'h3','Program ukończony!');
  for(const [i,name] of p.weeks.entries()){
@@ -213,7 +233,8 @@ function renderList(v){
    if(completed?.historyId!=null&&state.sessions.some(s=>String(s.id)===String(completed.historyId)))button(entry,'Pokaż podsumowanie treningu',()=>window.openSportSummary?.(completed.historyId));
    if(completed?.blockCount>0){
     add(entry,'p','Zrealizowano '+completed.blockCount+' z '+d.blocks.length+' bloków.');
-    renderOverview(entry,core.build(dayFor(p,d.day,completed.scheduleRevision??1).blocks,completed.blockCount,p.blockRest),completed.records,-1);
+    const l=preparation.layout(core,dayFor(p,d.day,completed.scheduleRevision??1).blocks,completed.blockCount,p.blockRest,completed.auxiliary);
+    renderOverview(entry,l.steps,preparation.review(l,completed.records,completed.auxiliary?.records),-1);
    }
    for(const [bi,b] of d.blocks.entries()){
     const block=add(entry,'details');add(block,'summary',(bi===0?'Główna misja':'Blok bonusowy '+bi)+' · '+b.rounds+' rund');
