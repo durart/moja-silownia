@@ -8,10 +8,11 @@
     ? require('../modules/timed-exercise-core.js') : root.MojaTimedExercise;
   const adaptive = typeof module === 'object' && module.exports
     ? require('./adaptive-adapter.js') : root.MojaAdaptiveAdapter;
-  const api = factory(progression,timed,timedCore,adaptive);
+  const recoveryEngine=typeof module==='object'&&module.exports?require('./adaptive-recovery.js'):root.MojaAdaptiveRecovery;
+  const api = factory(progression,timed,timedCore,adaptive,recoveryEngine);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.MojaTrainerPreparation = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression,timed,timedCore,adaptive) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression,timed,timedCore,adaptive,recoveryEngine) {
   'use strict';
   const MAX_SETS = 30;
   const supportedEquipment = new Set(['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg']);
@@ -112,7 +113,11 @@
       else if (isRecovery && kg !== null && kg > 0) {
         const normal = weight(standardRows[i]?.weight);
         // Do not invent equipment-compatible weights when no recovery reference exists.
-        if (!recovery.length || !previous || (normal !== null && kg > normal)) kg = null;
+        if (!recovery.length && !isWarmup && equipmentType!=='unknown' && normal!==null && normal>0) {
+          const config=progression.EQUIPMENT_CONFIG[progression.resolveEquipmentType(equipmentType,normal)];
+          const step=number(exercise.equipmentStepKg)??config?.step;
+          kg=recoveryEngine?.prescribe({rows:[{setType:'W',weight:normal,reps:integer(standardRows[i]?.reps)}],step})?.[0]?.weight??null;
+        } else if ((!recovery.length && !isWarmup) || !previous || (normal !== null && kg > normal)) kg = null;
       } else if (!caution && !isRecovery && !isWarmup && previous && advice.action === 'consider_decrease' && Number.isFinite(advice.suggestedWeight) && Number(previous.weight) === advice.weight) {
         kg = advice.suggestedWeight;
         if (range) reps = range.min;
