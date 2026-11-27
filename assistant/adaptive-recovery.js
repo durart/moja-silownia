@@ -13,5 +13,19 @@
     if(readinessCaution===true) return {action:'offer_recovery',reason:'readiness',requiresConfirmation:true};
     return {action:'none',reason:'insufficient_recovery_signal'};
   }
-  return Object.freeze({recommend});
+  function prescribe({rows,step,reviewRequired=false}={}){
+    if(reviewRequired||!Array.isArray(rows)||!Number.isFinite(step)||step<=0||step>20) return null;
+    const working=rows.filter(r=>r?.setType==='W');
+    if(!working.length||working.some(r=>!Number.isFinite(r.weight)||r.weight<=0||!Number.isInteger(r.reps)||r.reps<1)) return null;
+    const keep=Math.max(1,Math.ceil(working.length*0.75));
+    let index=0;
+    return rows.flatMap(row=>{
+      if(row.setType!=='W') return [{...row}];
+      if(index++>=keep) return [];
+      const steps=Math.max(1,Math.round(row.weight*0.125/step));
+      const weight=Number((row.weight-steps*step).toFixed(2));
+      return [{...row,weight:weight>0&&weight>=row.weight*0.8?weight:null,targetRir:4}];
+    });
+  }
+  return Object.freeze({recommend,prescribe});
 });
