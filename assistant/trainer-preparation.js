@@ -60,7 +60,7 @@
     return (sleep !== null && sleep < 6) || (battery !== null && battery < 30) ||
       (score !== null && score < 50) || /^(bad|poor|low|slabo|słabo|zle|źle|tired|1|2)$/i.test(String(pre?.feeling ?? ''));
   }
-  function prepare({sessions, exercise, target = null, sessionMode = 'standard', preWorkout, activeFlag, planId, slotIndex} = {}) {
+  function prepare({sessions, exercise, target = null, sessionMode = 'standard', preWorkout, activeFlag, planId, slotIndex, plan} = {}) {
     if (!exercise?.id) return { rows: [], reason: 'missing_exercise' };
     if (timedCore?.measurementType(exercise)==='duration') return timed.prepare({sessions,exercise,target,sessionMode,activeFlag,planId,slotIndex,cautionToday:readinessCaution(preWorkout)});
     const history = historyFor(sessions, exercise.id, {planId, slotIndex});
@@ -93,7 +93,8 @@
     const advice = progression.suggest(history, exercise.id, { minReps: range.min, maxReps: range.max, equipmentType, equipmentStepKg: exercise.equipmentStepKg,
       ...(explicitRir ? {targetRir: plannedRir, expectedWorkingSets: overall && uniformTargets ? expectedWorkingSets : 0} : {}) });
     const recentFlag = (Array.isArray(sessions) ? sessions : []).filter(s => typeof s?.date === 'string' && Number.isFinite(Date.parse(s.date)) && (s.exerciseNotes?.[exercise.id] || validRows(s,exercise.id).length)).sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,5).some(s => flags.has(s.exerciseNotes?.[exercise.id]?.flag));
-    const caution = recentFlag || flags.has(activeFlag) || readinessCaution(preWorkout);
+    const broadDecline = plan?.id === planId && adaptive?.assessPlan({sessions,plan})?.status === 'broad_decline';
+    const caution = recentFlag || flags.has(activeFlag) || readinessCaution(preWorkout) || broadDecline;
     const hasTimedTarget = /\b(?:s|sek\.?|sekund|min\.?|maks\.?)\s*$/i.test(String(target?.reps ?? ''));
     const mayIncrease = !isRecovery && !caution && !hasTimedTarget && advice.action === 'consider_increase' && Number.isFinite(advice.suggestedWeight) && (overall !== null || target?.reps == null || target?.reps === '');
     const rows = Array.from({length: count}, (_, i) => {
