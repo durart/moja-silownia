@@ -23,3 +23,6 @@ Ryzyko rezydualne: heurystyki wymagają obserwacji w rzeczywistych treningach; a
 
 ## Weryfikacja rollbacku
 Dodano test lokalny: zapis nowej serii w RC.1, powrót do kodu 4.0.0 z odrębnym cache, porównanie danych i odczyt offline. Wynik oczekuje na CI.
+
+## Wyniki CI — b09c44eef5485e914408f69721eeb5844e60ebd4
+9/10 workflow PASS; 63/63 testów adaptacyjnych, Playwright progresji i Security hardening PASS. Aktualizacja SW osiągnęła porównanie danych, które wykazało dodanie manualSetIndex: 0 w syntetycznej serii. Import i rollback nieosiągnięte. NO-GO do ponownej regresji.

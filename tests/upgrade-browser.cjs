@@ -30,7 +30,7 @@ const server=http.createServer((req,res)=>{
   state.sessions.push({id:'upgrade-history',date:new Date().toISOString(),sets:[{exerciseId:id,weight:40,reps:10,rir:2,setType:'W'}]});
   state.trainerSettings={weights:true,reps:true,sets:true,explanation:false};
   startManualWorkoutNow();
-  state.active.push({exerciseId:id,weight:40,reps:8,rir:0,setType:'W',at:new Date().toISOString()});
+  state.active.push({exerciseId:id,weight:40,reps:8,rir:0,setType:'W',manualSetIndex:0,at:new Date().toISOString()});
   if(!save())throw Error('Legacy save failed');
   localStorage.setItem('moja-silownia-preview-v01','upgrade-sentinel');
   return JSON.parse(JSON.stringify({startedAt:state.startedAt,active:state.active,sessions:state.sessions,plans:state.plans,trainerSettings:state.trainerSettings}));
@@ -53,7 +53,7 @@ const server=http.createServer((req,res)=>{
  assert.deepEqual(await snapshot(),before);
  console.log('Production 4.0.0 to RC.1 upgrade, backup import, offline and isolation PASS');
  const updated=await page.evaluate(()=>{
-  state.active.push({...state.active[0],weight:42.5,reps:7,rir:0,at:new Date().toISOString()});
+  state.active.push({...state.active[0],weight:42.5,reps:7,rir:0,manualSetIndex:1,at:new Date().toISOString()});
   if(!save())throw Error('Candidate save failed');
   return JSON.parse(JSON.stringify({startedAt:state.startedAt,active:state.active,sessions:state.sessions,plans:state.plans,trainerSettings:state.trainerSettings}));
  });
