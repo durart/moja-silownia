@@ -9,10 +9,11 @@
   const adaptive = typeof module === 'object' && module.exports
     ? require('./adaptive-adapter.js') : root.MojaAdaptiveAdapter;
   const recoveryEngine=typeof module==='object'&&module.exports?require('./adaptive-recovery.js'):root.MojaAdaptiveRecovery;
-  const api = factory(progression,timed,timedCore,adaptive,recoveryEngine);
+  const explanation=typeof module==='object'&&module.exports?require('./adaptive-explanation.js'):root.MojaAdaptiveExplanation;
+  const api = factory(progression,timed,timedCore,adaptive,recoveryEngine,explanation);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.MojaTrainerPreparation = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression,timed,timedCore,adaptive,recoveryEngine) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression,timed,timedCore,adaptive,recoveryEngine,explanation) {
   'use strict';
   const MAX_SETS = 30;
   const supportedEquipment = new Set(['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg']);
@@ -141,13 +142,13 @@
     const candidate = !bodyweight && !hasTimedTarget && !caution && !isRecovery &&
       advice.action !== 'review' && advice.action !== 'consider_decrease' && target &&
       targets.every(t => Number.isInteger(t.min) && Number.isInteger(t.rir))
-      ? adaptive?.suggest({sessions,exerciseId:exercise.id,planId,slotIndex,targets,
+      ? adaptive?.evaluate({sessions,exerciseId:exercise.id,planId,slotIndex,targets,
           equipmentType: equipmentType === 'unknown' ? 'unknown' : progression.resolveEquipmentType(equipmentType,topWeight),
           equipmentStepKg:exercise.equipmentStepKg,sessionMode,caution}) : null;
     if (candidate) targets.forEach((t,i) => {
-      const next = candidate[i];
+      const next = candidate.recommendations[i];
       if (next && rows[t.index].weight !== null) {
-        rows[t.index] = {...rows[t.index],weight:next.weight,reps:next.reps};
+        rows[t.index] = {...rows[t.index],weight:next.weight,reps:next.reps,...(explanation?{explanation:explanation.explain({reason:next.reason,observations:candidate.observations,comparable:true})}:{})};
       }
     });
     // Only remove a trailing working-set suffix; never shift original plan indices.
