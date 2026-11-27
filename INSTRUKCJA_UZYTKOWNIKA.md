@@ -1,6 +1,6 @@
 # Moja Siłownia — instrukcja użytkownika
 
-Wersja dokumentacji: 1.6 | Aplikacja: 3.7.0 | Aktualizacja: 26.11.2026
+Wersja dokumentacji: 1.7 | Aplikacja: 3.9.0 | Aktualizacja: 27.11.2026
 
 [Aplikacja](https://durart.github.io/moja-silownia/)
 
@@ -67,7 +67,7 @@ Zamiana nie zmienia zapisanego planu ani wcześniej wykonanych serii. Aplikacja 
 Licznik mierzy czas sesji, a timer odlicza przerwę (domyślnie 90 s według dotychczasowych ustaleń). Na ekranie aktywnego treningu licznik jest stale widoczny nad przyciskiem zakończenia. +15 s wydłuża aktywną przerwę, a Pomiń pozwala kontynuować wcześniej. Testuj dźwięk sprawdza sygnały zależne od urządzenia.
 
 ## 8. Asystent Progresji
-Analizuje historię, ciężary, powtórzenia, zakres docelowy, RIR i charakter sesji. Przykład: przy zakresie 8–12 wykonanie 60 kg × 12 może uzasadniać propozycję zwiększenia ciężaru, zależnie od pozostałych danych. Trening regeneracyjny nie powinien zastępować standardowego odniesienia. Podpowiedź nie jest obowiązkiem ani oceną techniki.
+Analizuje historię, ciężary, powtórzenia, zakres docelowy, RIR i charakter sesji. Od 3.9.0 podwójna progresja dla jednolitych serii z jawnym zakresem i RIR wymaga osiągnięcia górnej granicy we wszystkich planowanych seriach z docelowym RIR przed zwiększeniem ciężaru. Przykład: 75 kg, 3 × 5–8, RIR 2: 7/6/5 → 8/7/6 → 8/8/7 → 8/8/8, następnie 77,5 kg, jeśli sprzęt pozwala. Brak RIR, niepełne lub niewiarygodne serie ograniczają progresję. Powtarzający się spadek może uzasadnić ostrożne zmniejszenie ciężaru. Historia innego planu jest wykorzystywana przy jednoznacznym dopasowaniu. Niejednorodne piramidy nie otrzymują automatycznej progresji każdej serii. Trening regeneracyjny nie powinien zastępować standardowego odniesienia. Podpowiedź nie jest obowiązkiem ani oceną techniki.
 
 Skrócona rekomendacja pozostaje widoczna; wybierz Pokaż uzasadnienie, aby zobaczyć szczegóły i ustawienia sprzętu.
 
@@ -132,8 +132,11 @@ Przed treningiem sprawdź obciążenie mięśni, wybierz plan i opcjonalnie wpis
 Zapisuj rzeczywiste wyniki, wiarygodny RIR, sesje regeneracyjne i notatki. Analizuj trendy. Traktuj asystenta jako wsparcie. Regularnie twórz kopie.
 
 ## Zakres weryfikacji
-Instrukcja opisuje wydanie produkcyjne 3.7.0, w tym kardio (3.5.0), zamianę ćwiczeń (3.5.1), uporządkowanie tożsamości ćwiczeń (3.6.0) i grafiki atlasu (3.7.0). Zakres oparto na wydaniach PR #71, #73 i #74 oraz ich testach regresyjnych. Garmin LIVE pozostaje poza potwierdzonym zakresem produkcji.
+Instrukcja opisuje wydanie produkcyjne 3.9.0 (PR #80), w tym kardio (3.5.0), zamianę ćwiczeń (3.5.1), uporządkowanie tożsamości ćwiczeń (3.6.0) i grafiki atlasu (3.7.0). Zakres oparto na wydaniach PR #71, #73 i #74 oraz ich testach regresyjnych. Garmin LIVE pozostaje poza potwierdzonym zakresem produkcji.
 
 ## Instrukcje techniki — aktualizacja 3.3.1
 W katalogu wybierz przycisk Technika przy ćwiczeniu. Instrukcje 103 ćwiczeń podstawowych są przypisane do identyfikatorów ćwiczeń, nie do podobieństwa nazw. Wybrane ćwiczenia mają nowe ilustracje poglądowe. Odnośniki zewnętrzne wymagają internetu. Ilustracje nie zastępują korekty techniki przez trenera.
 
+
+## Wydanie 3.9.0 — potwierdzenie
+27.11.2026: commit produkcyjny `7943595cd22afab7dd54d0479881dde2437428da`; GitHub Pages 45977530736 i regresje 45977531499, 45977531471: PASS. Kandydat 3b253cf: 10/10 CI; użytkownik potwierdził 8/8 testów RC1, działanie produkcji i zachowanie danych. Preview-390 zachowany. Cache v56, klucz danych bez zmian. Przerwa z planu (15–600 s) ma pierwszeństwo i blokuje wybór przerwy dla ćwiczenia. Izolacja danych jest logiczna, nie stanowi odrębnej granicy bezpieczeństwa. Nie potwierdzono wszystkich metadanych importu ani propagacji wszystkich oznaczeń niewiarygodności z UI. Dostępność produkcji potwierdził użytkownik, nie niezależny odczyt publicznego URL. Kolejna implementacja nie została rozpoczęta.
