@@ -100,7 +100,7 @@ test('staging remains isolated and production v2 retains profile v1.9', () => {
   assert.match(preview, /profile-ui\.js\?v=310/);
   assert.match(sw, /profile-core\.js\?v=190/);
   assert.match(sw, /profile-ui\.js\?v=310/);
-  assert.match(production, /v3\.8\.0/);
+  assert.match(production, /v3\.9\.0/);
   assert.match(production, /const key='moja-silownia-v01'/);
   assert.match(production, /id="profileContent"/);
   assert.match(production, /profile-core\.js\?v=190/);
@@ -109,7 +109,7 @@ test('staging remains isolated and production v2 retains profile v1.9', () => {
   assert.match(production, /v\.profile=ProfileCore\.normalizeProfile\(v\.profile\)/);
   assert.match(production, /bodyWeightKg:ProfileCore\.resolveWorkoutWeight/);
   assert.match(production, /estimateCalories/);
-  assert.match(read('sw.js'), /moja-silownia-shell-v55-graphics-r6-3\.8\.0/);
+  assert.match(read('sw.js'), /moja-silownia-shell-v56-3\.9\.0-progression/);
   assert.match(read('sw.js'), /profile-core\.js\?v=190/);
   assert.match(read('sw.js'), /profile-ui\.js\?v=310/);
   assert.match(read('sw.js'), /profile\.css\?v=190/);
