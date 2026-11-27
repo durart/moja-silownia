@@ -22,7 +22,8 @@
       const pr = set.records.length ? '<span class="sp2-record">🏆 PR</span>' : '';
       const side=set.programSet?.side?' · '+esc(set.programSet.side)+' strona':'';
       const result=set.measurementType==='duration'?(set.durationSeconds?number(set.durationSeconds)+' s':'Brak prawidłowego czasu')+(set.weight?' · '+number(set.weight)+' kg dodatkowo':''):(set.programSet?number(set.reps)+' powt.'+(set.programSet.perSide?' / stronę':''):number(set.weight)+' kg × '+number(set.reps)+' powt.'+rir);
-      return '<li><span>'+(index+1)+'. '+result+side+'</span>'+pr+'</li>';
+      const position=set.programSet?'Blok '+number(set.programSet.block)+' · runda '+number(set.programSet.round):String(index+1)+'.';
+      return '<li><span>'+position+' · '+result+side+'</span>'+pr+'</li>';
     }).join('');
     return '<details class="sp2-exercise"><summary><span class="sp2-exercise-name">' +
       esc(group.name) + '</span><span class="sp2-exercise-count">' +

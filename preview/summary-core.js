@@ -51,7 +51,7 @@
       if (isPR) records++;
       const id = String(set.exerciseId || 'unknown-' + i);
       const slot = Number.isInteger(set.planSlotIndex) ? set.planSlotIndex : null;
-      const key = JSON.stringify([id, slot]);
+      const key = JSON.stringify([id, slot, set.programSet?String(set.name||''):null]);
       let group = byKey.get(key);
       if (!group) {
         group = {
