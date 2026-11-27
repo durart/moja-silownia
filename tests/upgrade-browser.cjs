@@ -21,6 +21,7 @@ const server=http.createServer((req,res)=>{
  const context=await browser.newContext({serviceWorkers:'allow',acceptDownloads:true});
  let page=await context.newPage();const url='http://127.0.0.1:'+server.address().port+'/';
  await page.goto(url);assert.match(await page.title(),/v4\.0\.0/);
+ await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
  await page.reload();
  await page.waitForFunction(()=>navigator.serviceWorker.controller!==null);
  const before=await page.evaluate(()=>{
