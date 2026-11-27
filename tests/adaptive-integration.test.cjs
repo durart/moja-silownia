@@ -55,3 +55,28 @@ test('broad plan decline blocks progression of a stable exercise',()=>{const pla
 test('recovery trims only trailing working rows and respects safety flags',()=>{const target={sets:5,reps:'8-12',rir:2,setDetails:[{setType:'R'},...Array.from({length:4},()=>({setType:'W'}))]};const history=[{date:new Date(now).toISOString(),sets:[row(0,20,10,'R'),...Array.from({length:4},(_,i)=>row(i+1,80,10))]}];const args={...input,target,sessions:history,sessionMode:'recovery',adaptiveRecovery:true};const result=prepare(args);assert.equal(result.rows.length,4);assert.equal(result.rows[0].weight,20);assert.equal(result.rows[1].weight,70);assert.equal(prepare({...args,activeFlag:'pain'}).rows.length,5);const drafts=require('../assistant/trainer-drafts.js');const state={startedAt:'test',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise],sessions:history,preWorkout:{adaptiveRecovery:true}};drafts.initialize(state);drafts.ensure(state,'bench',0,target);drafts.change(state,'bench',0,4,'weight',77.5);state.activeSessionMode='recovery';drafts.refreshMode(state,'bench',0,target);assert.equal(drafts.row(state,'bench',0,4).weight,77.5);});
 
 test('explanations survive JSON round trip and are removed by manual edits',()=>{const drafts=require('../assistant/trainer-drafts.js');const state={startedAt:'test',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise],sessions};drafts.initialize(state);drafts.ensure(state,'bench',0,input.target);const restored=JSON.parse(JSON.stringify(state));assert.equal(drafts.row(restored,'bench',0,1).explanation.reason,'increase_weight');assert.equal(drafts.row(restored,'bench',0,2).explanation.reason,'increase_reps');drafts.change(restored,'bench',0,1,'weight',67.5);assert.equal(drafts.row(restored,'bench',0,1).explanation,undefined);restored.trainerWorkout.entries['slot:0'].rows[2].explanation={reason:'<script>',observations:3};assert.equal(drafts.row(restored,'bench',0,2).explanation,undefined);});
+
+test('alternating plans keep independent pyramid prescriptions for the same exercise',()=>{
+ const other=sessions.map(s=>({...s,date:new Date(Date.parse(s.date)-86400000).toISOString(),sets:s.sets.map(r=>({...r,planId:'B',weight:r.setType==='R'?20:r.weight+20}))}));
+ const mixed=[...sessions,...other];
+ const before=JSON.stringify(mixed);
+ assert.equal(prepare({...input,sessions:mixed}).rows[1].weight,72.5);
+ assert.equal(prepare({...input,sessions:mixed,planId:'B'}).rows[1].weight,92.5);
+ assert.equal(JSON.stringify(mixed),before);
+});
+test('adaptive strength evidence cannot use a different slot or plan',()=>{
+ const adapter=require('../assistant/adaptive-adapter.js');
+ const args={sessions,exerciseId:'bench',planId:'A',slotIndex:0,targets:[{index:1,min:8,max:12,rir:2},{index:2,min:8,max:12,rir:2}],equipmentType:'barbell',now};
+ assert.ok(adapter.evaluate(args));
+ assert.equal(adapter.evaluate({...args,planId:'B'}),null);
+ assert.equal(adapter.evaluate({...args,slotIndex:1}),null);
+});
+test('calisthenics execution context stays separate from strength evidence',()=>{
+ const calisthenics=require('../modules/calisthenics-progression.js');
+ const move={id:'pushup',type:'reps',target:12};
+ assert.notEqual(calisthenics.key(move),calisthenics.key({...move,type:'duration'}));
+ assert.notEqual(calisthenics.key(move),calisthenics.key({...move,pauseSeconds:2}));
+ const adapter=require('../assistant/adaptive-adapter.js');
+ const history=sessions.map(s=>({...s,sets:s.sets.map(r=>({...r,weight:0}))}));
+ assert.equal(adapter.evaluate({sessions:history,exerciseId:'bench',planId:'A',slotIndex:0,targets:[{index:1,min:8,max:12,rir:2},{index:2,min:8,max:12,rir:2}],equipmentType:'barbell',now}),null);
+});
