@@ -17,8 +17,9 @@ const server=http.createServer((req,res)=>{
  const browser=await chromium.launch();
  try{
  const context=await browser.newContext({serviceWorkers:'allow',acceptDownloads:true});
- const page=await context.newPage(),url='http://127.0.0.1:'+server.address().port+'/';
+ let page=await context.newPage();const url='http://127.0.0.1:'+server.address().port+'/';
  await page.goto(url);assert.match(await page.title(),/v4\.0\.0/);
+ await page.reload();
  await page.waitForFunction(()=>navigator.serviceWorker.controller!==null);
  const before=await page.evaluate(()=>{
   const id=state.exercises[0].id;
@@ -35,7 +36,10 @@ const server=http.createServer((req,res)=>{
  root=candidate;
  await page.evaluate(async()=>{const r=await navigator.serviceWorker.ready;await r.update();});
  await page.waitForFunction(async()=> (await caches.keys()).includes('moja-silownia-shell-v62-4.1.0-rc1'),{},{timeout:60000});
- await page.reload();await page.waitForFunction(()=>document.title.includes('4.1.0-rc.1'),{},{timeout:60000});
+ await page.waitForFunction(async()=>{const r=await navigator.serviceWorker.getRegistration();return !!r?.waiting;},{},{timeout:60000});
+ await page.close();page=await context.newPage();await page.goto(url);
+ await page.waitForFunction(()=>navigator.serviceWorker.controller!==null&&document.title.includes('4.1.0-rc.1'),{},{timeout:60000});
+ await page.waitForFunction(async()=>!(await caches.keys()).some(k=>k.startsWith('moja-silownia-shell-')&&k!=='moja-silownia-shell-v62-4.1.0-rc1'));
  const snapshot=()=>page.evaluate(()=>JSON.parse(JSON.stringify({startedAt:state.startedAt,active:state.active,sessions:state.sessions,plans:state.plans,trainerSettings:state.trainerSettings})));
  assert.deepEqual(await snapshot(),before);
  await context.setOffline(true);await page.reload();assert.deepEqual(await snapshot(),before);
