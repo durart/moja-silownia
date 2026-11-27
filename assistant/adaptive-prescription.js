@@ -1,6 +1,11 @@
 /* Conservative per-set prescription candidate; not connected to workout drafts. */
+(function(root, factory) {
+  const common = typeof module === 'object' && module.exports;
+  const api = factory(common ? require('./assistant-progression.js') : root.MojaAdvisorProgression);
+  if (common) module.exports = api;
+  else root.MojaAdaptivePrescription = api;
+})(globalThis, function(progression) {
 'use strict';
-const progression = require('./assistant-progression.js');
 
 function prescribe({ samples, targets, equipmentType, equipmentStepKg, caution = false } = {}) {
   if (!Array.isArray(samples) || !Array.isArray(targets) || targets.length < 1 ||
@@ -30,4 +35,6 @@ function prescribe({ samples, targets, equipmentType, equipmentStepKg, caution =
     return hold;
   });
 }
-module.exports = Object.freeze({ prescribe });
+return Object.freeze({ prescribe });
+
+});
