@@ -55,6 +55,7 @@ const assert=require('node:assert/strict');
   await card.locator('#r_0_0_w').waitFor({state:'visible'});
   await card.locator('#r_0_0_w').fill('67.5');
   assert.equal(await card.locator('.hevy-set').first().locator('.adaptive-explanation').count(),0);
+  assert.match(await card.locator('.adaptive-exercise-explanation').textContent(),/Zalecenia adaptacyjne dla 1 serii/);
   await page.evaluate(()=>{state.activeSessionMode='recovery';renderPlanWorkout();});
   assert.match(await card.locator('.adaptive-exercise-explanation').textContent(),/Tryb regeneracyjny/);
   assert.equal(await card.locator('#r_0_0_w').inputValue(),'67.5');

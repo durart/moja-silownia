@@ -25,7 +25,7 @@
     if(flags.has(state.activeExerciseNotes?.[id]?.flag)||['review','timed_review'].includes(record.reason))return 'Sprawdź bezpieczeństwo przed wykonaniem ćwiczenia.';
     if(record.mode==='recovery')return 'Tryb regeneracyjny — bez automatycznego zwiększania obciążenia.';
     if(record.reason==='readiness')return 'Ostrożność ze względu na gotowość treningową.';
-    const count=record.rows.filter(r=>!r.edited&&window.MojaAdaptiveExplanation?.normalize(r.explanation)).length;
+    const count=record.rows.filter(r=>r&&!r.edited&&window.MojaAdaptiveExplanation?.normalize(r.explanation)).length;
     return count?'Zalecenia adaptacyjne dla '+count+' serii. Szczegóły pod seriami.':'';
   }
   function count(id,slot){return drafts.get(state,id,slot)?.rows.length;}
@@ -59,7 +59,7 @@
     const identity=inputIdentity(event.target);
     if(!identity)return;
     const {id,slot,index,field}=identity;
-    if(drafts.change(state,id,slot,index,field,event.target.value)){event.target.closest('.hevy-set')?.querySelector('.adaptive-explanation')?.remove();save();}
+    if(drafts.change(state,id,slot,index,field,event.target.value)){event.target.closest('.hevy-set')?.querySelector('.adaptive-explanation')?.remove();const summary=event.target.closest('[data-workout-slot]')?.querySelector('.adaptive-exercise-explanation');if(summary)summary.textContent=exerciseExplanation(id,slot);save();}
   }
   function caution(id,card) {
     if(!drafts.active(state)||!flags.has(state.activeExerciseNotes?.[id]?.flag))return;

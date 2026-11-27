@@ -80,3 +80,10 @@ test('calisthenics execution context stays separate from strength evidence',()=>
  const history=sessions.map(s=>({...s,sets:s.sets.map(r=>({...r,weight:0}))}));
  assert.equal(adapter.evaluate({sessions:history,exerciseId:'bench',planId:'A',slotIndex:0,targets:[{index:1,min:8,max:12,rir:2},{index:2,min:8,max:12,rir:2}],equipmentType:'barbell',now}),null);
 });
+
+test('RIR zero is valid evidence but does not justify increasing weight at failure',()=>{
+ const history=sessions.map(s=>({...s,sets:s.sets.map(r=>({...r,rir:0}))}));
+ const adapter=require('../assistant/adaptive-adapter.js');
+ const result=adapter.evaluate({sessions:history,exerciseId:'bench',planId:'A',slotIndex:0,targets:[{index:1,min:8,max:12,rir:0},{index:2,min:8,max:12,rir:0}],equipmentType:'barbell',now});
+ assert.ok(result);assert.equal(result.recommendations[0].weight,70);assert.equal(result.recommendations[1].reps,10);
+});
