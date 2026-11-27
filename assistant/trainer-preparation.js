@@ -44,6 +44,7 @@
         if (context.planId != null && Number.isInteger(context.slotIndex)) {
           const samePlan = sets.filter(row => row.planId === context.planId);
           if (samePlan.length) sets = samePlan.filter(row => row.planSlotIndex === context.slotIndex);
+          else if (new Set(sets.map(row => JSON.stringify([row.planId ?? null,row.planSlotIndex ?? null]))).size > 1) sets = [];
         }
         if (sets.length && sets.every(row => Number.isInteger(row.planSetIndex)) && new Set(sets.map(row=>row.planSetIndex)).size===sets.length) sets.sort((a,b)=>a.planSetIndex-b.planSetIndex);
         else if (sets.length && sets.every(row => Number.isInteger(row.manualSetIndex)) && new Set(sets.map(row=>row.manualSetIndex)).size===sets.length) sets.sort((a,b)=>a.manualSetIndex-b.manualSetIndex);
@@ -109,6 +110,9 @@
         const normal = weight(standardRows[i]?.weight);
         // Do not invent equipment-compatible weights when no recovery reference exists.
         if (!recovery.length || !previous || (normal !== null && kg > normal)) kg = null;
+      } else if (!caution && !isRecovery && !isWarmup && previous && advice.action === 'consider_decrease' && Number.isFinite(advice.suggestedWeight) && Number(previous.weight) === advice.weight) {
+        kg = advice.suggestedWeight;
+        if (range) reps = range.min;
       } else if (mayIncrease && !isWarmup && previous && Number(previous.weight) === advice.weight) {
         kg = advice.suggestedWeight;
         if (range) reps = range.min;
