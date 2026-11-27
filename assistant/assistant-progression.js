@@ -141,8 +141,19 @@ function suggest(sessions, exerciseId, options = {}) {
       return result('review', 'Nie osiągnięto dolnego zakresu powtórzeń.');
     if (latest.rows.some(row => row.rir === null || !Number.isInteger(row.rir) || row.rir < targetRir))
       return result('maintain', 'Brak potwierdzenia docelowego RIR we wszystkich seriach.');
-    if (latest.rows.some(row => row.reps < high))
+    if (latest.rows.some(row => row.reps < high)) {
+      const comparable = history.slice(0, 3);
+      if (comparable.length === 3 && comparable.every(item =>
+        item.rows.length === expected && item.rows.every(row =>
+          row.weight === weight && Number.isInteger(row.rir) && row.rir >= targetRir))) {
+        const totals = comparable.map(item => item.rows.reduce((sum, row) => sum + row.reps, 0));
+        if (totals[0] < totals[1] && totals[1] < totals[2])
+          return result('maintain', 'Dwa kolejne spadki liczby powtórzeń. Oceń regenerację i rozważ lżejszy trening.', {trend:'declining'});
+        if (totals.every(total => total === totals[0]))
+          return result('maintain', 'Trzy porównywalne treningi bez wzrostu liczby powtórzeń. Sprawdź przerwy i regenerację.', {trend:'stagnation'});
+      }
       return result('maintain', 'Kontynuuj progresję powtórzeń przy obecnym ciężarze.');
+    }
     return increase('DOUBLE_PROGRESSION', 'Wszystkie zaplanowane serie osiągnęły górny zakres przy docelowym RIR.');
   }
   if (primary.rows.some(row => row.reps < low))
