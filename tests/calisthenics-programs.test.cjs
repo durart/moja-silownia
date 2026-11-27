@@ -76,8 +76,44 @@ test('corrupt saved run rejected; ready timer does not run on its own',()=>{
 });
 test('preview assets and cache use same version and production remains distinct',()=>{
  const html=fs.readFileSync('preview/index.html','utf8'),sw=fs.readFileSync('preview/sw.js','utf8'),prod=fs.readFileSync('index.html','utf8');
- for(const name of ['modules/circuit-core.js?v=1','modules/programs-data.js?v=1','modules/programs-ui.mjs?v=1','styles/programs.css?v=1']){
+ for(const name of ['modules/circuit-core.js?v=1','modules/programs-data.js?v=1','modules/programs-ui.mjs?v=2','styles/programs.css?v=2','modules/program-history.js?v=1']){
   assert.ok(html.includes(name));assert.ok(sw.includes(name));assert.ok(!prod.includes(name));
  }
  assert.match(sw,/moja-silownia-preview-shell/);assert.match(html,/moja-silownia-preview-v01/);
+});
+
+const history=require('../preview/modules/program-history.js');
+function sampleProgram(){
+ const p={id:'test',version:1,title:'Kalistenika',blockRest:75,days:[{day:1,kind:'training',title:'Podstawy',blocks:[{rounds:1,rest:60,moves:[e('reps',12,{id:'cali-23',perSide:true}),e('duration',25,{id:'seed-93',perSide:true})]}]},{day:2,kind:'rest',blocks:[]}]};
+ const d={day:1,blockCount:1,finishedAt:1700000090000,startedAt:1700000000000,records:[{position:0,actual:9,completedAt:1700000010000},{position:1,actual:25,completedAt:1700000040000},{position:2,actual:20,completedAt:1700000090000}]};
+ return {p,d,v:{version:1,progress:{test:{version:1,nextDay:3,completed:[d,{day:2,blockCount:0,finishedAt:1700000100000,records:[]}]}},active:null}};
+}
+test('session adapter preserves actual results, seconds, side, rounds, and actual elapsed duration',()=>{
+ const {p,d}=sampleProgram(),s=history.createSession(p,p.days[0],d,core,3);
+ assert.equal(s.durationSeconds,90);assert.equal(s.sets.length,3);assert.equal(s.sets[0].reps,9);
+ assert.equal(s.sets[0].programSet.perSide,true);assert.equal(s.sets[1].programSet.side,'lewa');assert.equal(s.sets[2].programSet.side,'prawa');assert.equal(s.sets[2].durationSeconds,20);
+ assert.ok(!Object.hasOwn(s.sets[1],'reps'));assert.ok(!Object.hasOwn(s.sets[0],'rir'));
+});
+test('migration is immutable, skips rest, handles id collisions, never duplicates on reload',()=>{
+ const {p,v,d}=sampleProgram(),before=JSON.stringify(v),existing={id:d.finishedAt,date:'2026-01-01',sets:[]};
+ const out=history.reconcile(v,[existing],[p],core);
+ assert.equal(JSON.stringify(v),before);assert.equal(out.sessions.length,2);assert.equal(out.added.length,1);assert.equal(out.added[0],d.finishedAt+1);
+ assert.equal(out.sessions[0],existing);assert.equal(out.programTraining.progress.test.completed[0].historyId,out.added[0]);
+ assert.equal(out.programTraining.progress.test.completed[1].historyId,undefined);
+ const again=history.reconcile(out.programTraining,out.sessions,[p],core);
+ assert.equal(again.added.length,0);assert.equal(again.sessions,out.sessions);
+ assert.equal(history.reconcile(out.programTraining,[],[p],core).sessions.length,0);
+});
+test('existing session linked without duplication; missing historical duration stays unknown',()=>{
+ const {p,v,d}=sampleProgram();delete d.startedAt;
+ const s=history.createSession(p,p.days[0],d,core,11);
+ assert.equal(s.durationSeconds,null);assert.equal(s.bodyWeightKg,undefined);
+ const out=history.reconcile(v,[s],[p],core);assert.equal(out.added.length,0);assert.equal(out.sessions.length,1);assert.equal(out.lastId,11);
+});
+test('summary counts bilateral repetitions and keeps exercise variants distinguishable',()=>{
+ const sandbox={};vm.runInNewContext(fs.readFileSync('preview/summary-core.js','utf8'),sandbox);
+ const {p,d}=sampleProgram();const s=history.createSession(p,p.days[0],d,core,3);
+ s.sets.push({...s.sets[0],name:'Wariant z pauzą'});
+ const result=sandbox.SportSummaryCore.build(s,{estimateCalories:()=>{throw Error('Historical weight unknown');}});
+ assert.equal(result.reps,36);assert.equal(result.exerciseCount,3);assert.equal(result.timedSeconds,45);assert.equal(result.activeKcal,null);
 });
