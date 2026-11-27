@@ -2,14 +2,15 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.MojaProgramHistory=api;})(globalThis,function(){
  'use strict';
  function sessionKey(p,d){return p.id+':'+p.version+':'+d.day+':'+d.finishedAt;}
+ function definitionFor(p,day,revision){if(!p)return undefined;const rev=revision??1;if(rev===1)return (p.legacyDays||p.days).find(x=>x.day===day);if(rev===p.scheduleRevision)return p.days.find(x=>x.day===day);return undefined;}
  function createSession(p,definition,d,core,id){
   const steps=core.build(definition.blocks,d.blockCount,p.blockRest);
   const sets=d.records.map(r=>{
-   const s=steps[r.position];
+   const s=core.actualStep(steps[r.position],r);
    if(s?.kind!=='exercise'||s.unresolved)throw Error('Nieprawidłowy wynik programu');
    const exerciseId=s.id||('program-only-'+s.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-'));
    const fields={exerciseId,name:s.name,weight:0,setType:'W',at:new Date(r.completedAt).toISOString(),pr:[],
-     programSet:{block:s.block,round:s.round,number:s.number,side:s.side||null,perSide:!!s.perSide,target:s.target}};
+     programSet:{block:s.block,round:s.round,number:s.number,side:s.side||null,perSide:!!s.perSide,target:s.target,...(s.pauseSeconds?{pauseSeconds:s.pauseSeconds,pausePosition:s.pausePosition}:{}),...(r.alternative?{alternative:true}:{}),...(s.sourceLabel?{sourceLabel:s.sourceLabel}:{})}};
    return s.type==='duration'?{...fields,measurementType:'duration',durationSeconds:r.actual,targetDurationSeconds:s.target}:{...fields,reps:r.actual};
   });
   const durationSeconds=Number.isSafeInteger(d.startedAt)&&d.startedAt<=d.finishedAt?Math.floor((d.finishedAt-d.startedAt)/1000):null;
@@ -24,7 +25,7 @@
    const progress=v.progress[p.id];if(!progress)continue;
    for(const [index,d] of progress.completed.entries()){
     if(d.blockCount===0||d.historyId!=null)continue;
-    const definition=p.days.find(x=>x.day===d.day);
+    const definition=definitionFor(p,d.day,d.scheduleRevision);
     if(!definition||definition.kind==='rest')throw Error('Nieprawidłowy dzień historii');
     const key=sessionKey(p,d),existing=history.find(s=>s.program?.key===key);
     let id=existing?.id;
@@ -48,5 +49,5 @@
  function resultLabel(step,actual){
   return actual==null?'—':actual+(step.type==='duration'?' s':' powt.')+(step.side?' · '+step.side+' strona':step.perSide&&step.type==='reps'?' / stronę':'');
  }
- return Object.freeze({createSession,reconcile,resultLabel});
+ return Object.freeze({createSession,reconcile,resultLabel,definitionFor});
 });

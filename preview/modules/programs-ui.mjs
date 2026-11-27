@@ -7,7 +7,7 @@ const host=document.getElementById('programsContent');
 const defaultState=()=>({version:1,progress:{},active:null});
 const getState=()=>state.programTraining??defaultState();
 const programFor=id=>programs.find(p=>p.id===id);
-const dayFor=(p,day)=>p?.days.find(d=>d.day===day);
+const dayFor=(p,day,revision=p?.scheduleRevision??1)=>history.definitionFor(p,day,revision);
 const validInt=(n,min,max)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
 let selectedProgram=programs[0].id,selectedCount=1,failed=false,errorMessage='';
 const audio=createRestAudio({getRestUntil:()=>getState().active?.run?.status==='rest'?getState().active.run.deadline:null,note,document,window,fetch});
@@ -19,18 +19,19 @@ function validate(v){
   if(!def||p?.version!==def.version||!validInt(p.nextDay,1,def.days.length+1)||!Array.isArray(p.completed)||p.completed.length!==p.nextDay-1)throw Error('Nieprawidłowy postęp programu');
   for(const [i,d] of p.completed.entries()){
    if(d?.day!==i+1||!validInt(d.finishedAt,0,Number.MAX_SAFE_INTEGER)||!validInt(d.blockCount,0,3)||!Array.isArray(d.records)||d.records.length>2000)throw Error('Nieprawidłowy dzień programu');
-   const expected=dayFor(def,d.day);
+   const expected=dayFor(def,d.day,d.scheduleRevision??1);
+   if(!expected)throw Error('Nieznana wersja dnia programu');
    if(expected.kind==='rest'){if(d.blockCount!==0||d.records.length)throw Error('Nieprawidłowy odpoczynek');continue;}
    if(d.blockCount===0)throw Error('Brak bloku');
    if(d.historyId!=null&&!validInt(d.historyId,0,Number.MAX_SAFE_INTEGER))throw Error('Nieprawidłowy identyfikator historii');
    if(d.startedAt!=null&&(!validInt(d.startedAt,0,d.finishedAt)))throw Error('Nieprawidłowy początek dnia');
    const steps=core.build(expected.blocks,d.blockCount,def.blockRest);
    const exercises=steps.map((s,i)=>s.kind==='exercise'?i:null).filter(i=>i!==null);
-   if(d.records.length!==exercises.length||!d.records.every((r,j)=>r.position===exercises[j]&&validInt(r.actual,1,3600)&&validInt(r.completedAt,0,Number.MAX_SAFE_INTEGER)))throw Error('Nieprawidłowe wyniki programu');
+   if(d.records.length!==exercises.length||!d.records.every((r,j)=>r.position===exercises[j]&&validInt(r.actual,1,3600)&&validInt(r.completedAt,0,Number.MAX_SAFE_INTEGER)&&core.validAlternative(steps[r.position],r)))throw Error('Nieprawidłowe wyniki programu');
   }
  }
  if(v.active!=null){
-  const a=v.active,p=programFor(a.programId),d=dayFor(p,a.day);
+  const a=v.active,p=programFor(a.programId),d=dayFor(p,a.day,a.scheduleRevision??1);
   if(!p||!d||d.kind==='rest'||v.progress[p.id]?.nextDay!==a.day||!validInt(a.blockCount,1,d.blocks.length)||!core.valid(a.run))throw Error('Nieprawidłowy aktywny program');
   const expected=core.build(d.blocks,a.blockCount,p.blockRest);
   if(JSON.stringify(expected)!==JSON.stringify(a.run.steps)||expected.some(x=>x.unresolved)||a.run.records.some(x=>!validInt(x.completedAt,0,Number.MAX_SAFE_INTEGER)))throw Error('Nieprawidłowy przebieg programu');
@@ -70,12 +71,12 @@ function startDay(p,day,count){
  const v=getState(),pr=progress(v,p);
  if(day.day!==pr.nextDay||day.kind==='rest'||day.blocks.slice(0,count).some(b=>b.moves.some(m=>m.unresolved)))return;
  const run=core.create(core.build(day.blocks,count,p.blockRest),Date.now());
- persist({...v,progress:{...v.progress,[p.id]:pr},active:{programId:p.id,day:day.day,blockCount:count,bodyWeightKg:ProfileCore.resolveWorkoutWeight({},ProfileCore.isValidProfile(state.profile)?state.profile:null,state.bodyWeight),run}});
+ persist({...v,progress:{...v.progress,[p.id]:pr},active:{programId:p.id,day:day.day,blockCount:count,scheduleRevision:p.scheduleRevision??1,bodyWeightKg:ProfileCore.resolveWorkoutWeight({},ProfileCore.isValidProfile(state.profile)?state.profile:null,state.bodyWeight),run}});
  render();
 }
-function completeDay(v,p,day,blockCount,records,finishedAt,startedAt,bodyWeightKg){
+function completeDay(v,p,day,blockCount,records,finishedAt,startedAt,bodyWeightKg,scheduleRevision=p.scheduleRevision??1){
  const pr=progress(v,p);
- return {...v,active:null,progress:{...v.progress,[p.id]:{...pr,nextDay:day+1,completed:[...pr.completed,{day,blockCount,records,finishedAt,...(Number.isSafeInteger(startedAt)?{startedAt}:{}),...(Number.isFinite(bodyWeightKg)?{bodyWeightKg}:{})}]}}};
+ return {...v,active:null,progress:{...v.progress,[p.id]:{...pr,nextDay:day+1,completed:[...pr.completed,{day,blockCount,records,finishedAt,scheduleRevision,...(Number.isSafeInteger(startedAt)?{startedAt}:{}),...(Number.isFinite(bodyWeightKg)?{bodyWeightKg}:{})}]}}};
 }
 function completeRest(p,day){
  if(active()||regularActive())return;
@@ -92,7 +93,7 @@ function transition(event){
   const old=a.run,next=core.act(old,event,Date.now());
   if(next===old)return;
   const p=programFor(a.programId);
-  const result=next.status==='done'?completeDay(v,p,a.day,a.blockCount,next.records,next.finishedAt,next.startedAt,a.bodyWeightKg):{...v,active:{...a,run:next}};
+  const result=next.status==='done'?completeDay(v,p,a.day,a.blockCount,next.records,next.finishedAt,next.startedAt,a.bodyWeightKg,a.scheduleRevision??1):{...v,active:{...a,run:next}};
   const saved=persist(result,next.status==='done');
   if(!saved){render();return;}
   if(old.status==='rest'&&next.status!=='rest'){if(event.type==='skipRest')audio.stop();else if(!audio.getScheduledUntil())audio.beep();}
@@ -117,25 +118,26 @@ function picture(parent,m){
  if(!e)return;
  // Reuse trusted catalog art; no external image sources or imported HTML.
  const img=add(parent,'img',null,'program-exercise-art');
- img.src='./assets/graphics-r6/'+encodeURIComponent(m.id)+'.webp';img.alt=m.name;img.loading='lazy';
+ const src=window.ExerciseGraphics?.exerciseGraphic(m.id);if(!src){img.remove();return;}img.src=src;img.alt=m.name;img.loading='lazy';
  img.addEventListener('error',()=>img.remove(),{once:true});
  button(parent,'Technika ćwiczenia',()=>openTechnique(m.id));
 }
 function renderOverview(parent,steps,records,position){
- const done=new Map(records.map(r=>[r.position,r.actual]));
+ const done=new Map(records.map(r=>[r.position,r]));
  const details=add(parent,'details',null,'program-week');details.open=true;
  add(details,'summary','Wszystkie ćwiczenia i wyniki');
  let block=null,round=null;
- for(const [i,s] of steps.entries()){
-  if(s.kind!=='exercise')continue;
+ for(const [i,base] of steps.entries()){
+  if(base.kind!=='exercise')continue;
+  const s=core.actualStep(base,done.get(i));
   if(block!==s.block||round!==s.round){block=s.block;round=s.round;add(details,'h4','Blok '+block+' · runda '+round);}
   const row=add(details,'p',null,'program-overview-row');
   add(row,'span',(done.has(i)?'✓ ':i===position?'→ ':'○ ')+s.name+(s.side?' · '+s.side:''));
-  add(row,'strong',done.has(i)?history.resultLabel(s,done.get(i)):'Cel: '+target(s));
+  add(row,'strong',done.has(i)?history.resultLabel(s,done.get(i).actual):'Cel: '+target(s));
  }
 }
 function renderRun(v){
- const a=v.active,p=programFor(a.programId),day=dayFor(p,a.day),r=a.run,s=r.steps[r.position];
+ const a=v.active,p=programFor(a.programId),day=dayFor(p,a.day,a.scheduleRevision??1),r=a.run,s=r.steps[r.position];
  add(host,'h2','Dzień '+day.day+' — '+day.title);
  add(host,'p','Blok '+s.block+' / '+a.blockCount+' · runda '+s.round+(s.rounds?' / '+s.rounds:''),'muted');
  const meter=add(host,'progress');meter.max=r.steps.length;meter.value=r.position;meter.setAttribute('aria-label','Postęp treningu');
@@ -160,7 +162,9 @@ function renderRun(v){
   if(r.status==='ready'){
    const label=add(card,'label',s.type==='duration'?'Wykonano (s)':'Wykonano '+(s.perSide?'na stronę':'powtórzeń'));
    const input=add(label,'input');input.type='number';input.inputMode='numeric';input.min='1';input.max='3600';input.step='1';input.value=String(s.target);
-   button(card,s.type==='duration'?'Zapisz czas ręcznie':'✓ Zatwierdź powtórzenia',()=>{const n=Number(input.value);if(!validInt(n,1,3600)){note('Podaj prawidłową liczbę.');return;}audio.unlock();transition({type:s.type==='duration'?'manual':'reps',actual:n});},s.type==='reps'?'program-primary':'secondary');
+   let selectedAlternative=false;
+   if(s.alternative){const optionLabel=add(card,'label','Wariant ćwiczenia');const select=add(optionLabel,'select');const standard=add(select,'option',s.name);standard.value='standard';const easier=add(select,'option',s.alternative.name);easier.value='alternative';select.addEventListener('change',()=>{selectedAlternative=select.value==='alternative';input.value=String(selectedAlternative?s.alternative.target:s.target);});button(card,'Technika wariantu',()=>openTechnique(s.alternative.id));}
+   button(card,s.type==='duration'?'Zapisz czas ręcznie':'✓ Zatwierdź powtórzenia',()=>{const n=Number(input.value);if(!validInt(n,1,3600)){note('Podaj prawidłową liczbę.');return;}audio.unlock();transition({type:s.type==='duration'?'manual':'reps',actual:n,...(selectedAlternative?{alternative:true}:{})});},s.type==='reps'?'program-primary':'secondary');
   }
  }
  add(host,'p','Zapisane ćwiczenia: '+r.records.length,'muted');
@@ -209,7 +213,7 @@ function renderList(v){
    if(completed?.historyId!=null&&state.sessions.some(s=>String(s.id)===String(completed.historyId)))button(entry,'Pokaż podsumowanie treningu',()=>window.openSportSummary?.(completed.historyId));
    if(completed?.blockCount>0){
     add(entry,'p','Zrealizowano '+completed.blockCount+' z '+d.blocks.length+' bloków.');
-    renderOverview(entry,core.build(d.blocks,completed.blockCount,p.blockRest),completed.records,-1);
+    renderOverview(entry,core.build(dayFor(p,d.day,completed.scheduleRevision??1).blocks,completed.blockCount,p.blockRest),completed.records,-1);
    }
    for(const [bi,b] of d.blocks.entries()){
     const block=add(entry,'details');add(block,'summary',(bi===0?'Główna misja':'Blok bonusowy '+bi)+' · '+b.rounds+' rund');

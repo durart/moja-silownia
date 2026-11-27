@@ -1,4 +1,4 @@
-/* Calisthenics catalog v1: stable IDs, no external image dependencies. */
+/* Stable catalog identifiers; approved anatomical art is separate. */
 window.CALISTHENICS_LIBRARY=[
   {
     "id": "cali-01",
@@ -374,7 +374,6 @@ window.CALISTHENICS_LIBRARY=[
     "errors": "Zginanie łokci; szarpanie.",
     "query": "scapular pull up"
   },
-
   {
     "id": "cali-23",
     "name": "Przysiady wykroczne",
@@ -801,5 +800,284 @@ window.CALISTHENICS_LIBRARY=[
     "query": "step back squat thrust no jump",
     "measurementType": "reps",
     "repetitionUnit": "reps"
+  },
+  {
+    "id": "cali-41",
+    "name": "Koci grzbiet–krowa",
+    "group": "Kalistenika",
+    "groups": [
+      "Plecy",
+      "Brzuch"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "mobility",
+    "level": "Początkujący",
+    "muscles": "Mobilizacja kręgosłupa; mięśnie grzbietu i brzucha",
+    "steps": [
+      "Ustaw dłonie pod barkami, kolana pod biodrami.",
+      "Z wydechem delikatnie zaokrąglij grzbiet.",
+      "Z wdechem wróć przez neutralną pozycję do łagodnego wyprostu; szyję utrzymuj komfortowo."
+    ],
+    "errors": "Wymuszanie zakresu, zadzieranie głowy.",
+    "easier": "Mniejszy zakres, wolniejsze tempo.",
+    "harder": "Dłuższa kontrolowana pauza bez pogłębiania wyprostu.",
+    "query": "cat cow exercise",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-42",
+    "name": "Spacer w spokojnym tempie",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "conditioning",
+    "level": "Początkujący",
+    "muscles": "Mięśnie nóg; lekka aktywność tlenowa",
+    "steps": [
+      "Idź w naturalnym, swobodnym tempie.",
+      "Utrzymuj rozluźnione ramiona i równomierny oddech.",
+      "Dobierz tempo pozwalające swobodnie rozmawiać."
+    ],
+    "errors": "Zbyt wysokie tempo w dniu regeneracji.",
+    "easier": "Krótszy spacer po płaskim terenie.",
+    "harder": "Dłuższy spacer w tym samym spokojnym tempie.",
+    "query": "walking exercise",
+    "measurementType": "duration"
+  },
+  {
+    "id": "cali-43",
+    "name": "Pajacyki klasyczne",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi",
+      "Barki"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "conditioning",
+    "level": "Początkujący",
+    "muscles": "Nogi, łydki, barki",
+    "steps": [
+      "Stań ze stopami razem i rękami przy tułowiu.",
+      "Lekko podskocz, rozstaw nogi i unieś ramiona.",
+      "Miękko wróć do pozycji początkowej."
+    ],
+    "errors": "Twarde lądowanie, wymuszanie zakresu barków.",
+    "easier": "Pajacyki bez podskoku.",
+    "harder": "Nieco szybsze tempo przy zachowaniu techniki.",
+    "query": "jumping jacks",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-44",
+    "name": "Przysiady z wyskokiem",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "legs",
+    "level": "Średni",
+    "muscles": "Czworogłowe ud, pośladki, łydki",
+    "steps": [
+      "Zejdź do kontrolowanego przysiadu.",
+      "Dynamicznie wyprostuj biodra i kolana, wykonując niewielki wyskok.",
+      "Wyląduj miękko na obu stopach, uginając kolana."
+    ],
+    "errors": "Twarde lądowanie, zapadanie kolan do środka.",
+    "easier": "Przysiad bez podskoku lub ze wspięciem na palce.",
+    "harder": "Stopniowo zwiększaj wysokość tylko przy stabilnym lądowaniu.",
+    "query": "bodyweight jump squat",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-45",
+    "name": "Przysiady ze wspięciem na palce",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi",
+      "Łydki"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "legs",
+    "level": "Początkujący",
+    "muscles": "Czworogłowe ud, pośladki, łydki",
+    "steps": [
+      "Zejdź do przysiadu z piętami na podłożu.",
+      "Wyprostuj nogi i unieś pięty.",
+      "Powoli opuść pięty przed kolejnym powtórzeniem."
+    ],
+    "errors": "Odrywanie pięt w przysiadzie, kołysanie się.",
+    "easier": "Podparcie o ścianę; mniejszy zakres.",
+    "harder": "Pauza na górze wspięcia.",
+    "query": "squat to calf raise",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-46",
+    "name": "Pompki diamentowe na kolanach",
+    "group": "Kalistenika",
+    "groups": [
+      "Klatka piersiowa",
+      "Triceps",
+      "Barki"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "push",
+    "level": "Średni",
+    "muscles": "Triceps, klatka piersiowa, przednie barki",
+    "steps": [
+      "Ustaw dłonie blisko siebie pod klatką, kciuki i palce wskazujące blisko siebie.",
+      "Oprzyj kolana na macie, utrzymaj linię od głowy do kolan.",
+      "Zegnij łokcie w kontrolowanym zakresie i wypchnij tułów do góry."
+    ],
+    "errors": "Wypinanie bioder, wymuszanie ustawienia nadgarstków.",
+    "easier": "Pompki na kolanach ze swobodniejszym rozstawem dłoni.",
+    "harder": "Klasyczne pompki diamentowe.",
+    "query": "diamond push up knees",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-47",
+    "name": "Pompki pike z nogami na podwyższeniu",
+    "group": "Kalistenika",
+    "groups": [
+      "Barki",
+      "Triceps"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "push",
+    "level": "Średni",
+    "muscles": "Przednie barki, triceps, stabilizatory tułowia",
+    "steps": [
+      "Oprzyj stopy na stabilnym podwyższeniu, dłonie na podłodze.",
+      "Unieś biodra i zegnij łokcie, kierując głowę między dłonie.",
+      "Wypchnij ciało do góry bez utraty ustawienia bioder."
+    ],
+    "errors": "Niestabilne podwyższenie, opadanie bioder, obciążanie głowy.",
+    "easier": "Pompki pike ze stopami na podłodze.",
+    "harder": "Stopniowo zwiększ zakres, jeśli technika pozostaje stabilna.",
+    "query": "feet elevated pike push up",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-48",
+    "name": "Inchworm z pompką",
+    "group": "Kalistenika",
+    "groups": [
+      "Brzuch",
+      "Barki",
+      "Klatka piersiowa",
+      "Triceps"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "conditioning",
+    "level": "Średni",
+    "muscles": "Brzuch, barki, klatka piersiowa, triceps, tylna taśma",
+    "steps": [
+      "Ze stania wykonaj skłon, w razie potrzeby ugnij kolana.",
+      "Przejdź dłońmi do wysokiej deski i wykonaj pompkę.",
+      "Cofnij dłonie do stóp i wróć do stania."
+    ],
+    "errors": "Zapadanie bioder, wymuszanie zakresu skłonu.",
+    "easier": "Inchworm bez pompki.",
+    "harder": "Pauza w dolnej pozycji pompki.",
+    "query": "inchworm with push up",
+    "measurementType": "reps"
+  },
+  {
+    "id": "cali-49",
+    "name": "Deska boczna z uniesioną nogą",
+    "group": "Kalistenika",
+    "groups": [
+      "Brzuch",
+      "Nogi",
+      "Barki"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "core",
+    "level": "Średni",
+    "muscles": "Mięśnie skośne brzucha, pośladkowy średni, stabilizatory barku",
+    "steps": [
+      "Oprzyj przedramię pod barkiem, wyprostuj nogi i unieś biodra.",
+      "Unieś górną nogę, zachowując stabilną miednicę.",
+      "Utrzymuj pozycję przez zadany czas, następnie zmień stronę."
+    ],
+    "errors": "Opadanie bioder, rotowanie tułowia, unoszenie barku do ucha.",
+    "easier": "Zwykła deska boczna lub podpór na kolanie.",
+    "harder": "Stopniowo wydłuż czas bez utraty techniki.",
+    "query": "side plank leg raise",
+    "measurementType": "duration",
+    "durationMode": "perSide"
+  },
+  {
+    "id": "cali-50",
+    "name": "Wspięcia na palce jednonóż",
+    "group": "Kalistenika",
+    "groups": [
+      "Łydki"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "legs",
+    "level": "Początkujący",
+    "muscles": "Mięśnie łydek",
+    "steps": [
+      "Stań na jednej nodze, drugą unieś nad podłoże.",
+      "Podeprzyj się stabilnie i unieś piętę nogi podporowej.",
+      "Powoli opuść piętę, po serii zmień nogę."
+    ],
+    "errors": "Kołysanie, odbijanie się, uciekanie stopy na bok.",
+    "easier": "Wspięcia obunóż.",
+    "harder": "Pauza 2 s na górze.",
+    "query": "single leg calf raise",
+    "measurementType": "reps",
+    "repetitionUnit": "perSide"
+  },
+  {
+    "id": "cali-51",
+    "name": "Krzesełko przy ścianie jednonóż",
+    "group": "Kalistenika",
+    "groups": [
+      "Nogi"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "legs",
+    "level": "Średni",
+    "muscles": "Czworogłowe ud, pośladki, stabilizatory tułowia",
+    "steps": [
+      "Oprzyj plecy o ścianę i przyjmij stabilny, komfortowy siad.",
+      "Unieś jedną stopę nad podłoże, nie skręcając miednicy.",
+      "Zmień nogę w połowie zadanego czasu."
+    ],
+    "errors": "Zbyt głęboki siad mimo bólu, utrata stabilności.",
+    "easier": "Krzesełko obunóż.",
+    "harder": "Stopniowo wydłuż czas przy zachowaniu stabilności.",
+    "query": "single leg wall sit",
+    "measurementType": "duration",
+    "durationMode": "switchHalfway"
+  },
+  {
+    "id": "cali-52",
+    "name": "Deska z naprzemiennym wyciąganiem ręki",
+    "group": "Kalistenika",
+    "groups": [
+      "Brzuch",
+      "Barki"
+    ],
+    "equipment": "Masa ciała",
+    "kind": "core",
+    "level": "Średni",
+    "muscles": "Brzuch, stabilizatory barku i tułowia",
+    "steps": [
+      "Przyjmij stabilny podpór, stopy rozstaw nieco szerzej.",
+      "Wyciągnij jedną rękę do przodu, nie obracając miednicy.",
+      "Wróć do podporu i zmień rękę, kontynuuj przez zadany czas."
+    ],
+    "errors": "Rotacja bioder, zapadanie lędźwi, utrata równowagi.",
+    "easier": "Klasyczna deska lub podpór na kolanach.",
+    "harder": "Węższy rozstaw stóp, jeśli stabilność pozostaje dobra.",
+    "query": "plank alternating arm reach",
+    "measurementType": "duration"
   }
 ];
