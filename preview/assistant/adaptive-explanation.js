@@ -22,5 +22,17 @@
       observations:evidenceCount,
       confidence:known&&['increase_weight','increase_reps','maintain'].includes(reason)&&evidenceCount>=3?(evidenceCount>=4?'high':'moderate'):'low'});
   }
-  return Object.freeze({explain});
+  function normalize(value){
+    if(!value||!Object.values(reasons).includes(value.reason))return null;
+    const reason=value.reason==='safety_review'?'review':value.reason;
+    return explain({reason,observations:value.observations,comparable:true});
+  }
+  function label(value){
+    const e=normalize(value);
+    if(!e)return '';
+    const labels={increase_weight:'Zwiększenie ciężaru',increase_reps:'Zwiększenie powtórzeń',maintain:'Utrzymanie parametrów',safety_review:'Sprawdź bezpieczeństwo',recovery:'Regeneracja',readiness:'Ostrożność ze względu na gotowość',insufficient_data:'Brak porównywalnych danych'};
+    const confidence={low:'niska',moderate:'umiarkowana',high:'wysoka'};
+    return labels[e.reason]+' · Porównywalne treningi: '+e.observations+' · Wiarygodność: '+confidence[e.confidence];
+  }
+  return Object.freeze({explain,normalize,label});
 });

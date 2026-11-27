@@ -17,6 +17,7 @@
     const value=drafts.row(state,id,slot,index);
     return value?{...value,weight:value.weight??'',...(value.measurementType==='duration'?{}:{reps:value.reps??''})}:null;
   }
+  function explanationText(value){return drafts.settings(state).explanation&&!value?.edited?window.MojaAdaptiveExplanation?.label(value?.explanation)||'':'';}
   function count(id,slot){return drafts.get(state,id,slot)?.rows.length;}
   function capture(id,slot,index,actual){return drafts.capture(state,id,slot,index,actual);}
   function append(id,slot,previous){return drafts.append(state,id,slot,previous);}
@@ -48,7 +49,7 @@
     const identity=inputIdentity(event.target);
     if(!identity)return;
     const {id,slot,index,field}=identity;
-    if(drafts.change(state,id,slot,index,field,event.target.value))save();
+    if(drafts.change(state,id,slot,index,field,event.target.value)){event.target.closest('.hevy-set')?.querySelector('.adaptive-explanation')?.remove();save();}
   }
   function caution(id,card) {
     if(!drafts.active(state)||!flags.has(state.activeExerciseNotes?.[id]?.flag))return;
@@ -75,13 +76,14 @@
     let changed=false;
     record.rows.forEach((value,i)=>{
       if(completed[i]||value?.edited)return;
+      if(value?.explanation){delete value.explanation;changed=true;}
       if(value?.weight!=null&&value.weight!==0){
         value.weight=null;changed=true;
         const field=document.getElementById(Number.isInteger(slot)?'r_'+slot+'_'+i+'_w':'m_'+id+'_'+i+'_w');
         if(field)field.value='';
       }
     });
-    if(changed){record.reason='review';save();}
+    if(changed){record.reason='review';card?.querySelectorAll('.adaptive-explanation').forEach(el=>el.remove());save();}
   }
   function renderSettings(root) {
     if(!root)return;
@@ -110,6 +112,6 @@
       root?.addEventListener('change',onInput);
     }
   }
-  window.MojaTrainerWorkoutUI=Object.freeze({entry,row,count,capture,append,removeRow,removeExercise,caution,renderSettings});
+  window.MojaTrainerWorkoutUI=Object.freeze({entry,row,explanationText,count,capture,append,removeRow,removeExercise,caution,renderSettings});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
