@@ -26,3 +26,6 @@ Dodano test lokalny: zapis nowej serii w RC.1, powrót do kodu 4.0.0 z odrębnym
 
 ## Wyniki CI — b09c44eef5485e914408f69721eeb5844e60ebd4
 9/10 workflow PASS; 63/63 testów adaptacyjnych, Playwright progresji i Security hardening PASS. Aktualizacja SW osiągnęła porównanie danych, które wykazało dodanie manualSetIndex: 0 w syntetycznej serii. Import i rollback nieosiągnięte. NO-GO do ponownej regresji.
+
+## Wyniki CI — 7aaefa892377097eb83640624cc3b72612d5a234
+9/10 workflow PASS, 63/63 testów adaptacyjnych. Workflow 46014045255: aktualizacja 4.0.0 → RC.1, import JSON, offline i izolacja PASS. Rollback: timeout podczas oczekiwania na kontroler i tytuł po ponownym otwarciu strony. Test uzupełniono o oczekiwanie na aktywację cache rollbacku i ponowne przeładowanie. NO-GO do potwierdzenia.

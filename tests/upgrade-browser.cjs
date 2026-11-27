@@ -61,6 +61,9 @@ const server=http.createServer((req,res)=>{
  await page.evaluate(async()=>{const r=await navigator.serviceWorker.ready;await r.update();});
  await page.waitForFunction(async()=>!!(await navigator.serviceWorker.getRegistration())?.waiting,{},{timeout:60000});
  await page.close();page=await context.newPage();await page.goto(url);
+ await page.waitForFunction(async name=>(await caches.keys()).includes(name)&&!(await caches.keys()).includes('moja-silownia-shell-v62-4.1.0-rc1'),rollbackCache,{timeout:60000});
+ await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
+ await page.reload();
  await page.waitForFunction(()=>navigator.serviceWorker.controller!==null&&document.title.includes('4.0.0'),{},{timeout:60000});
  await page.waitForFunction(async name=>(await caches.keys()).includes(name)&&!(await caches.keys()).includes('moja-silownia-shell-v62-4.1.0-rc1'),rollbackCache);
  assert.deepEqual(await snapshot(),updated);
