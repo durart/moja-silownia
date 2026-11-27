@@ -19,3 +19,23 @@ test('the preparation modules load in order and are all cached',()=>{
 });
 
 test('timed preparation is loaded before the trainer and cached',()=>{const html=read('index.html'),sw=read('sw.js');let last=-1;for(const script of ['modules/timed-exercise-core.js?v=3','assistant/timed-preparation.js?v=1','assistant/trainer-preparation.js?v=311']){const pos=html.indexOf(script);assert.ok(pos>last,script);assert.ok(sw.includes(script));last=pos;}});
+
+test('plan-specific rest resolves by slot without mutating global settings',()=>{
+ for(const file of ['index.html','preview/index.html']){
+  const html=read(file);
+  const source=html.slice(html.indexOf('function plannedRest('),html.indexOf('function changeRest('));
+  const state={restSettings:{bench:60},restDefaultSeconds:90};
+  const plan={exerciseIds:['bench','bench','bench','other'],targets:[{rest:'180 s'},{rest:'120'},{rest:'invalid'},{rest:'300'}]};
+  const planSlot=(id,pos)=>({plan,pos,valid:Number.isInteger(pos)});
+  const rest=new Function('state','planSlot','restOptions',source+'return restSeconds')(state,planSlot,[30,60,90,120,150,180]);
+  assert.equal(rest('bench',0),180);
+  assert.equal(rest('bench',1),120);
+  assert.equal(rest('bench',2),60);
+  assert.equal(rest('bench',3),60);
+  assert.equal(rest('bench'),60);
+  assert.deepEqual(state.restSettings,{bench:60});
+  assert.ok(html.includes('Date.now()+restSeconds(id,slotIndex)*1000'));
+  assert.ok(html.includes('},id,pos))return;'));
+  assert.ok(html.includes('safe(target.notes)'));
+ }
+});
