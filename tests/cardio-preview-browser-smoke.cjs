@@ -38,7 +38,7 @@ async function verify(card,id){
    },{storageKey,otherKey});
    await page.goto('http://127.0.0.1:'+server.address().port+(production?'/':'/preview/'));
    await page.waitForFunction(()=>!!window.MojaCardioWorkout&&!!document.getElementById('compactWorkoutDock'));
-   assert.match(await page.title(),production?/v4\.0\.0 — Programy treningowe/:/TEST v4\.0\.0 — Katalog ćwiczeń/);
+   assert.match(await page.title(),production?/v4\.1\.0 — Programy treningowe/:/TEST v4\.1\.0 — Katalog ćwiczeń/);
    assert.equal(await page.evaluate(()=>state.plans[0].exerciseIds[0]),'cardio-elliptical');
    await page.evaluate(()=>{tab('catalog');uiCatalogChoose('__cardio__');});
    const rows=page.locator('#catalogList .catalog-exercise-main');

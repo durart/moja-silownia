@@ -2,10 +2,11 @@
 (function(root, factory) {
   const preparation = typeof module === 'object' && module.exports
     ? require('./trainer-preparation.js') : root.MojaTrainerPreparation;
-  const api = factory(preparation);
+  const explanation=typeof module==='object'&&module.exports?require('./adaptive-explanation.js'):root.MojaAdaptiveExplanation;
+  const api = factory(preparation,explanation);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.MojaTrainerDrafts = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function(preparation) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(preparation,explanation) {
   'use strict';
   const VERSION = 1;
   const MAX_ROWS = 100;
@@ -26,7 +27,8 @@
       rir:validNumber(row?.rir,0,5,true) ? row.rir : null,
       targetRir:validNumber(row?.targetRir,0,5,true) ? row.targetRir : null,
       setType:row?.setType === 'R' ? 'R' : 'W',
-      edited:row?.edited === true
+      edited:row?.edited === true,
+      ...(!row?.edited&&explanation?.normalize(row?.explanation)?{explanation:explanation.normalize(row.explanation)}:{})
     };
   }
   function active(state) {
@@ -50,6 +52,12 @@
     const value=state?.trainerSettings;
     return {weights:value?.weights!==false,reps:value?.reps!==false,sets:value?.sets!==false,explanation:value?.explanation!==false};
   }
+  function assessmentPlan(state) {
+    const plan=state.plans?.find(p=>p.id===state.activePlan);
+    if(!Array.isArray(plan?.exerciseIds)) return null;
+    return {...plan,exerciseIds:plan.exerciseIds.map((id,i)=>
+      (state.hiddenWorkoutSlots||[]).includes(i)||(state.workoutSwaps?.[i]&&state.workoutSwaps[i]!==id)?null:id)};
+  }
   function ensure(state,id,slot,target,completed=[]) {
     if (!active(state)) return {entry:null,changed:false};
     const existing=get(state,id,slot);
@@ -57,14 +65,14 @@
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return {entry:null,changed:false};
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
-      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot});
+      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state),adaptiveRecovery:state.preWorkout?.adaptiveRecovery===true});
     const prefs=settings(state);
     const legacyCount=Number.isInteger(Number(target?.sets))&&Number(target.sets)>0?Math.min(MAX_ROWS,Number(target.sets)):Number.isInteger(slot)?3:1;
     const count=Math.min(MAX_ROWS,Math.max(completed.length,existing?.rows.length||0,prefs.sets?prepared.rows.length:legacyCount));
     const rows=Array.from({length:count},(_,i)=>{
       const row=normalizeRow(prepared.rows[i]??(prepared.rows[0]?.measurementType==='duration'?prepared.rows.at(-1):undefined));
-      if (!prefs.weights) row.weight=null;
-      if (!prefs.reps) {if(row.measurementType==='duration')row.durationSeconds=null;else row.reps=null;}
+      if (!prefs.weights) {row.weight=null;delete row.explanation;}
+      if (!prefs.reps) {delete row.explanation;if(row.measurementType==='duration')row.durationSeconds=null;else row.reps=null;}
       if (completed[i]) return {...normalizeRow(row.measurementType==='duration'?{...completed[i],measurementType:'duration'}:completed[i]),edited:true};
       if (existing?.rows[i]?.edited && row.measurementType==='duration') {
         const prior=existing.rows[i];return {...row,weight:validNumber(prior.weight,0,10000)?prior.weight:row.weight,
@@ -97,7 +105,7 @@
       const limits=field==='weight'?[0,10000,false]:field==='reps'?[1,10000,true]:field==='durationSeconds'?[1,86400,true]:[0,5,true];
       if (!validNumber(value,...limits)) return false;
     }
-    entry.rows[index]={...prior,[field]:value,edited:true};return true;
+    delete prior.explanation;entry.rows[index]={...prior,[field]:value,edited:true};return true;
   }
   function capture(state,id,slot,index,actual) {
     const entry=get(state,id,slot);
@@ -116,7 +124,7 @@
   function removeRow(state,id,slot,index) {
     const entry=get(state,id,slot);
     if (!entry||!row(state,id,slot,index)) return false;
-    entry.rows.splice(index,1);return true;
+    entry.rows.splice(index,1);entry.manualSetCount=true;return true;
   }
   function refreshMode(state,id,slot,target,completed=[]) {
     const entry=get(state,id,slot);
@@ -124,14 +132,21 @@
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return false;
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
-      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot});
+      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state),adaptiveRecovery:state.preWorkout?.adaptiveRecovery===true});
     const prefs=settings(state);
-    entry.rows=entry.rows.map((value,i)=>{
+    const adaptiveResize=state.preWorkout?.adaptiveRecovery===true||entry.adaptiveResized===true;
+    const desired=prefs.sets&&adaptiveResize&&!entry.manualSetCount?prepared.rows.length:entry.rows.length;
+    if(desired!==entry.rows.length)entry.adaptiveResized=state.activeSessionMode==='recovery';
+    const protectedCount=entry.rows.reduce((n,r,i)=>r?.edited||completed[i]?i+1:n,completed.length);
+    const count=Math.min(MAX_ROWS,Math.max(desired,protectedCount));
+    entry.rows=Array.from({length:count},(_,i)=>{
+      const value=entry.rows[i];
       const prior=normalizeRow(value);
       if (completed[i]||prior.edited) return prior;
+      if(!prepared.rows[i]&&value){delete prior.explanation;return prior;}
       const next=normalizeRow(prepared.rows[i]??(prepared.rows[0]?.measurementType==='duration'?prepared.rows.at(-1):undefined));
-      if (!prefs.weights) next.weight=null;
-      if (!prefs.reps) {if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;}
+      if (!prefs.weights) {next.weight=null;delete next.explanation;}
+      if (!prefs.reps) {delete next.explanation;if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;}
       return next;
     });
     entry.mode=state.activeSessionMode;entry.reason=prepared.reason;if(prepared.advice)entry.advice=prepared.advice;else delete entry.advice;return true;

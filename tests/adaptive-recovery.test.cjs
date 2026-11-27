@@ -1,0 +1,19 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {recommend}=require('../assistant/adaptive-recovery.js');
+const assessment={status:'broad_decline',eligible:3,declining:2};
+test('broad decline offers recovery with explicit confirmation',()=>assert.deepEqual(recommend({assessment}),{action:'offer_recovery',reason:'broad_decline',requiresConfirmation:true}));
+test('readiness alone offers recovery',()=>assert.equal(recommend({readinessCaution:true}).reason,'readiness'));
+test('combined signals are distinguished',()=>assert.equal(recommend({assessment,readinessCaution:true}).reason,'combined_signals'));
+test('local decline does not trigger whole workout recovery',()=>assert.equal(recommend({assessment:{status:'local_decline'}}).action,'none'));
+test('existing recovery mode is preserved',()=>assert.equal(recommend({assessment,sessionMode:'recovery'}).action,'none'));
+test('safety review takes precedence',()=>assert.equal(recommend({assessment,reviewRequired:true}).action,'review'));
+test('malformed broad decline cannot trigger recovery',()=>assert.equal(recommend({assessment:{status:'broad_decline',eligible:2,declining:2}}).action,'none'));
+test('input is not mutated',()=>{const input=Object.freeze({assessment:Object.freeze(assessment)});recommend(input);assert.equal(input.assessment.declining,2);});
+
+const {prescribe}=require('../assistant/adaptive-recovery.js');
+const rows=[{setType:'R',weight:20,reps:10},...Array.from({length:4},()=>({setType:'W',weight:80,reps:10,targetRir:2}))];
+test('recovery retains warmup and reduces working volume and load',()=>{const result=prescribe({rows,step:2.5});assert.equal(result.length,4);assert.deepEqual(result[0],rows[0]);assert.equal(result[1].weight,70);assert.equal(result[1].targetRir,4);assert.equal(rows.length,5);});
+test('unsafe equipment step leaves weight unfilled',()=>assert.equal(prescribe({rows:[{setType:'W',weight:5,reps:8}],step:2.5})[0].weight,null));
+test('unknown step or safety review prevents prescription',()=>{assert.equal(prescribe({rows}),null);assert.equal(prescribe({rows,step:2.5,reviewRequired:true}),null);});

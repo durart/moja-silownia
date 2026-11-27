@@ -17,6 +17,17 @@
     const value=drafts.row(state,id,slot,index);
     return value?{...value,weight:value.weight??'',...(value.measurementType==='duration'?{}:{reps:value.reps??''})}:null;
   }
+  function explanationText(value){return drafts.settings(state).explanation&&!value?.edited?window.MojaAdaptiveExplanation?.label(value?.explanation)||'':'';}
+  function exerciseExplanation(id,slot){
+    if(!drafts.settings(state).explanation)return '';
+    const record=drafts.get(state,id,slot);
+    if(!record)return '';
+    if(flags.has(state.activeExerciseNotes?.[id]?.flag)||['review','timed_review'].includes(record.reason))return 'Sprawdź bezpieczeństwo przed wykonaniem ćwiczenia.';
+    if(record.mode==='recovery')return 'Tryb regeneracyjny — bez automatycznego zwiększania obciążenia.';
+    if(record.reason==='readiness')return 'Ostrożność ze względu na gotowość treningową.';
+    const count=record.rows.filter(r=>r&&!r.edited&&window.MojaAdaptiveExplanation?.normalize(r.explanation)).length;
+    return count?'Zalecenia adaptacyjne dla '+count+' serii. Szczegóły pod seriami.':'';
+  }
   function count(id,slot){return drafts.get(state,id,slot)?.rows.length;}
   function capture(id,slot,index,actual){return drafts.capture(state,id,slot,index,actual);}
   function append(id,slot,previous){return drafts.append(state,id,slot,previous);}
@@ -48,7 +59,7 @@
     const identity=inputIdentity(event.target);
     if(!identity)return;
     const {id,slot,index,field}=identity;
-    if(drafts.change(state,id,slot,index,field,event.target.value))save();
+    if(drafts.change(state,id,slot,index,field,event.target.value)){event.target.closest('.hevy-set')?.querySelector('.adaptive-explanation')?.remove();const summary=event.target.closest('[data-workout-slot]')?.querySelector('.adaptive-exercise-explanation');if(summary)summary.textContent=exerciseExplanation(id,slot);save();}
   }
   function caution(id,card) {
     if(!drafts.active(state)||!flags.has(state.activeExerciseNotes?.[id]?.flag))return;
@@ -75,13 +86,15 @@
     let changed=false;
     record.rows.forEach((value,i)=>{
       if(completed[i]||value?.edited)return;
+      if(value?.explanation){delete value.explanation;changed=true;}
       if(value?.weight!=null&&value.weight!==0){
         value.weight=null;changed=true;
         const field=document.getElementById(Number.isInteger(slot)?'r_'+slot+'_'+i+'_w':'m_'+id+'_'+i+'_w');
         if(field)field.value='';
       }
     });
-    if(changed){record.reason='review';save();}
+    if(record.reason!=='review'){record.reason='review';changed=true;}
+    if(changed){card?.querySelectorAll('.adaptive-explanation').forEach(el=>el.remove());const summary=card?.querySelector('.adaptive-exercise-explanation');if(summary)summary.textContent=exerciseExplanation(id,slot);save();}
   }
   function renderSettings(root) {
     if(!root)return;
@@ -110,6 +123,6 @@
       root?.addEventListener('change',onInput);
     }
   }
-  window.MojaTrainerWorkoutUI=Object.freeze({entry,row,count,capture,append,removeRow,removeExercise,caution,renderSettings});
+  window.MojaTrainerWorkoutUI=Object.freeze({entry,row,explanationText,exerciseExplanation,count,capture,append,removeRow,removeExercise,caution,renderSettings});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

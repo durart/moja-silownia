@@ -6,10 +6,14 @@
     ? require('./timed-preparation.js') : root.MojaTimedPreparation;
   const timedCore = typeof module === 'object' && module.exports
     ? require('../modules/timed-exercise-core.js') : root.MojaTimedExercise;
-  const api = factory(progression,timed,timedCore);
+  const adaptive = typeof module === 'object' && module.exports
+    ? require('./adaptive-adapter.js') : root.MojaAdaptiveAdapter;
+  const recoveryEngine=typeof module==='object'&&module.exports?require('./adaptive-recovery.js'):root.MojaAdaptiveRecovery;
+  const explanation=typeof module==='object'&&module.exports?require('./adaptive-explanation.js'):root.MojaAdaptiveExplanation;
+  const api = factory(progression,timed,timedCore,adaptive,recoveryEngine,explanation);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.MojaTrainerPreparation = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression,timed,timedCore) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression,timed,timedCore,adaptive,recoveryEngine,explanation) {
   'use strict';
   const MAX_SETS = 30;
   const supportedEquipment = new Set(['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg']);
@@ -58,7 +62,7 @@
     return (sleep !== null && sleep < 6) || (battery !== null && battery < 30) ||
       (score !== null && score < 50) || /^(bad|poor|low|slabo|słabo|zle|źle|tired|1|2)$/i.test(String(pre?.feeling ?? ''));
   }
-  function prepare({sessions, exercise, target = null, sessionMode = 'standard', preWorkout, activeFlag, planId, slotIndex} = {}) {
+  function prepare({sessions, exercise, target = null, sessionMode = 'standard', preWorkout, activeFlag, planId, slotIndex, plan, adaptiveRecovery = false} = {}) {
     if (!exercise?.id) return { rows: [], reason: 'missing_exercise' };
     if (timedCore?.measurementType(exercise)==='duration') return timed.prepare({sessions,exercise,target,sessionMode,activeFlag,planId,slotIndex,cautionToday:readinessCaution(preWorkout)});
     const history = historyFor(sessions, exercise.id, {planId, slotIndex});
@@ -91,7 +95,8 @@
     const advice = progression.suggest(history, exercise.id, { minReps: range.min, maxReps: range.max, equipmentType, equipmentStepKg: exercise.equipmentStepKg,
       ...(explicitRir ? {targetRir: plannedRir, expectedWorkingSets: overall && uniformTargets ? expectedWorkingSets : 0} : {}) });
     const recentFlag = (Array.isArray(sessions) ? sessions : []).filter(s => typeof s?.date === 'string' && Number.isFinite(Date.parse(s.date)) && (s.exerciseNotes?.[exercise.id] || validRows(s,exercise.id).length)).sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,5).some(s => flags.has(s.exerciseNotes?.[exercise.id]?.flag));
-    const caution = recentFlag || flags.has(activeFlag) || readinessCaution(preWorkout);
+    const broadDecline = plan?.id === planId && adaptive?.assessPlan({sessions,plan})?.status === 'broad_decline';
+    const caution = recentFlag || flags.has(activeFlag) || readinessCaution(preWorkout) || broadDecline;
     const hasTimedTarget = /\b(?:s|sek\.?|sekund|min\.?|maks\.?)\s*$/i.test(String(target?.reps ?? ''));
     const mayIncrease = !isRecovery && !caution && !hasTimedTarget && advice.action === 'consider_increase' && Number.isFinite(advice.suggestedWeight) && (overall !== null || target?.reps == null || target?.reps === '');
     const rows = Array.from({length: count}, (_, i) => {
@@ -109,7 +114,11 @@
       else if (isRecovery && kg !== null && kg > 0) {
         const normal = weight(standardRows[i]?.weight);
         // Do not invent equipment-compatible weights when no recovery reference exists.
-        if (!recovery.length || !previous || (normal !== null && kg > normal)) kg = null;
+        if (adaptiveRecovery === true && !recovery.length && !isWarmup && equipmentType!=='unknown' && normal!==null && normal>0) {
+          const config=progression.EQUIPMENT_CONFIG[progression.resolveEquipmentType(equipmentType,normal)];
+          const step=number(exercise.equipmentStepKg)??config?.step;
+          kg=recoveryEngine?.prescribe({rows:[{setType:'W',weight:normal,reps:integer(standardRows[i]?.reps)}],step})?.[0]?.weight??null;
+        } else if ((!recovery.length && !isWarmup) || !previous || (normal !== null && kg > normal)) kg = null;
       } else if (!caution && !isRecovery && !isWarmup && previous && advice.action === 'consider_decrease' && Number.isFinite(advice.suggestedWeight) && Number(previous.weight) === advice.weight) {
         kg = advice.suggestedWeight;
         if (range) reps = range.min;
@@ -124,6 +133,30 @@
       if (!previous && !range && !hasTimedTarget) reps = null;
       return { weight: kg, reps, setType: isWarmup ? 'R' : 'W', targetRir: isWarmup || isRecovery ? 4 : targetRir };
     });
+    const targets = rows.flatMap((row,index) => {
+      if (row.setType !== 'W') return [];
+      const range = targetRange(target,index);
+      const rir = number(target?.setDetails?.[index]?.rir ?? target?.rir);
+      return [{ ...range, rir, index }];
+    });
+    const candidate = !bodyweight && !hasTimedTarget && !caution && !isRecovery &&
+      advice.action !== 'review' && advice.action !== 'consider_decrease' && target &&
+      targets.every(t => Number.isInteger(t.min) && Number.isInteger(t.rir))
+      ? adaptive?.evaluate({sessions,exerciseId:exercise.id,planId,slotIndex,targets,
+          equipmentType: equipmentType === 'unknown' ? 'unknown' : progression.resolveEquipmentType(equipmentType,topWeight),
+          equipmentStepKg:exercise.equipmentStepKg,sessionMode,caution}) : null;
+    if (candidate) targets.forEach((t,i) => {
+      const next = candidate.recommendations[i];
+      if (next && rows[t.index].weight !== null) {
+        rows[t.index] = {...rows[t.index],weight:next.weight,reps:next.reps,...(explanation?{explanation:explanation.explain({reason:next.reason,observations:candidate.observations,comparable:true})}:{})};
+      }
+    });
+    // Only remove a trailing working-set suffix; never shift original plan indices.
+    if(adaptiveRecovery === true && isRecovery && !recentFlag && !flags.has(activeFlag) && !bodyweight && !hasTimedTarget && equipmentType!=='unknown' && standardRows.length && rows.every(r=>r.weight!==null)){
+      const working=rows.filter(r=>r.setType==='W').length;
+      let remove=working-Math.ceil(working*0.75);
+      while(remove>0&&rows.at(-1)?.setType==='W'){rows.pop();remove--;}
+    }
     return { rows, advice, action: advice.action, reason: recentFlag || flags.has(activeFlag) ? 'review' : isRecovery ? 'recovery' : caution ? 'readiness' : mayIncrease || advice.action === 'consider_decrease' ? 'progression' : reference ? 'history' : 'plan' };
   }
   return Object.freeze({ prepare, repRange, readinessCaution, isTimedExercise:exercise=>timedCore?.measurementType(exercise)==='duration' });

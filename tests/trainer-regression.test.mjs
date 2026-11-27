@@ -14,11 +14,11 @@ test('the preparation modules load in order and are all cached',()=>{
  }
  assert.match(read('preview/modules/bootstrap.js'),/key:'moja-silownia-preview-v01'/);
  assert.match(preview,/const key='moja-silownia-preview-v01'/);
- assert.match(psw,/moja-silownia-preview-shell-v56-3\.9\.0-progression/);
+ assert.match(psw,/moja-silownia-preview-shell-v63-4\.1\.0/);
  assert.match(html,/const key='moja-silownia-v01'/);
 });
 
-test('timed preparation is loaded before the trainer and cached',()=>{const html=read('index.html'),sw=read('sw.js');let last=-1;for(const script of ['modules/timed-exercise-core.js?v=3','assistant/timed-preparation.js?v=1','assistant/trainer-preparation.js?v=311']){const pos=html.indexOf(script);assert.ok(pos>last,script);assert.ok(sw.includes(script));last=pos;}});
+test('timed preparation is loaded before the trainer and cached',()=>{const html=read('index.html'),sw=read('sw.js');let last=-1;for(const script of ['modules/timed-exercise-core.js?v=3','assistant/timed-preparation.js?v=1','assistant/trainer-preparation.js?v=313']){const pos=html.indexOf(script);assert.ok(pos>last,script);assert.ok(sw.includes(script));last=pos;}});
 
 test('plan-specific rest resolves by slot without mutating global settings',()=>{
  for(const file of ['index.html','preview/index.html']){
