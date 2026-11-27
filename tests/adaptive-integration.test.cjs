@@ -30,3 +30,20 @@ test('candidate shells register identical adaptive assets and isolated cache nam
  assert.notEqual(read('sw.js').match(/const CACHE='([^']+)'/)[1],read('preview/sw.js').match(/const CACHE='([^']+)'/)[1]);
  assert.ok(read('preview/index.html').includes('moja-silownia-preview-v01'));
 });
+
+test('adaptive draft preserves manual edits and completed rows across mode changes',()=>{
+ const drafts=require('../assistant/trainer-drafts.js');
+ const state={startedAt:'test',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise],sessions};
+ const before=JSON.stringify(sessions);
+ drafts.initialize(state);
+ const entry=drafts.ensure(state,'bench',0,input.target).entry;
+ assert.equal(entry.rows[1].weight,72.5);
+ assert.equal(drafts.change(state,'bench',0,1,'weight',67.5),true);
+ assert.equal(drafts.ensure(state,'bench',0,input.target).entry.rows[1].weight,67.5);
+ drafts.capture(state,'bench',0,2,{weight:65,reps:9,rir:2,setType:'W'});
+ state.activeSessionMode='recovery';
+ drafts.refreshMode(state,'bench',0,input.target);
+ assert.equal(drafts.row(state,'bench',0,1).weight,67.5);
+ assert.equal(drafts.row(state,'bench',0,2).reps,9);
+ assert.equal(JSON.stringify(sessions),before);
+});
