@@ -38,11 +38,11 @@ const server=http.createServer((req,res)=>{
  const download=page.waitForEvent('download');await page.evaluate(()=>exportData());const backup=await download;const backupPath=await backup.path();assert.ok(fs.statSync(backupPath).size>0);
  root=candidate;
  await page.evaluate(async()=>{const r=await navigator.serviceWorker.ready;await r.update();});
- await page.waitForFunction(async()=> (await caches.keys()).includes('moja-silownia-shell-v62-4.1.0-rc1'),{},{timeout:60000});
+ await page.waitForFunction(async()=> (await caches.keys()).includes('moja-silownia-shell-v63-4.1.0'),{},{timeout:60000});
  await page.waitForFunction(async()=>{const r=await navigator.serviceWorker.getRegistration();return !!r?.waiting;},{},{timeout:60000});
  await page.close();page=await context.newPage();await page.goto(url);
- await page.waitForFunction(()=>navigator.serviceWorker.controller!==null&&document.title.includes('4.1.0-rc.1'),{},{timeout:60000});
- await page.waitForFunction(async()=>!(await caches.keys()).some(k=>k.startsWith('moja-silownia-shell-')&&k!=='moja-silownia-shell-v62-4.1.0-rc1'));
+ await page.waitForFunction(()=>navigator.serviceWorker.controller!==null&&document.title.includes('4.1.0'),{},{timeout:60000});
+ await page.waitForFunction(async()=>!(await caches.keys()).some(k=>k.startsWith('moja-silownia-shell-')&&k!=='moja-silownia-shell-v63-4.1.0'));
  const snapshot=()=>page.evaluate(()=>JSON.parse(JSON.stringify({startedAt:state.startedAt,active:state.active,sessions:state.sessions,plans:state.plans,trainerSettings:state.trainerSettings})));
  assert.deepEqual(await snapshot(),before);
  await context.setOffline(true);await page.reload();assert.deepEqual(await snapshot(),before);
@@ -61,11 +61,11 @@ const server=http.createServer((req,res)=>{
  await page.evaluate(async()=>{const r=await navigator.serviceWorker.ready;await r.update();});
  await page.waitForFunction(async()=>!!(await navigator.serviceWorker.getRegistration())?.waiting,{},{timeout:60000});
  await page.close();page=await context.newPage();await page.goto(url);
- await page.waitForFunction(async name=>(await caches.keys()).includes(name)&&!(await caches.keys()).includes('moja-silownia-shell-v62-4.1.0-rc1'),rollbackCache,{timeout:60000});
+ await page.waitForFunction(async name=>(await caches.keys()).includes(name)&&!(await caches.keys()).includes('moja-silownia-shell-v63-4.1.0'),rollbackCache,{timeout:60000});
  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
  await page.reload();
  await page.waitForFunction(()=>navigator.serviceWorker.controller!==null&&document.title.includes('4.0.0'),{},{timeout:60000});
- await page.waitForFunction(async name=>(await caches.keys()).includes(name)&&!(await caches.keys()).includes('moja-silownia-shell-v62-4.1.0-rc1'),rollbackCache);
+ await page.waitForFunction(async name=>(await caches.keys()).includes(name)&&!(await caches.keys()).includes('moja-silownia-shell-v63-4.1.0'),rollbackCache);
  assert.deepEqual(await snapshot(),updated);
  await context.setOffline(true);await page.reload();assert.deepEqual(await snapshot(),updated);
  assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-preview-v01')),'upgrade-sentinel');
