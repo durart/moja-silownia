@@ -57,7 +57,7 @@
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return {entry:null,changed:false};
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
-      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot});
+      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:state.plans?.find(p=>p.id===state.activePlan)});
     const prefs=settings(state);
     const legacyCount=Number.isInteger(Number(target?.sets))&&Number(target.sets)>0?Math.min(MAX_ROWS,Number(target.sets)):Number.isInteger(slot)?3:1;
     const count=Math.min(MAX_ROWS,Math.max(completed.length,existing?.rows.length||0,prefs.sets?prepared.rows.length:legacyCount));
@@ -124,7 +124,7 @@
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return false;
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
-      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot});
+      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:state.plans?.find(p=>p.id===state.activePlan)});
     const prefs=settings(state);
     entry.rows=entry.rows.map((value,i)=>{
       const prior=normalizeRow(value);
