@@ -1,0 +1,13 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {classify,summarize}=require('../assistant/adaptive-trends.js');
+const samples=(...values)=>values.map(reps=>({reps,reserve:4}));
+test('four flat observations indicate stagnation',()=>assert.equal(classify(samples(20,20,20,20)).status,'stagnation'));
+test('single weak session is observation only',()=>assert.equal(classify(samples(18,20,20)).status,'observe'));
+test('repeated substantial decline is detected',()=>assert.equal(classify(samples(16,18,20)).status,'declining'));
+test('improvement is recognized',()=>assert.equal(classify(samples(22,21,20)).status,'improving'));
+test('insufficient history has low confidence',()=>assert.equal(classify(samples(20,20)).confidence,'low'));
+test('multiple distinct declining exercises suggest broad decline',()=>assert.equal(summarize([{exerciseId:'a',samples:samples(16,18,20)},{exerciseId:'b',samples:samples(16,18,20)},{exerciseId:'c',samples:samples(20,20,20)}]).status,'broad_decline'));
+test('duplicate exercise cannot inflate evidence',()=>assert.equal(summarize([{exerciseId:'a',samples:samples(16,18,20)},{exerciseId:'a',samples:samples(16,18,20)}]).declining,0));
+test('evidence module integrates without mutating history',()=>{const {analyze}=require('../assistant/adaptive-evidence.js');const now=Date.now();const history=[16,18,20].map((reps,i)=>({date:new Date(now-i*86400000).toISOString(),sets:[{exerciseId:'a',weight:50,reps,rir:2}]}));const before=JSON.stringify(history);assert.equal(classify(analyze(history,'a',{expectedWorkingSets:1,now}).samples).status,'declining');assert.equal(JSON.stringify(history),before);});
