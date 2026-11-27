@@ -4,6 +4,7 @@ on:
     paths:
       - 'preview/modules/circuit-core.js'
       - 'preview/modules/program-history.js'
+      - 'preview/modules/program-preparation.js'
       - 'preview/modules/programs-*.js'
       - 'preview/modules/programs-*.mjs'
       - 'tests/calisthenics-programs*'

@@ -87,6 +87,26 @@ const root=path.resolve(__dirname,'..');
     assert.equal(await page.evaluate(()=>state.programTraining.active.scheduleRevision),undefined);
     await host.getByRole('button',{name:'✓ Zatwierdź powtórzenia'}).click();
     assert.equal(await page.evaluate(()=>state.programTraining.active.run.records.length),1);
+    // New optional phases: choose express, complete first timer, skip remaining warmup and cooldown.
+    await host.getByRole('button',{name:'Przerwij dzień bez zaliczenia'}).click();
+    await host.getByLabel('Rozgrzewka (opcjonalna)').selectOption('express');
+    await host.getByLabel('Schładzanie — ok. 5 min').check();
+    await host.getByRole('button',{name:'Rozpocznij dzień'}).click();
+    await host.getByRole('button',{name:'Zapisz czas ręcznie'}).click();
+    await page.reload();await page.waitForFunction(()=>!!window.MojaPrograms);await show();
+    await host.getByRole('button',{name:'Pomiń resztę rozgrzewki'}).click();
+    assert.equal(await page.evaluate(()=>state.programTraining.active.run.position),4);
+    for(let i=0;i<30;i++){
+     const phase=await page.evaluate(()=>state.programTraining.active?.run?.steps[state.programTraining.active.run.position]?.phase);
+     if(phase==='cooldown')break;
+     const step=await page.evaluate(()=>state.programTraining.active.run.steps[state.programTraining.active.run.position]);
+     await host.getByRole('button',{name:step.kind==='rest'?'Pomiń przerwę':step.type==='duration'?'Zapisz czas ręcznie':'✓ Zatwierdź powtórzenia'}).click();
+    }
+    await host.getByRole('button',{name:'Pomiń resztę schładzania'}).click();
+    await page.locator('#summaryContent .sp2-title').waitFor();
+    assert.equal(await page.evaluate(()=>state.sessions[0].sets.length),15);
+    assert.equal(await page.evaluate(()=>state.sessions[0].program.auxiliary.completedSteps),1);
+    assert.equal(await page.evaluate(()=>state.programTraining.progress['military-calisthenics-56'].nextDay),3);
     assert.deepEqual(errors,[]);
    }finally{await context.close();}
   }

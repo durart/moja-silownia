@@ -16,7 +16,7 @@
   const durationSeconds=Number.isSafeInteger(d.startedAt)&&d.startedAt<=d.finishedAt?Math.floor((d.finishedAt-d.startedAt)/1000):null;
   return {id,date:new Date(d.finishedAt).toISOString(),planName:p.title+' · Dzień '+d.day+' — '+definition.title,sets,durationSeconds,
     sessionMode:definition.kind==='recovery'?'recovery':'standard',preWorkout:null,exerciseNotes:{},
-    program:{key:sessionKey(p,d),id:p.id,version:p.version,day:d.day,blockCount:d.blockCount,kind:definition.kind}};
+    program:{key:sessionKey(p,d),id:p.id,version:p.version,day:d.day,blockCount:d.blockCount,kind:definition.kind,...(d.auxiliary?{auxiliary:{warmup:d.auxiliary.warmup,cooldown:d.auxiliary.cooldown,completedSteps:d.auxiliary.records.length,mainDurationSeconds:Math.floor((d.auxiliary.mainFinishedAt-d.auxiliary.mainStartedAt)/1000)}}:{})}};
  }
  function reconcile(v,sessions,programs,core,enrich=s=>s){
   let next=v,history=sessions,added=[],lastId=null;

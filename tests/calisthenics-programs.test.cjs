@@ -77,7 +77,7 @@ test('corrupt saved run rejected; ready timer does not run on its own',()=>{
 });
 test('preview assets and cache use same version and production remains distinct',()=>{
  const html=fs.readFileSync('preview/index.html','utf8'),sw=fs.readFileSync('preview/sw.js','utf8'),prod=fs.readFileSync('index.html','utf8');
- for(const name of ['modules/circuit-core.js?v=2','modules/programs-data.js?v=2','modules/programs-ui.mjs?v=3','styles/programs.css?v=2','modules/program-history.js?v=2']){
+ for(const name of ['modules/circuit-core.js?v=2','modules/programs-data.js?v=2','modules/programs-ui.mjs?v=4','styles/programs.css?v=2','modules/program-history.js?v=3','modules/program-preparation.js?v=1']){
   assert.ok(html.includes(name));assert.ok(sw.includes(name));assert.ok(!prod.includes(name));
  }
  assert.match(sw,/moja-silownia-preview-shell/);assert.match(html,/moja-silownia-preview-v01/);
@@ -134,8 +134,8 @@ test('revision 2 retains structure and targets of every legacy day',()=>{
  assert.equal(history.definitionFor(p,3,2),p.days[2]);assert.equal(history.definitionFor(p,3,99),undefined);
 });
 test('all approved assets and catalog identities are registered and cached',()=>{
- const list=catalogSandbox.window.CALISTHENICS_LIBRARY;assert.equal(list.length,52);
- assert.equal(new Set(list.map(e=>e.id)).size,52);
+ const list=catalogSandbox.window.CALISTHENICS_LIBRARY;assert.equal(list.length,64);
+ assert.equal(new Set(list.map(e=>e.id)).size,64);
  const crypto=require('node:crypto'),sw=fs.readFileSync('preview/sw.js','utf8');
  const expected='c70f76b9ec05fc6db91339854c6f16f3f2535339 d6042726fd2e7b4fca41f58aef01d0f39e2a6270 afb7c0bedc68c0943713f1cca5a02ea8ff41e41b 4e5f8c40c6818dd8a05d93e4a8352ab23db88f51 4f15a7e8ee9d85294e693aeffb8da6d8fc2fd599 d7f2e929ef95476532f8225d0e2fc669a9dd3bc0 9724ce59d5de31d48907ff06f6f4f4233b2352ce f56726f6d6077f3a7a54c2324daa35fcc5c55c1f e05415e0dadf1125738a5caf6df7ecaae1399ef5 1e78b6278d3684c110d647aaa938b88d21098136 123b1732c052aa1c14faf61ef5f0d2ff026a6bc5 e2afcdc33c47661ef67ed13ca698a74c76daad72'.split(' ');
  const timed=require('../preview/modules/timed-exercise-core.js');
@@ -177,4 +177,49 @@ test('pause metadata is preserved without replacing base identity',()=>{
  const d={day:36,blockCount:1,records:[{position:0,actual:10,completedAt:2000}],finishedAt:2000};
  const s=history.createSession(p,p.days[35],d,core,1);
  assert.equal(s.sets[0].programSet.pauseSeconds,2);assert.equal(s.sets[0].exerciseId,'cali-12');
+});
+
+const prep=require('../preview/modules/program-preparation.js');
+test('warmup and cooldown source targets and timing are preserved',()=>{
+ assert.deepEqual(prep.routines.express.map(x=>x.target),[30,30,5,10]);
+ assert.deepEqual(prep.routines.standard.map(x=>x.target),[30,20,20,10,20,10,8,3,5]);
+ assert.deepEqual(prep.routines.cooldown.map(x=>x.target),[30,20,20,20,20,20,5]);
+ assert.equal(prep.routines.cooldown.at(-1).unit,'breaths');
+ assert.equal(prep.routines.cooldown.filter(x=>x.perSide).length,4);
+});
+test('legacy layout remains byte-identical across every day and block selection',()=>{
+ for(const def of [p.days,p.legacyDays])for(const d of def)for(let count=1;count<=d.blocks.length;count++){
+  assert.deepEqual(prep.layout(core,d.blocks,count,p.blockRest,null).steps,core.build(d.blocks,count,p.blockRest));
+ }
+});
+test('optional phases can be skipped without affecting work sets',()=>{
+ const d=p.days[0],cfg={version:1,warmup:'express',cooldown:true},l=prep.layout(core,d.blocks,1,p.blockRest,cfg);
+ let run=core.create(l.steps,1000);
+ run=core.act(run,{type:'start'},1000);run=core.act(run,{type:'tick'},31000);
+ assert.equal(run.records[0].actual,30);
+ run=prep.skipPhase(run,32000);assert.equal(run.position,l.mainOffset);
+ assert.equal(core.valid(run),true);
+ assert.equal(prep.skipPhase(run,32001),run);
+ let now=33000;
+ while(!run.steps[run.position]?.phase&&run.status!=='done'){
+  const s=run.steps[run.position];run=core.act(run,s.kind==='rest'?{type:'skipRest'}:{type:s.type==='duration'?'manual':'reps',actual:s.target},now++);
+ }
+ assert.equal(run.steps[run.position].phase,'cooldown');
+ run=prep.skipPhase(run,now);assert.equal(run.status,'done');assert.ok(core.valid(run));
+ const split=prep.split(l,run.records);assert.equal(split.main.length,15);assert.equal(split.aux.length,1);
+ assert.ok(prep.validateAuxiliary(l,split.aux,core));assert.deepEqual(prep.review(l,split.main,split.aux),run.records);
+ assert.equal(prep.validateAuxiliary(l,[...split.aux,split.aux[0]],core),false);
+ const completed={day:1,blockCount:1,records:split.main,finishedAt:now,startedAt:1000,auxiliary:{...cfg,records:split.aux,mainStartedAt:32000,mainFinishedAt:now-1}};
+ const s=history.createSession(p,d,completed,core,1);
+ assert.equal(s.sets.length,15);assert.equal(s.program.auxiliary.completedSteps,1);
+ assert.ok(s.sets.every(x=>x.exerciseId!=='cali-35'));
+});
+test('new mobility entries have descriptions and draft art registered offline',()=>{
+ const list=catalogSandbox.window.CALISTHENICS_LIBRARY,sw=fs.readFileSync('preview/sw.js','utf8');
+ const timed=require('../preview/modules/timed-exercise-core.js');
+ for(let i=53;i<=64;i++){
+  const id='cali-'+i,e=list.find(x=>x.id===id),file='assets/graphics-r6/'+id+'.webp';
+  assert.ok(e.steps.length>=3&&e.errors&&e.easier);assert.ok(sw.includes(file));assert.ok(fs.statSync('preview/'+file).size>1000);
+  assert.equal(timed.measurementType(e),i>=59&&i<=63?'duration':'reps');
+ }
 });
