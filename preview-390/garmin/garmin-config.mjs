@@ -1,4 +1,4 @@
-const KEY = "moja-silownia-garmin-mock-config-v1" + (globalThis.location?.pathname.includes("/preview/") ? "-preview" : "-app");
+const KEY = "moja-silownia-garmin-mock-config-v1-rc390";
 
 export function validateConfig(config) {
   const url = new URL(config.endpoint);
