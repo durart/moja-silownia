@@ -108,7 +108,7 @@ test('Staging has one start toggle and one active session toggle, without per-ex
  assert.match(html,/moja-silownia-preview-v01/);
  assert.match(html,/session-mode\.js\?v=200/);
  assert.match(html,/assistant-core\.js\?v=200/);
- assert.match(sw,/moja-silownia-preview-shell-v60-4\.1\.0-alpha4/);
+ assert.match(sw,/moja-silownia-preview-shell-v61-4\.1\.0-alpha5/);
  assert.match(sw,/session-mode\.js\?v=200/);
  assert.match(sw,/assistant-core\.js\?v=200/);
  assert.match(read('index.html'),/Moja Siłownia v4\.0\.0/);

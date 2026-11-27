@@ -20,11 +20,11 @@ test('candidate shells register identical adaptive assets and isolated cache nam
  const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
  for(const prefix of ['', 'preview/']){
   const html=read(prefix+'index.html'),sw=read(prefix+'sw.js');
-  for(const name of ['adaptive-evidence','adaptive-prescription','adaptive-trends','adaptive-recovery','adaptive-adapter']){
-   const url='./assistant/'+name+'.js?v=1';
+  for(const name of ['adaptive-evidence','adaptive-prescription','adaptive-trends','adaptive-recovery','adaptive-explanation','adaptive-adapter']){
+   const url='./assistant/'+name+'.js?v='+(name==='adaptive-adapter'?2:1);
    assert.ok(html.includes(url));assert.ok(sw.includes(url));
    assert.equal(read(prefix+'assistant/'+name+'.js'),read('assistant/'+name+'.js'));
-   assert.ok(html.indexOf(url)<html.indexOf('./assistant/trainer-preparation.js?v=311'));
+   assert.ok(html.indexOf(url)<html.indexOf('./assistant/trainer-preparation.js?v=313'));
   }
  }
  assert.notEqual(read('sw.js').match(/const CACHE='([^']+)'/)[1],read('preview/sw.js').match(/const CACHE='([^']+)'/)[1]);
@@ -53,3 +53,5 @@ test('declining performance holds working sets and preserves warmup',()=>{const 
 test('broad plan decline blocks progression of a stable exercise',()=>{const plan={id:'A',exerciseIds:['bench','b','c'],targets:[input.target,{sets:1},{sets:1}]};const history=sessions.map((s,i)=>({...s,sets:[...s.sets,...['b','c'].map((exerciseId,j)=>({exerciseId,planId:'A',planSlotIndex:j+1,planSetIndex:0,weight:50,reps:8+i*2,rir:2,setType:'W'}))]}));const adapter=require('../assistant/adaptive-adapter.js');assert.equal(adapter.assessPlan({sessions:history,plan}).status,'broad_decline');assert.equal(prepare({...input,sessions:history,plan}).rows[1].weight,70);assert.equal(adapter.assessPlan({sessions:history,plan:{...plan,id:'B'}}).status,'insufficient_data');});
 
 test('recovery trims only trailing working rows and respects safety flags',()=>{const target={sets:5,reps:'8-12',rir:2,setDetails:[{setType:'R'},...Array.from({length:4},()=>({setType:'W'}))]};const history=[{date:new Date(now).toISOString(),sets:[row(0,20,10,'R'),...Array.from({length:4},(_,i)=>row(i+1,80,10))]}];const args={...input,target,sessions:history,sessionMode:'recovery',adaptiveRecovery:true};const result=prepare(args);assert.equal(result.rows.length,4);assert.equal(result.rows[0].weight,20);assert.equal(result.rows[1].weight,70);assert.equal(prepare({...args,activeFlag:'pain'}).rows.length,5);const drafts=require('../assistant/trainer-drafts.js');const state={startedAt:'test',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise],sessions:history,preWorkout:{adaptiveRecovery:true}};drafts.initialize(state);drafts.ensure(state,'bench',0,target);drafts.change(state,'bench',0,4,'weight',77.5);state.activeSessionMode='recovery';drafts.refreshMode(state,'bench',0,target);assert.equal(drafts.row(state,'bench',0,4).weight,77.5);});
+
+test('explanations survive JSON round trip and are removed by manual edits',()=>{const drafts=require('../assistant/trainer-drafts.js');const state={startedAt:'test',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise],sessions};drafts.initialize(state);drafts.ensure(state,'bench',0,input.target);const restored=JSON.parse(JSON.stringify(state));assert.equal(drafts.row(restored,'bench',0,1).explanation.reason,'increase_weight');assert.equal(drafts.row(restored,'bench',0,2).explanation.reason,'increase_reps');drafts.change(restored,'bench',0,1,'weight',67.5);assert.equal(drafts.row(restored,'bench',0,1).explanation,undefined);restored.trainerWorkout.entries['slot:0'].rows[2].explanation={reason:'<script>',observations:3};assert.equal(drafts.row(restored,'bench',0,2).explanation,undefined);});
