@@ -1,0 +1,14 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {suggest}=require('../assistant/adaptive-adapter.js');
+const now=Date.parse('2026-11-27T12:00:00Z');
+const row=(i,weight)=>({exerciseId:'bench',planId:'A',planSlotIndex:0,planSetIndex:i,weight,reps:12,rir:3});
+const session=d=>({date:new Date(now-d*86400000).toISOString(),sets:[row(0,70),row(1,65)]});
+const input={sessions:[session(0),session(4),session(8)],exerciseId:'bench',planId:'A',slotIndex:0,targets:[{min:8,max:12,rir:2},{min:8,max:12,rir:2}],equipmentType:'barbell',now};
+test('strict context connects history to prescription',()=>assert.equal(suggest(input)[0].weight,72.5));
+test('other plan and slot are excluded',()=>{assert.equal(suggest({...input,planId:'B'}),null);assert.equal(suggest({...input,slotIndex:1}),null);});
+test('ambiguous order and missing indices block recommendation',()=>{const s=session(0);s.sets.reverse();assert.equal(suggest({...input,sessions:[s,...input.sessions.slice(1)]}),null);});
+test('recovery and caution block recommendation',()=>{assert.equal(suggest({...input,sessionMode:'recovery'}),null);assert.equal(suggest({...input,caution:true}),null);});
+test('recent pain blocks recommendation',()=>assert.equal(suggest({...input,sessions:[{...session(0),exerciseNotes:{bench:{flag:'pain'}}},...input.sessions.slice(1)]}),null));
+test('browser globals load without CommonJS',()=>{const vm=require('node:vm');const fs=require('node:fs');const path=require('node:path');const context=vm.createContext({});for(const file of ['session-mode','assistant-progression','adaptive-evidence','adaptive-prescription','adaptive-adapter'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../assistant',file+'.js'),'utf8'),context);assert.equal(context.MojaAdaptiveAdapter.suggest(input)[0].weight,72.5);});
