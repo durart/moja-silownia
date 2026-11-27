@@ -76,3 +76,24 @@ test('completed out-of-order plan rows retain their intended pyramid order',()=>
 test('a missed repetition goal does not force a heavier or unachieved prescription',()=>{const result=make([row(70,6,0),row(70,7,1)],{target:{sets:2,reps:'8–12'}});assert.deepEqual(result.rows.map(r=>r.weight),[70,70]);assert.deepEqual(result.rows.map(r=>r.reps),[6,7]);});
 test('free workouts can progress repetitions with reserve, even without an explicit goal',()=>{const result=make([row(70,10,2)],{target:null});assert.equal(result.rows[0].weight,70);assert.equal(result.rows[0].reps,11);});
 test('free bodyweight sets progress repetitions without inventing load',()=>{const result=make([row(0,12,3)],{target:null,exercise:{id:'bench',equipment:'Masa ciała'}});assert.equal(result.rows[0].weight,0);assert.equal(result.rows[0].reps,13);});
+
+test('explicit double progression requires every planned working set and target RIR',()=>{
+  const target={sets:3,reps:'5–8',rir:'2'};
+  for(const [reps,rirs,expected] of [
+    [[7,6,5],[2,2,2],75],[[8,7,6],[2,2,2],75],
+    [[8,8,7],[2,2,2],75],[[8,8,8],[2,2,2],77.5],
+    [[8,8,8],[2,1,0],75],[[8,8,8],[2,null,2],75],
+    [[8,8],[2,2],75]
+  ]){
+    const result=make(reps.map((n,i)=>row(75,n,rirs[i])),{target});
+    assert.equal(result.rows[0].weight,expected);
+    assert.equal(result.rows[0].targetRir,2);
+  }
+});
+test('individual RIR targets zero, one and three govern explicit progression',()=>{
+  for(const rir of [0,1,3]){
+    const result=make([row(75,8,rir),row(75,8,rir),row(75,8,rir)],{target:{sets:3,reps:'5–8',rir:String(rir)}});
+    assert.equal(result.rows[0].weight,77.5);
+    assert.equal(result.rows[0].targetRir,rir);
+  }
+});
