@@ -104,3 +104,24 @@ test('swapping exercise in a plan slot never reuses the previous draft',()=>{
  const entry=drafts.ensure(state,'replacement',0,{sets:2,reps:'8-12',rir:2}).entry;
  assert.equal(entry.exerciseId,'replacement');assert.ok(entry.rows.every(r=>r.weight===null&&!r.explanation));
 });
+
+test('automatic recovery restores planned volume on return to standard',()=>{
+ const drafts=require('../assistant/trainer-drafts.js');
+ const target={sets:5,reps:'8-12',rir:2,setDetails:[{setType:'R'},...Array.from({length:4},()=>({setType:'W'}))]};
+ const history=[{date:new Date(now).toISOString(),sets:[row(0,20,10,'R'),...Array.from({length:4},(_,i)=>row(i+1,80,10))]}];
+ const state={startedAt:'test',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise],sessions:history,preWorkout:{adaptiveRecovery:true}};
+ const before=JSON.stringify(history);drafts.initialize(state);drafts.ensure(state,'bench',0,target);
+ state.activeSessionMode='recovery';drafts.refreshMode(state,'bench',0,target);
+ assert.equal(drafts.get(state,'bench',0).rows.length,4);
+ state.activeSessionMode='standard';state.preWorkout={};drafts.refreshMode(state,'bench',0,target);
+ assert.equal(drafts.get(state,'bench',0).rows.length,5);assert.equal(JSON.stringify(history),before);
+});
+test('manually appended and captured rows survive mode transitions',()=>{
+ const drafts=require('../assistant/trainer-drafts.js');
+ const state={startedAt:'test',activePlan:'A',activeSessionMode:'standard',exercises:[input.exercise],sessions,preWorkout:{adaptiveRecovery:true}};
+ const before=JSON.stringify(sessions);drafts.initialize(state);drafts.ensure(state,'bench',0,input.target);
+ assert.equal(drafts.append(state,'bench',0,{weight:60,reps:9,setType:'W'}),true);
+ drafts.capture(state,'bench',0,1,{weight:67.5,reps:8,rir:0,setType:'W'});
+ for(const mode of ['recovery','standard']){state.activeSessionMode=mode;drafts.refreshMode(state,'bench',0,input.target);assert.equal(drafts.get(state,'bench',0).rows.length,4);assert.equal(drafts.row(state,'bench',0,3).weight,60);assert.equal(drafts.row(state,'bench',0,1).rir,0);}
+ assert.equal(JSON.stringify(sessions),before);
+});
