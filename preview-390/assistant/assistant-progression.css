@@ -1,0 +1,10 @@
+/* Stage 3 — optional progression hint within Sport Performance exercise cards. */
+#workout .advisor-progression{display:flex;flex-direction:column;gap:5px;margin:10px 0 13px;padding:12px 13px;border:1px solid #31576b;border-left:3px solid #22d3e5;border-radius:12px;background:#102b3c;color:#e9f6fa}
+#workout .advisor-progression-overline{font-size:10px;font-weight:800;letter-spacing:.12em;color:#6be1ed}
+#workout .advisor-progression strong{font-size:14px;line-height:1.35}
+#workout .advisor-progression p{font-size:12px;line-height:1.5;margin:2px 0;color:#c2d7e2}
+#workout .advisor-progression small{font-size:11px;color:#a8c5d2;line-height:1.45}
+#workout .advisor-progression-weight{font-size:12px;font-weight:700;color:#a9f4e8}
+#workout .advisor-progression.advisor-caution{border-left-color:#e6af63}
+#workout .advisor-progression.advisor-neutral{border-left-color:#708da0}
+#workout .advisor-progression.advisor-progress{border-left-color:#3be0b3}
