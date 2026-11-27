@@ -2,9 +2,10 @@
 (function(root,factory){
   const common=typeof module==='object'&&module.exports;
   const api=factory(common?require('./adaptive-evidence.js'):root.MojaAdaptiveEvidence,
-    common?require('./adaptive-prescription.js'):root.MojaAdaptivePrescription);
+    common?require('./adaptive-prescription.js'):root.MojaAdaptivePrescription,
+    common?require('./adaptive-trends.js'):root.MojaAdaptiveTrends);
   if(common) module.exports=api; else root.MojaAdaptiveAdapter=api;
-})(globalThis,function(evidence,prescription){
+})(globalThis,function(evidence,prescription,trends){
   'use strict';
   function suggest({sessions,exerciseId,planId,slotIndex,targets,equipmentType,equipmentStepKg,
     caution=false,sessionMode='standard',now=Date.now()}={}){
@@ -19,7 +20,7 @@
         const indices=rows.map(r=>r.planSetIndex);
         const expected=targets.map((t,i)=>t?.index ?? i);
         const valid=rows.length===targets.length&&indices.every((n,i)=>Number.isInteger(n)&&n===expected[i])&&
-          rows.every(r=>r.reliable!==false&&r.unreliable!==true);
+          rows.every(r=>r.reliable!==false&&r.unreliable!==true&&Number.isFinite(r.weight)&&r.weight>0&&Number.isInteger(r.reps)&&r.reps>0&&Number.isInteger(r.rir)&&r.rir>=0&&r.rir<=5);
         return {...s,sets:valid?rows:[],invalid:!valid};
       }).filter(Boolean).filter(s=>typeof s.date==='string'&&Number.isFinite(Date.parse(s.date))&&Date.parse(s.date)<=now)
       .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
@@ -29,7 +30,8 @@
     const boundary=standard.findIndex(s=>s.invalid);
     const result=evidence.analyze(boundary<0?standard:standard.slice(0,boundary),exerciseId,{expectedWorkingSets:targets.length,now});
     if(result.status!=='comparable') return null;
-    return prescription.prescribe({samples:result.samples.map(s=>s.rows),targets,equipmentType,equipmentStepKg,caution});
+    const trend=trends?.classify(result.samples);
+    return prescription.prescribe({samples:result.samples.map(s=>s.rows),targets,equipmentType,equipmentStepKg,caution:!trend||trend.confidence==='low'||trend.status==='declining'||trend.status==='observe'});
   }
   return Object.freeze({suggest});
 });
