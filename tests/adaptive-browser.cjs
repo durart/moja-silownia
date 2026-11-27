@@ -29,6 +29,7 @@ const assert=require('node:assert/strict');
   await context.setOffline(true);
   await page.reload({waitUntil:'load'});
   assert.equal(await page.evaluate(()=>typeof globalThis.MojaAdaptiveAdapter?.suggest),'function');
+  assert.equal(await page.evaluate(()=>globalThis.MojaAdaptiveTrends.classify([20,20,20,20].map(reps=>({reps,reserve:4}))).status),'stagnation');
   assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),'adaptive-browser-sentinel');
   assert.ok(await page.evaluate(async()=> (await caches.keys()).includes('moja-silownia-preview-shell-v58-4.1.0-alpha2')));
   console.log('Adaptive browser, manual edit, offline reload and production storage sentinel passed');
