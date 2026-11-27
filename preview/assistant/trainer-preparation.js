@@ -6,10 +6,12 @@
     ? require('./timed-preparation.js') : root.MojaTimedPreparation;
   const timedCore = typeof module === 'object' && module.exports
     ? require('../modules/timed-exercise-core.js') : root.MojaTimedExercise;
-  const api = factory(progression,timed,timedCore);
+  const adaptive = typeof module === 'object' && module.exports
+    ? require('./adaptive-adapter.js') : root.MojaAdaptiveAdapter;
+  const api = factory(progression,timed,timedCore,adaptive);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.MojaTrainerPreparation = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression,timed,timedCore) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function(progression,timed,timedCore,adaptive) {
   'use strict';
   const MAX_SETS = 30;
   const supportedEquipment = new Set(['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg']);
@@ -123,6 +125,24 @@
       }
       if (!previous && !range && !hasTimedTarget) reps = null;
       return { weight: kg, reps, setType: isWarmup ? 'R' : 'W', targetRir: isWarmup || isRecovery ? 4 : targetRir };
+    });
+    const targets = rows.flatMap((row,index) => {
+      if (row.setType !== 'W') return [];
+      const range = targetRange(target,index);
+      const rir = number(target?.setDetails?.[index]?.rir ?? target?.rir);
+      return [{ ...range, rir, index }];
+    });
+    const candidate = !bodyweight && !hasTimedTarget && !caution && !isRecovery &&
+      advice.action !== 'review' && advice.action !== 'consider_decrease' && target &&
+      targets.every(t => Number.isInteger(t.min) && Number.isInteger(t.rir))
+      ? adaptive?.suggest({sessions,exerciseId:exercise.id,planId,slotIndex,targets,
+          equipmentType: equipmentType === 'unknown' ? 'unknown' : progression.resolveEquipmentType(equipmentType,topWeight),
+          equipmentStepKg:exercise.equipmentStepKg,sessionMode,caution}) : null;
+    if (candidate) targets.forEach((t,i) => {
+      const next = candidate[i];
+      if (next && rows[t.index].weight !== null) {
+        rows[t.index] = {...rows[t.index],weight:next.weight,reps:next.reps};
+      }
     });
     return { rows, advice, action: advice.action, reason: recentFlag || flags.has(activeFlag) ? 'review' : isRecovery ? 'recovery' : caution ? 'readiness' : mayIncrease || advice.action === 'consider_decrease' ? 'progression' : reference ? 'history' : 'plan' };
   }
