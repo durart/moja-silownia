@@ -1,0 +1,15 @@
+/* Isolated program screen, compatible with Sport Performance theme. */
+.programs-hub-tile{grid-column:1/-1}
+#programsContent progress{display:block;width:100%;height:12px;accent-color:#24c6df;margin:12px 0}
+#programsContent .program-clock{display:block;font-variant-numeric:tabular-nums;font-weight:800;font-size:clamp(2.6rem,13vw,4.7rem);text-align:center;line-height:1.3;color:#8ce8f4;margin:12px 0}
+#programsContent .program-primary{width:100%;min-height:48px;background:#087f98;color:white;font-weight:750;margin:8px 0}
+#programsContent .program-active button{margin:6px 0}
+#programsContent .program-exercise-art{width:100%;max-width:480px;display:block;margin:10px auto;border-radius:12px}
+#programsContent .program-week{padding:10px 12px;border:1px solid #385365;border-radius:10px;margin:10px 0}
+#programsContent .program-warning{color:#f3be75}
+#programsContent details p{margin:8px 0}
+
+.program-overview-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:.9rem}.program-overview-row strong{flex-shrink:0;text-align:right}.program-day-detail{margin:8px 0;padding:8px;border-top:1px solid #385365}.program-day-detail summary{cursor:pointer}
+
+#programsContent .program-advice{border:1px solid #385365;border-radius:10px;padding:12px;margin:12px 0;background:rgba(36,198,223,.04)}
+#programsContent .program-advice p{font-size:.9rem;margin:8px 0;overflow-wrap:anywhere}#programsContent .program-advice button{max-width:100%;white-space:normal}

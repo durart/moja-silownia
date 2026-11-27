@@ -25,7 +25,7 @@ window.CALISTHENICS_ICON_FILES={
 };
 window.CALISTHENICS_ICON_SVGS=Object.fromEntries(Object.entries(window.CALISTHENICS_ICON_FILES).map(([id,file])=>[id,'<img src="./assets/calisthenics/'+file+'" alt="" loading="lazy" decoding="async">']));
 // New entries use the approved R6 graphics directly, without duplicate image files.
-for(let index=23;index<=40;index++){
+for(let index=23;index<=64;index++){
  const id='cali-'+index;
  window.CALISTHENICS_ICON_SVGS[id]='<img src="./assets/graphics-r6/'+id+'.webp" alt="" loading="lazy" decoding="async">';
 }

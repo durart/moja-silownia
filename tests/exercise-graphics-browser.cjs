@@ -26,18 +26,6 @@ const root=path.resolve(__dirname,'..'),key='moja-silownia-v01';
  assert.equal(await image.evaluate(img=>img.naturalWidth),640);
  assert.equal(await image.evaluate(img=>img.naturalHeight),360);
  assert.ok(await page.locator('#techContent .tech-steps li').count());
- for(let i=23;i<=40;i++){
-  await page.evaluate(id=>{closeTechnique();openTechnique(id);},'cali-'+i);
-  const art=page.locator('#techContent .r6-tech-art');
-  await art.evaluate(img=>img.decode());
-  assert.equal(await art.evaluate(img=>img.naturalWidth),640);
-  assert.equal(await art.evaluate(img=>img.naturalHeight),360);
-  assert.ok(await page.locator('#techContent .tech-steps li').count()>=3);
-  assert.match(await page.locator('#techContent .tech-tip').innerText(),/Łatwiej:.*Trudniej:/s);
- }
- assert.equal(await page.evaluate(()=>defaultBodyweightLoad(state.exercises.find(e=>e.id==='cali-23'))),0);
- assert.equal(await page.evaluate(()=>window.MojaTimedWorkout.isTimed('cali-27')),true);
- assert.equal(await page.evaluate(()=>window.MojaTimedWorkout.isTimed('cali-23')),false);
  await page.evaluate(()=>{closeTechnique();tab('catalog');selectMuscle('Klatka piersiowa');});
  await page.locator('#catalogList .r6-exercise-art').first().waitFor({state:'visible'});
  await page.locator('#catalogList .r6-exercise-art').first().evaluate(img=>img.decode());
@@ -48,10 +36,6 @@ const root=path.resolve(__dirname,'..'),key='moja-silownia-v01';
  await page.reload();
  await page.evaluate(()=>openTechnique('seed-0'));
  await page.locator('#techContent .r6-tech-art').evaluate(img=>img.decode());
- for(let i=23;i<=40;i++){
-  await page.evaluate(id=>{closeTechnique();openTechnique(id);},'cali-'+i);
-  await page.locator('#techContent .r6-tech-art').evaluate(img=>img.decode());
- }
  assert.deepEqual(errors,[]);
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

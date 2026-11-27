@@ -1,0 +1,316 @@
+/* Program UI: uses the same atomic state save and backup as the training diary. */
+import {createRestAudio} from './rest-audio.js?v=1';
+import {canonicalExerciseId} from './exercise-identity.mjs';
+const core=window.MojaCircuitCore;
+const history=window.MojaProgramHistory;
+const preparation=window.MojaProgramPreparation;
+const progression=window.MojaCalisthenicsProgression;
+const programs=window.MojaProgramsData;
+const host=document.getElementById('programsContent');
+const defaultState=()=>({version:1,progress:{},active:null});
+const getState=()=>state.programTraining??defaultState();
+const programFor=id=>programs.find(p=>p.id===id);
+const dayFor=(p,day,revision=p?.scheduleRevision??1)=>history.definitionFor(p,day,revision);
+const validInt=(n,min,max)=>Number.isSafeInteger(n)&&n>=min&&n<=max;
+let selectedProgram=programs[0].id,selectedCount=1,selectedWarmup='none',selectedCooldown=false,failed=false,errorMessage='';
+const audio=createRestAudio({getRestUntil:()=>getState().active?.run?.status==='rest'?getState().active.run.deadline:null,note,document,window,fetch});
+function validate(v){
+ if(v==null)return true;
+ if(v.version!==1||!v.progress||typeof v.progress!=='object'||Array.isArray(v.progress)||Object.keys(v.progress).length>programs.length)throw Error('Nieprawidłowy zapis programu');
+ for(const [id,p] of Object.entries(v.progress)){
+  const def=programFor(id);
+  if(!def||p?.version!==def.version||!validInt(p.nextDay,1,def.days.length+1)||!Array.isArray(p.completed)||p.completed.length!==p.nextDay-1)throw Error('Nieprawidłowy postęp programu');
+  for(const [i,d] of p.completed.entries()){
+   if(d?.day!==i+1||!validInt(d.finishedAt,0,Number.MAX_SAFE_INTEGER)||!validInt(d.blockCount,0,3)||!Array.isArray(d.records)||d.records.length>2000)throw Error('Nieprawidłowy dzień programu');
+   const expected=dayFor(def,d.day,d.scheduleRevision??1);
+   if(!expected)throw Error('Nieznana wersja dnia programu');
+   if(expected.kind==='rest'){if(d.blockCount!==0||d.records.length||d.auxiliary!=null)throw Error('Nieprawidłowy odpoczynek');continue;}
+   if(d.blockCount===0)throw Error('Brak bloku');
+   if(d.historyId!=null&&!validInt(d.historyId,0,Number.MAX_SAFE_INTEGER))throw Error('Nieprawidłowy identyfikator historii');
+   if(d.startedAt!=null&&(!validInt(d.startedAt,0,d.finishedAt)))throw Error('Nieprawidłowy początek dnia');
+   const steps=core.build(expected.blocks,d.blockCount,def.blockRest);
+   if(d.auxiliary!=null){const l=preparation.layout(core,expected.blocks,d.blockCount,def.blockRest,d.auxiliary);if(!preparation.validateAuxiliary(l,d.auxiliary.records,core)||!validInt(d.auxiliary.mainStartedAt,d.startedAt??0,d.finishedAt)||!validInt(d.auxiliary.mainFinishedAt,d.auxiliary.mainStartedAt,d.finishedAt))throw Error('Nieprawidłowy zapis rozgrzewki lub schładzania');}
+   const exercises=steps.map((s,i)=>s.kind==='exercise'?i:null).filter(i=>i!==null);
+   if(d.records.length!==exercises.length||!d.records.every((r,j)=>r.position===exercises[j]&&validInt(r.actual,1,3600)&&validInt(r.completedAt,0,Number.MAX_SAFE_INTEGER)&&core.validAlternative(steps[r.position],r)))throw Error('Nieprawidłowe wyniki programu');
+  }
+ }
+ if(v.active!=null){
+  const a=v.active,p=programFor(a.programId),d=dayFor(p,a.day,a.scheduleRevision??1);
+  if(!p||!d||d.kind==='rest'||v.progress[p.id]?.nextDay!==a.day||!validInt(a.blockCount,1,d.blocks.length)||!core.valid(a.run))throw Error('Nieprawidłowy aktywny program');
+  const l=preparation.layout(core,d.blocks,a.blockCount,p.blockRest,a.auxiliary);
+  const expected=l.steps;
+  if(a.auxiliary!=null&&a.run.position>=l.mainOffset&&!validInt(a.mainStartedAt,a.run.startedAt,Number.MAX_SAFE_INTEGER))throw Error('Nieprawidłowy początek misji');
+  if(JSON.stringify(expected)!==JSON.stringify(a.run.steps)||expected.some(x=>x.unresolved)||a.run.records.some(x=>!validInt(x.completedAt,0,Number.MAX_SAFE_INTEGER)))throw Error('Nieprawidłowy przebieg programu');
+ }
+ return true;
+}
+function enrich(session,day){
+ // Keep program steps stable; use the existing canonical history identity where available.
+ session.sets=session.sets.map(set=>{const id=canonicalExerciseId(set.exerciseId);return id!==set.exerciseId&&state.exercises.some(e=>e.id===id)?{...set,originalExerciseId:set.exerciseId,exerciseId:id}:set;});
+ if(Number.isFinite(day.bodyWeightKg)&&day.bodyWeightKg>0)session.bodyWeightKg=day.bodyWeightKg;
+ if(session.durationSeconds!=null&&session.bodyWeightKg!=null)session.calories=estimateCalories(day.auxiliary?{...session,durationSeconds:Math.floor((day.auxiliary.mainFinishedAt-day.auxiliary.mainStartedAt)/1000)}:session);
+ session.muscles=muscleLoads(session);session.fatigueImpulse=muscleFatigueImpulse(session);
+ session.fatigueModel=session.sets.some(s=>s.measurementType==='duration')?3:2;
+ return session;
+}
+function persist(next,withHistory=false){
+ const previous=state.programTraining,previousSessions=state.sessions;
+ try{
+  validate(next);
+  const result=withHistory?history.reconcile(next,state.sessions,programs,core,enrich):{programTraining:next,sessions:state.sessions,lastId:null,added:[]};
+  state.programTraining=result.programTraining;state.sessions=result.sessions;
+  if(!save())throw Error('Nie zapisano danych.');
+  failed=false;errorMessage='';return result;
+ }catch(e){if(previous===undefined)delete state.programTraining;else state.programTraining=previous;state.sessions=previousSessions;failed=true;errorMessage=e.message;audio.stop();return false;}
+}
+function syncHistory(){
+ if(!state.programTraining)return false;
+ try{
+  const v=getState();validate(v);
+  if(!Object.values(v.progress).some(p=>p.completed.some(d=>d.blockCount>0&&d.historyId==null)))return true;
+  return !!persist(v,true);
+ }catch(e){failed=true;errorMessage=e.message;return false;}
+}
+function active(){return !!state.programTraining?.active;}
+function regularActive(){return !!(state.startedAt||state.activePlan||state.manualStarted||state.active?.length||state.pendingWorkout||window.MojaCardioWorkout?.hasRecords()||window.MojaCardioWorkout?.timer());}
+function progress(v,p){return v.progress[p.id]??{version:p.version,nextDay:1,completed:[]};}
+function startDay(p,day,count,selection=null){
+ if(active()||regularActive()){note('Najpierw zakończ aktywny trening.');return;}
+ const v=getState(),pr=progress(v,p);
+ if(day.day!==pr.nextDay||day.kind==='rest'||day.blocks.slice(0,count).some(b=>b.moves.some(m=>m.unresolved)))return;
+ const auxiliary=preparation.normalize(selection);
+ const l=preparation.layout(core,day.blocks,count,p.blockRest,auxiliary);
+ const run=core.create(l.steps,Date.now());
+ persist({...v,progress:{...v.progress,[p.id]:pr},active:{programId:p.id,day:day.day,blockCount:count,scheduleRevision:p.scheduleRevision??1,...(auxiliary?{auxiliary,mainStartedAt:l.mainOffset===0?run.startedAt:null}:{}),bodyWeightKg:ProfileCore.resolveWorkoutWeight({},ProfileCore.isValidProfile(state.profile)?state.profile:null,state.bodyWeight),run}});
+ render();
+}
+function completeDay(v,p,day,blockCount,records,finishedAt,startedAt,bodyWeightKg,scheduleRevision=p.scheduleRevision??1,auxiliary=null){
+ const pr=progress(v,p);
+ return {...v,active:null,progress:{...v.progress,[p.id]:{...pr,nextDay:day+1,completed:[...pr.completed,{day,blockCount,records,finishedAt,scheduleRevision,...(auxiliary?{auxiliary}:{}),...(Number.isSafeInteger(startedAt)?{startedAt}:{}),...(Number.isFinite(bodyWeightKg)?{bodyWeightKg}:{})}]}}};
+}
+function completeRest(p,day){
+ if(active()||regularActive())return;
+ const v=getState();
+ if(day.kind==='rest'&&progress(v,p).nextDay===day.day)persist(completeDay(v,p,day.day,0,[],Date.now()));
+ render();
+}
+function transition(event){
+ if(failed)return;
+ const v=getState(),a=v.active;
+ if(!a)return;
+ try{
+  validate(v);
+  const old=a.run,now=Date.now(),next=event.type==='skipPhase'?preparation.skipPhase(old,now):core.act(old,event,now);
+  if(next===old)return;
+  const p=programFor(a.programId);
+  const definition=dayFor(p,a.day,a.scheduleRevision??1);
+  const l=preparation.layout(core,definition.blocks,a.blockCount,p.blockRest,a.auxiliary);
+  const mainStartedAt=a.auxiliary!=null&&a.mainStartedAt==null&&next.position>=l.mainOffset?now:a.mainStartedAt;
+  const split=preparation.split(l,next.records);
+  const auxiliary=a.auxiliary!=null?{...a.auxiliary,records:split.aux,mainStartedAt,mainFinishedAt:split.main.at(-1)?.completedAt}:null;
+  const result=next.status==='done'?completeDay(v,p,a.day,a.blockCount,split.main,next.finishedAt,next.startedAt,a.bodyWeightKg,a.scheduleRevision??1,auxiliary):{...v,active:{...a,run:next,...(a.auxiliary!=null?{mainStartedAt}:{})}};
+  const saved=persist(result,next.status==='done');
+  if(!saved){render();return;}
+  if(old.status==='rest'&&next.status!=='rest'){if(event.type==='skipRest')audio.stop();else if(!audio.getScheduledUntil())audio.beep();}
+  if(event.type==='skipPhase')audio.stop();else if(old.status==='running'&&next.status!=='running'&&next.status!=='paused')audio.beep();
+  if(next.status==='rest'){audio.unlock();audio.schedule(next.deadline);}
+  render();
+  if(next.status==='done'&&saved.lastId!=null){if(!window.openSportSummary?.(saved.lastId))tab('history');}
+ }catch(e){failed=true;errorMessage=e.message;render();}
+}
+function node(tag,textValue,cls){
+ const el=document.createElement(tag);if(textValue!=null)el.textContent=String(textValue);if(cls)el.className=cls;return el;
+}
+function add(parent,tag,textValue,cls){const el=node(tag,textValue,cls);parent.append(el);return el;}
+function button(parent,label,action,cls='secondary'){
+ const b=add(parent,'button',label,cls);b.type='button';b.addEventListener('click',action);return b;
+}
+function fmt(seconds){return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}
+function target(m){if(m.unit==='breaths')return m.target+' oddechów';return m.type==='duration'?m.target+' s'+(m.perSide?' / stronę':''):m.target+' powt.'+(m.perSide?' / stronę':'');}
+function picture(parent,m){
+ if(!m.id)return;
+ const e=state.exercises.find(x=>x.id===m.id)||(window.CALISTHENICS_LIBRARY||[]).find(x=>x.id===m.id);
+ if(!e)return;
+ // Reuse trusted catalog art; no external image sources or imported HTML.
+ const img=add(parent,'img',null,'program-exercise-art');
+ const src=window.ExerciseGraphics?.exerciseGraphic(m.id);if(!src){img.remove();return;}img.src=src;img.alt=m.name;img.loading='lazy';
+ img.addEventListener('error',()=>img.remove(),{once:true});
+ button(parent,'Technika ćwiczenia',()=>openTechnique(m.id));
+}
+function renderOverview(parent,steps,records,position){
+ const done=new Map(records.map(r=>[r.position,r]));
+ const details=add(parent,'details',null,'program-week');details.open=true;
+ add(details,'summary','Wszystkie ćwiczenia i wyniki');
+ let block=null,round=null,phase=null;
+ for(const [i,base] of steps.entries()){
+  if(base.kind!=='exercise')continue;
+  const s=core.actualStep(base,done.get(i));
+  if(block!==s.block||round!==s.round||phase!==(s.phase??null)){block=s.block;round=s.round;phase=s.phase??null;add(details,'h4',phase==='warmup'?'Rozgrzewka':phase==='cooldown'?'Schładzanie':'Blok '+block+' · runda '+round);}
+  const row=add(details,'p',null,'program-overview-row');
+  add(row,'span',(done.has(i)?'✓ ':i===position?'→ ':'○ ')+s.name+(s.side?' · '+s.side:''));
+  add(row,'strong',done.has(i)?(s.unit==='breaths'?done.get(i).actual+' oddechów':history.resultLabel(s,done.get(i).actual)):(position===-1&&s.phase?'Pominięto':'Cel: '+target(s)));
+ }
+}
+function progressionContext(p,v){
+ const now=Date.now(),completed=progress(v,p).completed;
+ return {index:progression.collect(p,completed,core,history,now),fatigue:MuscleFatigueCore.fatigue(state.sessions,state.exercises,now)};
+}
+function recommendation(s,context){
+ return progression.advise(s,context.index,progression.relevantFatigue({...s,id:canonicalExerciseId(s.id)},state.exercises,MuscleFatigueCore,context.fatigue));
+}
+function adviceText(s,a){
+ if(a.alternative)return 'Rozważ '+s.alternative.name+' — '+a.suggested+' powt. Zmień wariant tylko jeśli technika pozostaje komfortowa.';
+ if(a.status==='caution')return a.suggested<s.target?'Rozważ krótszą serię: '+target({...s,target:a.suggested})+'. Nie ćwicz przez ból.':'Zachowaj ostrożność; w razie trudności skróć serię lub pomiń bloki bonusowe.';
+ if(a.status==='build')return 'Zacznij od '+target({...s,target:a.suggested})+' i nie wymuszaj realizacji wyższego celu.';
+ if(a.status==='ready')return 'Dwa poprzednie porównywalne treningi osiągnęły obecny cel. Zachowaj plan; zwiększaj trudność dopiero zgodnie z harmonogramem i przy dobrej technice.';
+ if(a.status==='maintain')return 'Kontynuuj cel programu, jeśli technika i samopoczucie na to pozwalają.';
+ return 'Brak porównywalnych wyników. Zacznij od celu programu w komfortowym zakresie.';
+}
+function renderAdvice(parent,s,a){
+ const box=add(parent,'div',null,'program-advice');
+ add(box,'strong','Asystent progresji kalistenicznej');
+ if(a.last)add(box,'p','Ostatni porównywalny dzień: '+a.last.day+' · najniższy wynik '+target({...s,target:a.last.minimum})+' · '+a.last.count+' serii.');
+ if(a.fatigue?.value>=65)add(box,'p','Wysokie szacowane obciążenie: '+a.fatigue.muscle+' '+a.fatigue.value+'/100. To model, nie pomiar regeneracji.','program-warning');
+ add(box,'p',adviceText(s,a));
+ if(s.type==='duration'&&a.suggested<s.target)add(box,'p','Timer zachowuje cel planu. Możesz zakończyć wcześniej lub zapisać faktyczny czas ręcznie.','muted');
+ return box;
+}
+function renderRun(v){
+ const a=v.active,p=programFor(a.programId),day=dayFor(p,a.day,a.scheduleRevision??1),r=a.run,s=r.steps[r.position];
+ add(host,'h2','Dzień '+day.day+' — '+day.title);
+ add(host,'p',s.phase==='warmup'?'Rozgrzewka':s.phase==='cooldown'?'Schładzanie':'Blok '+s.block+' / '+a.blockCount+' · runda '+s.round+(s.rounds?' / '+s.rounds:''),'muted');
+ const meter=add(host,'progress');meter.max=r.steps.length;meter.value=r.position;meter.setAttribute('aria-label','Postęp treningu');
+ const card=add(host,'div',null,'card program-active');
+ if(s.kind==='rest'){
+  add(card,'h2',s.reason==='block'?'Przerwa między blokami':s.reason==='round'?'Przerwa między rundami':'Przerwa po ćwiczeniu');
+  const out=add(card,'output',fmt(core.remaining(r,Date.now())),'program-clock');out.id='programClock';out.setAttribute('aria-label','Pozostały czas przerwy');
+  const next=r.steps[r.position+1];if(next)add(card,'p','Następne: '+next.name,'muted');
+  button(card,'Pomiń przerwę',()=>transition({type:'skipRest'}));
+ }else{
+  add(card,'h2',s.name+(s.side?' — '+s.side+' strona':''));
+  add(card,'p','Cel: '+target(s));
+  if(s.note)add(card,'p',s.note,'muted');
+  const advice=day.kind==='training'&&!s.phase?recommendation(s,progressionContext(p,v)):null;
+  const adviceBox=advice?renderAdvice(card,s,advice):null;
+  if(!s.id)add(card,'p','Ćwiczenie bez powiązanej grafiki w katalogu.','muted');else picture(card,s);
+  if(s.type==='duration'){
+   const out=add(card,'output',fmt(core.remaining(r,Date.now())),'program-clock');out.id='programClock';out.setAttribute('aria-label','Pozostały czas ćwiczenia');
+   if(r.status==='ready')button(card,'START',()=>{audio.unlock();transition({type:'start'});},'program-primary');
+   if(r.status==='running')button(card,'Pauza',()=>transition({type:'pause'}));
+   if(r.status==='paused')button(card,'Wznów',()=>{audio.unlock();transition({type:'resume'});},'program-primary');
+   if(r.status==='paused'||r.status==='running')button(card,'Zakończ wcześniej',()=>transition({type:'finish'}));
+  }
+  if(r.status==='ready'){
+   const label=add(card,'label',s.type==='duration'?'Wykonano (s)':s.unit==='breaths'?'Wykonano oddechów':'Wykonano '+(s.perSide?'na stronę':'powtórzeń'));
+   const input=add(label,'input');input.type='number';input.inputMode='numeric';input.min='1';input.max='3600';input.step='1';input.value=String(s.target);
+   let selectedAlternative=false,variantSelect=null;
+   if(s.alternative){const optionLabel=add(card,'label','Wariant ćwiczenia');const select=add(optionLabel,'select');variantSelect=select;const standard=add(select,'option',s.name);standard.value='standard';const easier=add(select,'option',s.alternative.name);easier.value='alternative';select.addEventListener('change',()=>{selectedAlternative=select.value==='alternative';input.value=String(selectedAlternative?s.alternative.target:s.target);});button(card,'Technika wariantu',()=>openTechnique(s.alternative.id));}
+   if(adviceBox&&advice&&(advice.alternative||advice.suggested<s.target)){
+    button(adviceBox,advice.alternative?'Wybierz zalecany wariant':'Ustaw zalecaną wartość',()=>{
+     if(advice.alternative&&variantSelect){variantSelect.value='alternative';selectedAlternative=true;}
+     else if(variantSelect){variantSelect.value='standard';selectedAlternative=false;}
+     input.value=String(advice.suggested);
+     note('Ustawiono zalecenie. Zatwierdź dopiero rzeczywiście wykonany wynik.');
+    });
+   }
+   button(card,s.type==='duration'?'Zapisz czas ręcznie':s.unit==='breaths'?'✓ Zatwierdź oddechy':'✓ Zatwierdź powtórzenia',()=>{const n=Number(input.value);if(!validInt(n,1,3600)){note('Podaj prawidłową liczbę.');return;}audio.unlock();transition({type:s.type==='duration'?'manual':'reps',actual:n,...(selectedAlternative?{alternative:true}:{})});},s.type==='reps'?'program-primary':'secondary');
+  }
+ }
+ if(s.phase)button(card,s.phase==='warmup'?'Pomiń resztę rozgrzewki':'Pomiń resztę schładzania',()=>{if(confirm('Pominąć pozostałe ćwiczenia tego etapu?'))transition({type:'skipPhase'});});
+ add(host,'p','Zapisane ćwiczenia: '+r.records.length,'muted');
+ renderOverview(host,r.steps,r.records,r.position);
+ button(host,'Przerwij dzień bez zaliczenia',()=>{if(confirm('Przerwać bieżący dzień? Zapisane wyniki tego dnia nie zostaną zaliczone.')){audio.stop();persist({...v,active:null});render();}},'danger');
+}
+function renderList(v){
+ if(programs.length>1){
+  const sel=add(host,'select');sel.setAttribute('aria-label','Program treningowy');
+  for(const p of programs){const o=add(sel,'option',p.title);o.value=p.id;}
+  sel.value=selectedProgram;sel.addEventListener('change',()=>{selectedProgram=sel.value;selectedCount=1;render();});
+ }
+ const p=programFor(selectedProgram)||programs[0],pr=progress(v,p),day=dayFor(p,pr.nextDay);
+ add(host,'h2',p.title);add(host,'p',p.weeks.length+' tygodni · '+p.days.length+' dni');
+ const meter=add(host,'progress');meter.max=p.days.length;meter.value=pr.completed.length;meter.setAttribute('aria-label','Postęp programu');
+ add(host,'p',pr.completed.length+' / '+p.days.length+' dni ukończonych');
+ if(day){
+  const card=add(host,'div',null,'card');
+  add(card,'h3','Dzień '+day.day+' — '+day.title);
+  if(day.kind==='rest'){add(card,'p','Dzisiaj pełny odpoczynek. Nie ma treningu.');button(card,'Zalicz dzień odpoczynku',()=>completeRest(p,day),'program-primary').disabled=regularActive();}
+  else{
+   const label=add(card,'label','Zakres treningu (czas orientacyjny)');
+   const sel=add(label,'select');
+   ['15 min — główna misja','30 min — + blok 1','45 min — + blok 2'].slice(0,day.blocks.length).forEach((x,i)=>{const o=add(sel,'option',x);o.value=String(i+1);});
+   selectedCount=Math.min(selectedCount,day.blocks.length);sel.value=String(selectedCount);
+   sel.addEventListener('change',()=>{selectedCount=Number(sel.value);render();});
+   for(const [i,b] of day.blocks.slice(0,selectedCount).entries()){
+    const details=add(card,'details');details.open=i===0;add(details,'summary',(i===0?'Główna misja':'Blok bonusowy '+i)+' · '+b.rounds+' rund');
+    if(b.rounds>1)add(details,'p','Przerwa po rundzie: '+b.rest+' s','muted');
+    for(const m of b.moves)add(details,'p',m.name+' — '+target(m)+(m.note?' · '+m.note:'')+(m.unresolved?' · wymaga wyjaśnienia':''));
+   }
+   if(day.kind==='training'){
+    const context=progressionContext(p,v),moves=core.build(day.blocks,selectedCount,p.blockRest).filter(s=>s.kind==='exercise');
+    const unique=new Map();
+    for(const s of moves){const k=progression.key(s);if(!unique.has(k))unique.set(k,s);}
+    const adviceList=[...unique.values()].map(s=>[s,recommendation(s,context)]).filter(([,a])=>a);
+    const details=add(card,'details',null,'program-advice');details.open=true;
+    add(details,'summary','Asystent progresji kalistenicznej');
+    add(details,'p','Cel programu pozostaje niezmieniony. Zalecenia bazują na porównywalnych ukończonych dniach i szacowanym obciążeniu mięśni.');
+    const caution=adviceList.some(([,a])=>a.status==='caution');
+    if(caution){add(details,'p','Rozważ samą główną misję, jeśli czujesz zmęczenie lub masz trudność z wykonaniem ćwiczeń.','program-warning');if(selectedCount>1)button(details,'Wybierz tylko główną misję',()=>{selectedCount=1;render();});}
+    for(const [s,a] of adviceList){const row=add(details,'p');add(row,'strong',s.name+(s.side?' · '+s.side:''));add(row,'span',' — '+adviceText(s,a));}
+    const warm=add(card,'label','Rozgrzewka (opcjonalna)');const choice=add(warm,'select');
+    for(const [id,title] of [['none','Bez rozgrzewki'],['express','Ekspresowa — ok. 2 min'],['standard','Standardowa — ok. 5 min']]){const opt=add(choice,'option',title);opt.value=id;}
+    choice.value=selectedWarmup;choice.addEventListener('change',()=>{selectedWarmup=choice.value;render();});
+    if(selectedWarmup!=='none'){const details=add(card,'details');add(details,'summary','Ćwiczenia rozgrzewkowe');for(const m of preparation.routines[selectedWarmup])add(details,'p',m.name+' — '+target(m));}
+    const cool=add(card,'label');const check=add(cool,'input');check.type='checkbox';check.checked=selectedCooldown;add(cool,'span',' Schładzanie — ok. 5 min');check.addEventListener('change',()=>{selectedCooldown=check.checked;render();});
+    if(selectedCooldown){const details=add(card,'details');add(details,'summary','Ćwiczenia schładzające');for(const m of preparation.routines.cooldown)add(details,'p',m.name+' — '+target(m));add(details,'p','Pozycja nr 6 nie została udokumentowana w dostarczonym materiale.','muted');}
+   }
+   const unresolved=day.blocks.slice(0,selectedCount).flatMap(b=>b.moves).filter(m=>m.unresolved);
+   if(unresolved.length)add(card,'p','Ten zakres zawiera niejednoznaczne pozycje ze źródła. Wybierz krótszy wariant do czasu ich wyjaśnienia.','program-warning');
+   if(regularActive())add(card,'p','Najpierw zakończ zwykły trening.','program-warning');
+   button(card,'Rozpocznij dzień',()=>startDay(p,day,selectedCount,day.kind==='training'&&(selectedWarmup!=='none'||selectedCooldown)?{version:1,warmup:selectedWarmup,cooldown:selectedCooldown}:null),'program-primary').disabled=regularActive()||!!unresolved.length;
+  }
+ }else add(host,'h3','Program ukończony!');
+ for(const [i,name] of p.weeks.entries()){
+  const details=add(host,'details',null,'program-week');details.open=day?.week===i+1;
+  add(details,'summary','Tydzień '+(i+1)+' — '+name);
+  for(const d of p.days.filter(d=>d.week===i+1)){
+   const done=d.day<pr.nextDay;
+   const entry=add(details,'details',null,'program-day-detail');
+   add(entry,'summary',(done?'✓ ':d.day===pr.nextDay?'→ ':'')+'Dzień '+d.day+' — '+d.title);
+   const completed=pr.completed.find(x=>x.day===d.day);
+   if(completed?.historyId!=null&&state.sessions.some(s=>String(s.id)===String(completed.historyId)))button(entry,'Pokaż podsumowanie treningu',()=>window.openSportSummary?.(completed.historyId));
+   if(completed?.blockCount>0){
+    add(entry,'p','Zrealizowano '+completed.blockCount+' z '+d.blocks.length+' bloków.');
+    const l=preparation.layout(core,dayFor(p,d.day,completed.scheduleRevision??1).blocks,completed.blockCount,p.blockRest,completed.auxiliary);
+    renderOverview(entry,l.steps,preparation.review(l,completed.records,completed.auxiliary?.records),-1);
+   }
+   for(const [bi,b] of d.blocks.entries()){
+    const block=add(entry,'details');add(block,'summary',(bi===0?'Główna misja':'Blok bonusowy '+bi)+' · '+b.rounds+' rund');
+    for(const m of b.moves)add(block,'p',m.name+' — '+target(m)+(m.note?' · '+m.note:'')+(m.unresolved?' · wymaga wyjaśnienia':''));
+   }
+   if(d.kind==='rest')add(entry,'p','Pełny odpoczynek.');
+  }
+ }
+ const last=pr.completed.at(-1);if(last)add(host,'p','Ostatnio ukończony dzień: '+last.day+' · zapisane wyniki: '+last.records.length,'muted');
+}
+function render(){
+ if(!host)return;
+ if(!failed)syncHistory();
+ host.replaceChildren();
+ try{const v=getState();validate(v);
+  if(errorMessage){add(host,'p',errorMessage,'program-warning');button(host,'Ponów zapis / odśwież stan',()=>{failed=false;errorMessage='';transition({type:'tick'});render();});}
+  if(v.active)renderRun(v);else renderList(v);
+ }catch(e){add(host,'p','Nie można bezpiecznie odczytać programu: '+e.message+'. Dotychczasowe dane nie zostały usunięte.','program-warning');}
+}
+function update(){
+ if(!active()||failed)return;
+ const run=getState().active.run;
+ if(['running','rest'].includes(run?.status)){
+  if(Date.now()>=run.deadline)transition({type:'tick'});
+  else {const clock=document.getElementById('programClock');if(clock)clock.textContent=fmt(core.remaining(run,Date.now()));}
+ }
+}
+window.MojaPrograms=Object.freeze({render,isActive:active,validate,syncHistory});
+setInterval(update,250);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){update();if(!document.getElementById('programsPanel').classList.contains('hidden'))render();}});
+render();

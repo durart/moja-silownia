@@ -46,17 +46,17 @@
       const weight = positive(set.weight), count = timed?0:Math.floor(positive(set.reps));
       timedSeconds+=seconds;
       volume += weight * count;
-      reps += count;
+      reps += count*(set.programSet?.perSide?2:1);
       const isPR = Array.isArray(set.pr) && set.pr.length > 0;
       if (isPR) records++;
       const id = String(set.exerciseId || 'unknown-' + i);
       const slot = Number.isInteger(set.planSlotIndex) ? set.planSlotIndex : null;
-      const key = JSON.stringify([id, slot]);
+      const key = JSON.stringify([id, slot, set.programSet?String(set.name||''):null]);
       let group = byKey.get(key);
       if (!group) {
         group = {
           key, id, slot, name: String(set.name || 'Ćwiczenie bez nazwy'),
-          count: 0, minWeight: null, maxWeight: null, records: 0, sets: []
+          count: 0, minWeight: null, maxWeight: null, records: 0, sets: [], program: !!set.programSet
         };
         groups.push(group);
         byKey.set(key, group);
@@ -68,7 +68,7 @@
       if(timed)group.timedSeconds=(group.timedSeconds||0)+seconds;
       group.sets.push({
         weight, ...(timed?{measurementType:'duration',durationSeconds:seconds}:{reps:count,rir:set.rir==null?null:safeNumber(set.rir)}),
-        records: isPR ? set.pr.map(String) : []
+        records: isPR ? set.pr.map(String) : [], ...(set.programSet?{programSet:{...set.programSet}}:{})
       });
     }
     let cardioSeconds=0;
@@ -81,14 +81,14 @@
       groups.push({key:'cardio-'+String(activity.id),id:ex.id,name:ex.name,measurementType:'cardio',durationSeconds:activity.durationSeconds,activity:{...activity},count:0,sets:[],records:0});
     }
     let calories = session.calories;
-    if (!calories || !Number.isFinite(Number(calories.active))) {
+    if ((!calories || !Number.isFinite(Number(calories.active))) && (!session.program || (session.durationSeconds!=null&&session.bodyWeightKg!=null))) {
       calories = typeof options?.estimateCalories === 'function'
         ? options.estimateCalories(session) : null;
     }
     const activeKcal = calories && Number.isFinite(Number(calories.active))
       ? Math.max(0, Math.round(Number(calories.active))) : null;
     return {
-      id: session.id,
+      id: session.id, ...(session.program?{program:{...session.program}}:{}),
       name: String(session.planName || 'Trening dowolny'),
       date: dateLabel(session.date),
       fileDate: filenameDate(session.date),
