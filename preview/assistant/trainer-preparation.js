@@ -44,6 +44,7 @@
         if (context.planId != null && Number.isInteger(context.slotIndex)) {
           const samePlan = sets.filter(row => row.planId === context.planId);
           if (samePlan.length) sets = samePlan.filter(row => row.planSlotIndex === context.slotIndex);
+          else if (new Set(sets.map(row => JSON.stringify([row.planId ?? null,row.planSlotIndex ?? null]))).size > 1) sets = [];
         }
         if (sets.length && sets.every(row => Number.isInteger(row.planSetIndex)) && new Set(sets.map(row=>row.planSetIndex)).size===sets.length) sets.sort((a,b)=>a.planSetIndex-b.planSetIndex);
         else if (sets.length && sets.every(row => Number.isInteger(row.manualSetIndex)) && new Set(sets.map(row=>row.manualSetIndex)).size===sets.length) sets.sort((a,b)=>a.manualSetIndex-b.manualSetIndex);
@@ -78,7 +79,17 @@
     const topReps = topRows.filter(row => Number(row.weight) === topWeight).map(row => Number(row.reps));
     const inferred = topReps.length ? { min: Math.min(...topReps), max: Math.max(...topReps) } : { min: 8, max: 12 };
     const range = overall ?? inferred;
-    const advice = progression.suggest(history, exercise.id, { minReps: range.min, maxReps: range.max, equipmentType, equipmentStepKg: exercise.equipmentStepKg });
+    const plannedRir = number(target?.rir);
+    const explicitRir = plannedRir !== null && Number.isInteger(plannedRir) && plannedRir >= 0 && plannedRir <= 5;
+    const explicitWarmup = detail => detail?.setType === 'R' || detail?.type === 'warmup';
+    const expectedWorkingSets = count - Array.from({length: count}, (_, i) => target?.setDetails?.[i]).filter(explicitWarmup).length;
+    const uniformTargets = Array.from({length: count}, (_, i) => i).filter(i => !explicitWarmup(target?.setDetails?.[i])).every(i => {
+      const rowRange = targetRange(target, i);
+      return rowRange?.min === overall?.min && rowRange?.max === overall?.max &&
+        number(target?.setDetails?.[i]?.rir ?? target?.rir) === plannedRir;
+    });
+    const advice = progression.suggest(history, exercise.id, { minReps: range.min, maxReps: range.max, equipmentType, equipmentStepKg: exercise.equipmentStepKg,
+      ...(explicitRir ? {targetRir: plannedRir, expectedWorkingSets: overall && uniformTargets ? expectedWorkingSets : 0} : {}) });
     const recentFlag = (Array.isArray(sessions) ? sessions : []).filter(s => typeof s?.date === 'string' && Number.isFinite(Date.parse(s.date)) && (s.exerciseNotes?.[exercise.id] || validRows(s,exercise.id).length)).sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,5).some(s => flags.has(s.exerciseNotes?.[exercise.id]?.flag));
     const caution = recentFlag || flags.has(activeFlag) || readinessCaution(preWorkout);
     const hasTimedTarget = /\b(?:s|sek\.?|sekund|min\.?|maks\.?)\s*$/i.test(String(target?.reps ?? ''));
@@ -86,6 +97,8 @@
     const rows = Array.from({length: count}, (_, i) => {
       const detail = target?.setDetails?.[i];
       const previous = prior[i];
+      const plannedRir = number(detail?.rir ?? target?.rir);
+      const targetRir = plannedRir !== null && Number.isInteger(plannedRir) && plannedRir >= 0 && plannedRir <= 5 ? plannedRir : 2;
       const isWarmup = detail?.setType === 'R' || detail?.type === 'warmup' || (detail?.setType !== 'W' && detail?.type !== 'working' && warmup(previous));
       const range = targetRange(target, i);
       let kg = weight(previous?.weight) ?? weight(detail?.weight) ?? weight(target?.weight);
@@ -97,18 +110,21 @@
         const normal = weight(standardRows[i]?.weight);
         // Do not invent equipment-compatible weights when no recovery reference exists.
         if (!recovery.length || !previous || (normal !== null && kg > normal)) kg = null;
+      } else if (!caution && !isRecovery && !isWarmup && previous && advice.action === 'consider_decrease' && Number.isFinite(advice.suggestedWeight) && Number(previous.weight) === advice.weight) {
+        kg = advice.suggestedWeight;
+        if (range) reps = range.min;
       } else if (mayIncrease && !isWarmup && previous && Number(previous.weight) === advice.weight) {
         kg = advice.suggestedWeight;
         if (range) reps = range.min;
         else reps = Math.min(Number(previous.reps), inferred.min);
-      } else if (!caution && !isRecovery && !isWarmup && previous && number(previous.rir) >= 2 && advice.action !== 'review' && (range ? Number(previous.reps) < range.max : !target && Number(previous.reps) < 30)) {
+      } else if (!caution && !isRecovery && !isWarmup && previous && number(previous.rir) !== null && number(previous.rir) >= (explicitRir ? targetRir + 1 : 2) && advice.action !== 'review' && (range ? Number(previous.reps) < range.max : !target && Number(previous.reps) < 30)) {
         // Progress repetitions from actual performance; never force a missed lower goal.
         reps = Math.min(range?.max ?? 30, Number(previous.reps) + 1);
       }
       if (!previous && !range && !hasTimedTarget) reps = null;
-      return { weight: kg, reps, setType: isWarmup ? 'R' : 'W', targetRir: isWarmup || isRecovery ? 4 : 2 };
+      return { weight: kg, reps, setType: isWarmup ? 'R' : 'W', targetRir: isWarmup || isRecovery ? 4 : targetRir };
     });
-    return { rows, action: advice.action, reason: recentFlag || flags.has(activeFlag) ? 'review' : isRecovery ? 'recovery' : caution ? 'readiness' : mayIncrease ? 'progression' : reference ? 'history' : 'plan' };
+    return { rows, advice, action: advice.action, reason: recentFlag || flags.has(activeFlag) ? 'review' : isRecovery ? 'recovery' : caution ? 'readiness' : mayIncrease || advice.action === 'consider_decrease' ? 'progression' : reference ? 'history' : 'plan' };
   }
   return Object.freeze({ prepare, repRange, readinessCaution, isTimedExercise:exercise=>timedCore?.measurementType(exercise)==='duration' });
 });
