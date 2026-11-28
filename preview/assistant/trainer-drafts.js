@@ -61,12 +61,28 @@
   function ensure(state,id,slot,target,completed=[]) {
     if (!active(state)) return {entry:null,changed:false};
     const existing=get(state,id,slot);
-    if (existing && (existing.rows.every(r=>r?.measurementType==='duration') || !preparation.isTimedExercise(state.exercises?.find(e=>e.id===id)))) return {entry:existing,changed:false};
+    const compatible=existing&&(existing.rows.every(r=>r?.measurementType==='duration')||!preparation.isTimedExercise(state.exercises?.find(e=>e.id===id)));
+    if(compatible&&existing.mode!==(state.activeSessionMode||'standard'))return {entry:existing,changed:refreshMode(state,id,slot,target,completed)};
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return {entry:null,changed:false};
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
       preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state),adaptiveRecovery:state.preWorkout?.adaptiveRecovery===true});
     const prefs=settings(state);
+    if(compatible){
+      // Re-evaluate untouched suggestions; no history, completed set, or manual edit is rewritten.
+      const rows=existing.rows.map((prior,i)=>{
+        if(completed[i]||prior?.edited)return prior;
+        const next=normalizeRow(prepared.rows[i]);
+        if(!prefs.weights){next.weight=null;delete next.explanation;}
+        if(!prefs.reps){if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;delete next.explanation;}
+        return next;
+      });
+      const updated={...existing,rows,reason:prepared.reason};
+      if(prepared.advice)updated.advice=prepared.advice;else delete updated.advice;
+      const changed=JSON.stringify(updated)!==JSON.stringify(existing);
+      if(changed)state.trainerWorkout.entries[key(id,slot)]=updated;
+      return {entry:changed?updated:existing,changed};
+    }
     const legacyCount=Number.isInteger(Number(target?.sets))&&Number(target.sets)>0?Math.min(MAX_ROWS,Number(target.sets)):Number.isInteger(slot)?3:1;
     const count=Math.min(MAX_ROWS,Math.max(completed.length,existing?.rows.length||0,prefs.sets?prepared.rows.length:legacyCount));
     const rows=Array.from({length:count},(_,i)=>{
@@ -128,7 +144,7 @@
   }
   function refreshMode(state,id,slot,target,completed=[]) {
     const entry=get(state,id,slot);
-    if (!entry||entry.mode===state.activeSessionMode) return false;
+    if (!entry||entry.mode===(state.activeSessionMode||'standard')) return false;
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return false;
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
@@ -143,13 +159,13 @@
       const value=entry.rows[i];
       const prior=normalizeRow(value);
       if (completed[i]||prior.edited) return prior;
-      if(!prepared.rows[i]&&value){delete prior.explanation;return prior;}
+      if(!prepared.rows[i]&&value){return {...blankRow(),setType:prior.setType};}
       const next=normalizeRow(prepared.rows[i]??(prepared.rows[0]?.measurementType==='duration'?prepared.rows.at(-1):undefined));
       if (!prefs.weights) {next.weight=null;delete next.explanation;}
       if (!prefs.reps) {delete next.explanation;if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;}
       return next;
     });
-    entry.mode=state.activeSessionMode;entry.reason=prepared.reason;if(prepared.advice)entry.advice=prepared.advice;else delete entry.advice;return true;
+    entry.mode=state.activeSessionMode||'standard';entry.reason=prepared.reason;if(prepared.advice)entry.advice=prepared.advice;else delete entry.advice;return true;
   }
   return Object.freeze({active,initialize,clear,get,settings,ensure,removeExercise,row,change,capture,append,removeRow,refreshMode});
 });

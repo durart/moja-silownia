@@ -19,7 +19,8 @@ const EQUIPMENT_LABELS = Object.freeze({
 });
 const numeric = value => (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) && Number.isFinite(Number(value));
 const observation=typeof module==='object'&&module.exports?require('../modules/set-observation.js'):globalThis.MojaSetObservation;
-const flagNeedsReview = flag => ['pain', 'equipment', 'technique'].includes(flag);
+const safety=typeof module==='object'&&module.exports?require('./recommendation-safety.js'):globalThis.MojaRecommendationSafety;
+const flagNeedsReview=safety.flagNeedsReview;
 const sessionMode = typeof MojaSessionMode !== 'undefined'
   ? MojaSessionMode
   : (typeof module === 'object' && module.exports && typeof require === 'function'
@@ -114,6 +115,8 @@ function suggest(sessions, exerciseId, options = {}) {
     skippedRecoveryCount: allHistory.length - history.length, lastDate: latest.session.date
   };
   const result = (action, reason, extra = {}) => ({ action, reason, ...base, ...extra });
+  const historyRestriction=safety.historyBlock({sessions,exerciseId});
+  if(historyRestriction)return safety.blockedAdvice(base,historyRestriction);
   const increase = (path, reason, extra = {}) => {
     const loading = calculateNextWeight(weight, options.equipmentType || options.equipment,
       options.equipmentStepKg);

@@ -94,3 +94,78 @@ test('candidate modules and immutable raw records: valid standard progression st
  assert.equal(result.rows[0].weight,72.5);
  assert.equal(JSON.stringify(history),before);
 });
+
+const safety=require('../preview/assistant/recommendation-safety.js');
+const drafts=require('../preview/assistant/trainer-drafts.js');
+const planTarget={sets:2,reps:'8-12',rir:2};
+const planRow=(i,extra={})=>row({planId:'A',planSlotIndex:0,planSetIndex:i,rir:4,...extra});
+const planHistory=()=>[session([planRow(0),planRow(1)])];
+test('PS-010: skipped, replaced, incomplete or unreliable latest slot blocks fallback',()=>{
+ const prior=planHistory();
+ const attempts=[
+  [planRow(0,{exerciseId:'other',planSlotIndex:1})],
+  [planRow(0,{exerciseId:'other'}),planRow(1,{exerciseId:'other'})],
+  [planRow(0)],
+  [planRow(0),planRow(1,{reliable:false})],
+  [planRow(0),planRow(1,{rir:null})]
+ ];
+ for(const sets of attempts){
+  const history=[...prior,{date:'2026-11-24T12:00:00Z',sets}];
+  const before=JSON.stringify(history);
+  const result=trainer.prepare({sessions:history,exercise:ex,planId:'A',slotIndex:0,target:planTarget});
+  assert.notEqual(result.advice.action,'consider_increase');
+  assert.ok(result.rows.every(r=>r.weight===null||r.weight<=70));
+  assert.equal(JSON.stringify(history),before);
+ }
+});
+test('PS-010: exact comparable plan still progresses; another plan cannot override its load',()=>{
+ const history=[...planHistory(),{date:'2026-11-24T12:00:00Z',sets:[planRow(0,{planId:'B',weight:100}),planRow(1,{planId:'B',weight:100})]}];
+ const result=trainer.prepare({sessions:history,exercise:ex,planId:'A',slotIndex:0,target:planTarget});
+ assert.equal(result.rows[0].weight,72.5);
+ const missing=trainer.prepare({sessions:history,exercise:ex,planId:'C',slotIndex:0,target:planTarget});
+ assert.notEqual(missing.advice.action,'consider_increase');
+});
+test('PS-004/011/012: current restrictions are identical in recommendation gate',()=>{
+ assert.equal(safety.currentBlock({exercise:ex,activeFlag:'pain'}),'flag');
+ assert.equal(safety.currentBlock({exercise:ex,sessionMode:'recovery'}),'recovery');
+ assert.equal(safety.currentBlock({exercise:ex,preWorkout:{sleepHours:4}}),'readiness');
+ assert.equal(safety.currentBlock({exercise:ex,sessionMode:'unknown'}),'invalid_mode');
+ assert.equal(safety.currentBlock({exercise:{id:'seed-28'}}),'assisted');
+ assert.equal(safety.currentBlock({exercise:ex} ),null);
+});
+test('PS-011/012/013/014: restored draft revalidates without overwriting edited or completed rows',()=>{
+ const state={startedAt:'2026-11-25T12:00:00Z',activePlan:'A',activeSessionMode:'standard',exercises:[ex],sessions:planHistory()};
+ const raw=JSON.stringify(state.sessions);
+ drafts.initialize(state);
+ assert.equal(drafts.ensure(state,ex.id,0,planTarget).entry.rows[0].weight,72.5);
+ assert.equal(drafts.ensure(state,ex.id,0,planTarget).changed,false);
+ drafts.change(state,ex.id,0,0,'weight','65');
+ const restored=JSON.parse(JSON.stringify(state));
+ restored.activeExerciseNotes={[ex.id]:{flag:'pain'}};
+ const entry=drafts.ensure(restored,ex.id,0,planTarget).entry;
+ assert.equal(entry.rows[0].weight,65);
+ assert.equal(entry.rows[1].weight,null);
+ assert.equal(JSON.stringify(restored.sessions),raw);
+ delete restored.activeExerciseNotes;
+ restored.preWorkout={sleepHours:4};
+ const after=drafts.ensure(restored,ex.id,0,planTarget).entry;
+ assert.equal(after.rows[0].weight,65);
+ assert.ok(after.rows[1].weight===null||after.rows[1].weight<=70);
+ restored.activeSessionMode='recovery';
+ const recovered=drafts.ensure(restored,ex.id,0,planTarget).entry;
+ assert.equal(recovered.rows[0].weight,65);
+ assert.equal(recovered.mode,'recovery');
+ assert.ok(recovered.rows[1].weight===null||recovered.rows[1].weight<=70);
+});
+test('PS-005: changed exercise step invalidates untouched increased draft',()=>{
+ const state={startedAt:'2026-11-25T12:00:00Z',activePlan:'A',activeSessionMode:'standard',exercises:[{...ex}],sessions:planHistory()};
+ drafts.initialize(state);
+ assert.equal(drafts.ensure(state,ex.id,0,planTarget).entry.rows[0].weight,72.5);
+ state.exercises[0].equipmentStepKg=20;
+ const next=drafts.ensure(state,ex.id,0,planTarget).entry;
+ assert.equal(next.rows[0].weight,70);
+});
+test('PS-003: invalid latest observation cannot be skipped to escalate from older history',()=>{
+ const history=[session([row({rir:4}),row({rir:4})]),{date:'2026-11-24T12:00:00Z',sets:[row({rir:4,reliable:false})]}];
+ assert.notEqual(progression.suggest(history,ex.id,{equipmentType:'barbell'}).action,'consider_increase');
+});

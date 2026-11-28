@@ -47,6 +47,7 @@
     return trends.summarize(entries);
   }
   function evaluate(input={}) {
+    if(observation.isAssistedLoad(input.exerciseId))return null;
     const samples=collect(input);
     if(!samples) return null;
     const {targets,equipmentType,equipmentStepKg}=input;

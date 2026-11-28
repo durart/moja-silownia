@@ -36,24 +36,27 @@ function makeTimedCard(exerciseId,options){
  if(goals.length){const goal=document.createElement('small');goal.textContent='Cel serii roboczych: '+goals.map(s=>s+' s').join(' / ');box.append(goal);}
  return box;
 }
+function livePreparation(exerciseId,options){
+ const exercise=state.exercises?.find(item=>String(item.id)===String(exerciseId));
+ const plan=state.plans?.find(item=>item.id===state.activePlan);
+ const slot=options.slotIndex;
+ if(!exercise||state.activePlan!==options.planId||Number.isInteger(slot)&&(!plan||String(state.workoutSwaps?.[slot]??plan.exerciseIds?.[slot])!==String(exerciseId)))return null;
+ let target=Number.isInteger(slot)?plan?.targets?.[slot]:null;
+ if(target&&state.workoutSwaps?.[slot])target={sets:target.sets};
+ return window.MojaTrainerPreparation.prepare({sessions:state.sessions,exercise,target,planId:state.activePlan,slotIndex:slot,plan,sessionMode:state.activeSessionMode,preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[exerciseId]?.flag});
+}
+function rowSignature(input){
+ return JSON.stringify([...(input.closest('.hevy-set')?.querySelectorAll('input,select')||[])].map(field=>[field.id,field.value]));
+}
 function makeCard(exerciseId,options={}){
  const exercise=state.exercises?.find(item=>String(item.id)===String(exerciseId));
  if(window.MojaTimedWorkout?.isTimed(exerciseId))return makeTimedCard(exerciseId,options);
- const equipmentLabel=exercise?.equipmentType||exercise?.equipment;
- const supported=['barbell','dumbbell','dumbbell_light','machine_stack','cable_micro','Sztanga','Hantle','Maszyna','Wyciąg'];
- const result=options.prepared?.advice || window.MojaAdvisorProgression.suggest(state.sessions,exerciseId,{
-  ...options,
-  equipmentType:supported.includes(equipmentLabel)?equipmentLabel:'unknown',
-  equipmentStepKg:exercise?.equipmentStepKg
- });
- const pre=state.preWorkout||{};
- const lowFeeling=typeof pre.feeling==='string'&&/^(bad|poor|low|slabo|słabo|zle|źle|tired|1|2)$/i.test(pre.feeling);
- const shortSleep=Number(pre.sleepHours)>0&&Number(pre.sleepHours)<6;
- const lowBattery=pre.battery!=null&&pre.battery!==''&&Number(pre.battery)<30;
- const lowSleepScore=pre.sleepScore!=null&&pre.sleepScore!==''&&Number(pre.sleepScore)<50;
- const cautionToday=lowFeeling||shortSleep||lowBattery||lowSleepScore;
- const prepared=options.prepared;
- const reasons={recovery:'Trening regeneracyjny: nie zwiększam obciążenia. Gdy nie ma porównywalnej sesji regeneracyjnej, wybierz lekki ciężar samodzielnie.',review:'Ból, technika lub zmiana sprzętu wymagają ręcznej weryfikacji obciążenia.',readiness:'Dzisiejsze samopoczucie lub sen ograniczają progresję.',plan:'Brak porównywalnej historii. Uzupełniam tylko znane parametry planu.',history:'Wykorzystuję porównywalne, zakończone serie. Zachowuję układ ciężarów.'};
+ const prepared=options.prepared||livePreparation(exerciseId,options);
+ const result=prepared?.advice||{action:'insufficient_data',reason:'Brak porównywalnych danych do progresji.'};
+ const safety=window.MojaRecommendationSafety;
+ const block=safety.currentBlock({exercise,sessionMode:state.activeSessionMode,preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[exerciseId]?.flag});
+ const cautionToday=block!==null;
+ const reasons={recovery:'Trening regeneracyjny: nie zwiększam obciążenia. Gdy nie ma porównywalnej sesji regeneracyjnej, wybierz lekki ciężar samodzielnie.',review:'Ból, technika, asysta lub zmiana sprzętu wymagają ręcznej weryfikacji obciążenia.',context_review:'Historia nie potwierdza bezpiecznej zmiany obciążenia.',readiness:'Dzisiejsze samopoczucie lub sen ograniczają progresję.',plan:'Brak porównywalnej historii. Uzupełniam tylko znane parametry planu.',history:'Wykorzystuję porównywalne, zakończone serie. Zachowuję układ ciężarów.'};
  const meta=prepared&&reasons[prepared.reason]?{label:prepared.reason==='recovery'?'Trening regeneracyjny':prepared.reason==='review'?'Sprawdź obciążenie':'Przygotowanie serii',tone:prepared.reason==='review'||prepared.reason==='readiness'?'caution':'steady'}:guidance(result),box=document.createElement('section');
  box.className='advisor-progression advisor-'+meta.tone;box.setAttribute('aria-label','Wskazówka progresji treningowej');
  const eyebrow=document.createElement('span');eyebrow.className='advisor-progression-overline';eyebrow.textContent='ASYSTENT · PROGRESJA';
@@ -68,15 +71,27 @@ function makeCard(exerciseId,options={}){
  const ongoing=currentSession(exerciseId).filter(x=>x.setType!=='R').length;
  if(ongoing){const info=document.createElement('small');info.textContent='W bieżącym treningu zapisano już '+ongoing+' serii tego ćwiczenia. Sugestia bazuje na ostatnim zakończonym treningu.';box.append(info);}
  if(result.action==='consider_increase'&&cautionToday){const info=document.createElement('small');info.className='advisor-readiness-caution';info.textContent='Wyniki serii pozwalają rozważyć progresję, ale dzisiejszy sen lub samopoczucie sugerują ostrożność. Możesz utrzymać obecny ciężar albo zmniejszyć objętość. To nie jest medyczna ocena regeneracji.';box.append(info);}
- if(result.action==='consider_increase'&&!cautionToday&&!['pain','equipment','technique'].includes(state.activeExerciseNotes?.[exerciseId]?.flag)){
+ if(result.action==='consider_increase'&&!cautionToday&&prepared?.reason==='progression'){
   const caution=document.createElement('small');caution.textContent='Nie zwiększaj ciężaru przy bólu, pogorszeniu techniki lub dużym zmęczeniu. Ostateczna decyzja należy do Ciebie.';box.append(caution);
   if(Number.isFinite(result.suggestedWeight)&&!window.MojaTrainerDrafts?.active(state)){
    const apply=document.createElement('button');apply.type='button';apply.className='secondary';apply.textContent='Ustaw '+result.suggestedWeight+' kg w tym treningu';
+   const workout=state.startedAt;
+   const baseline=new Map([...(options.card?.querySelectorAll('input[id$="_w"]')||[])].map(input=>[input.id,rowSignature(input)]));
+   const fresh=()=>{
+    if(!workout||state.startedAt!==workout||!box.isConnected||window.MojaTrainerDrafts?.active(state))return false;
+    const current=livePreparation(exerciseId,options);
+    return current?.reason==='progression'&&current.advice?.action==='consider_increase'&&current.advice.suggestedWeight===result.suggestedWeight&&current.advice.weight===result.weight;
+   };
+   const reject=()=>{apply.disabled=true;alert('Warunki treningu się zmieniły. Odśwież zalecenie.');};
    apply.addEventListener('click',()=>{
-    if(['pain','equipment','technique'].includes(state.activeExerciseNotes?.[exerciseId]?.flag)){alert('Najpierw wyjaśnij problem oznaczony w notatce. Zwiększenie ciężaru jest zablokowane.');return;}
-    if(!confirm('Ustawić '+result.suggestedWeight+' kg w niezapisanych seriach tego ćwiczenia? Historia i plan pozostaną bez zmian.'))return;
+    if(!fresh()){reject();return;}
+    if(!confirm('Ustawić '+result.suggestedWeight+' kg w niezapisanych, niezmienionych seriach roboczych tego ćwiczenia? Historia i plan pozostaną bez zmian.'))return;
+    if(!fresh()){reject();return;}
     const card=box.closest('.exercise-card');
-    const inputs=[...(card?.querySelectorAll('input[id$="_w"]')||[])].filter(input=>!input.closest('.hevy-done'));
+    const inputs=[...(card?.querySelectorAll('input[id$="_w"]')||[])].filter(input=>!input.closest('.hevy-done')&&
+      document.getElementById(input.id.replace(/_w$/,'_type'))?.value==='W'&&
+      input.value!==''&&Number(input.value)===result.weight&&baseline.get(input.id)===rowSignature(input));
+    if(!inputs.length){apply.disabled=true;alert('Nie ma niezapisanych, niezmienionych serii z tym ciężarem.');return;}
     for(const input of inputs){input.value=String(result.suggestedWeight);input.dispatchEvent(new Event('change',{bubbles:true}));}
     apply.textContent='Ustawiono '+result.suggestedWeight+' kg';apply.disabled=true;
    });box.append(apply);
@@ -127,7 +142,7 @@ function decorate(root,mode){
   const planInput=card.querySelector('input[id^="r_"][id$="_w"]');
   const slotMatch=planInput?.id.match(/^r_(\d+)_\d+_w$/);
   const prepared=window.MojaTrainerDrafts?.get(state,id,slotMatch?Number(slotMatch[1]):null);
-  const cardNode=makeCard(id,{...numberRange(target),prepared});
+  const cardNode=makeCard(id,{...numberRange(target),prepared,card,planId:state.activePlan,slotIndex:slotMatch?Number(slotMatch[1]):null});
   if(window.MojaTrainerDrafts?.active(state)){
    if(!window.MojaTrainerDrafts.settings(state).explanation)continue;
    const label=document.createElement('small');label.textContent=window.MojaTimedWorkout?.isTimed(id)?'Asystent przygotował edytowalne cele czasowe. Zapisz faktyczny czas.':'Asystent przygotował edytowalne serie. RIR wpisz po wykonaniu.';cardNode.prepend(label);

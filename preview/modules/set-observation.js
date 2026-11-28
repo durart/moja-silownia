@@ -35,7 +35,7 @@
  function isAssistedLoad(value){
   const id=typeof value==='string'?value:String(value?.exerciseId??value?.id??'');
   return id==='seed-28'||value?.resistanceKind==='assisted_load'||value?.weightConvention==='assistance'||
-   /\bz asystą\b|\bz przeciwwagą\b|\bassisted\b/iu.test(String(value?.name??''));
+   /(?:^|\s)z (?:asystą|przeciwwagą)(?:\s|$)|\bassisted\b/iu.test(String(value?.name??''));
  }
  function validRepetitions(row){
   const kg=number(row?.weight),reps=number(row?.reps);
