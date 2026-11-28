@@ -110,7 +110,7 @@ function makeCard(exerciseId,options={}){
   const info=document.createElement('small');info.textContent='Dostępny skok jest zbyt duży dla bezpiecznej rekomendacji automatycznej.';box.append(info);
  }
  if(window.MojaAdvisorEquipmentUI?.decorate){
-  window.MojaAdvisorEquipmentUI.decorate(box,exercise,()=>{if(window.MojaTrainerDrafts?.active(state)){if(state.activePlan)renderPlanWorkout();else renderWorkout();}else box.replaceWith(makeCard(exerciseId,options));});
+  window.MojaAdvisorEquipmentUI.decorate(box,exercise,()=>{if(state.activePlan)renderPlanWorkout();else renderToday();});
  }
  if(Number.isFinite(result.weight)){
   const info=document.createElement('span');info.className='advisor-progression-weight';info.textContent='Ciężar roboczy (ostatni trening): '+result.weight+' kg';box.append(info);

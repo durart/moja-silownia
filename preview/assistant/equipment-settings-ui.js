@@ -53,7 +53,7 @@ function decorate(card, exercise, refresh) {
   form.append(stepLabel);
 
   const help = document.createElement('small');
-  help.textContent = 'Przykład: jeśli stos zmienia obciążenie co 6 kg, wpisz 6. Ustawienia dotyczą tylko tego ćwiczenia; historia pozostaje bez zmian.';
+  help.textContent = 'Przykład: jeśli stos zmienia obciążenie co 6 kg, wpisz 6. Ustawienia dotyczą tylko tego ćwiczenia; historia pozostaje bez zmian. Zmiana podczas treningu oznaczy sprzęt do ponownej weryfikacji.';
   form.append(help);
 
   const saveButton = document.createElement('button');
@@ -83,6 +83,7 @@ function decorate(card, exercise, refresh) {
       return;
     }
     const original = state.exercises;
+    const originalNotes=state.activeExerciseNotes;
     state.exercises = original.map(item => {
       if (String(item.id) !== String(exercise.id)) return item;
       const next = { ...item };
@@ -92,11 +93,19 @@ function decorate(card, exercise, refresh) {
       else delete next.equipmentStepKg;
       return next;
     });
+    const nextExercise=state.exercises.find(item=>String(item.id)===String(exercise.id));
+    const beforeExercise=original.find(item=>String(item.id)===String(exercise.id));
+    const safety=root.MojaRecommendationSafety;
+    if(state.startedAt&&safety&&safety.equipmentContext(beforeExercise)!==safety.equipmentContext(nextExercise)){
+      const previousNote=originalNotes?.[exercise.id];
+      if(!safety.flagNeedsReview(previousNote?.flag))state.activeExerciseNotes={...originalNotes,[exercise.id]:{...previousNote,text:previousNote?.text??'',flag:'equipment'}};
+    }
     try {
       if (save() !== true) throw new Error('Storage rejected equipment changes');
       if (typeof refresh === 'function') refresh();
     } catch (error) {
       state.exercises = original;
+      state.activeExerciseNotes=originalNotes;
       feedback.textContent = 'Nie udało się zapisać ustawień. Spróbuj ponownie.';
       console.warn('Exercise equipment configuration was not saved', error);
     }
