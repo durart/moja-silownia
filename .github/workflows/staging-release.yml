@@ -22,7 +22,7 @@ jobs:
         run: |
           git fetch --no-tags --depth=1 origin 163a8e3818d2576e85730691c684eb89a8778ca4
           git fetch --no-tags --depth=1 origin fb760a2dd66e39c085fcd23709e72216ad4d7390
-      - name: Verify preview-only scope and release integrity
+      - name: Verify independent surfaces and release integrity
         run: node scripts/verify-staging-release.cjs
       - run: node --test tests/staging-release.test.cjs tests/calisthenics-programs.test.cjs tests/musclemap-hybrid.test.cjs
       - run: npm install --no-save --package-lock=false playwright@1.56.1
