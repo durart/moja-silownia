@@ -64,8 +64,10 @@
       throw new RangeError('Invalid expected set count');
     const targetSeconds = validSeconds(options.previousTargetSeconds)
       ? Math.max(minSeconds, Math.min(maxSeconds, options.previousTargetSeconds)) : minSeconds;
-    const history = (Array.isArray(sessions) ? sessions : [])
-      .filter(session => session?.sessionMode !== 'recovery' && Number.isFinite(Date.parse(session?.date)))
+    const eligible=(Array.isArray(sessions)?sessions:[]).filter(s=>(s?.sessionMode==null||s.sessionMode==='standard')&&Number.isFinite(Date.parse(s?.date))&&Date.parse(s.date)<=Date.now()).slice().sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
+    const latestAttempt=eligible.find(s=>Array.isArray(s.sets)&&s.sets.some(r=>r?.exerciseId===exerciseId&&r.measurementType==='duration'&&!observation.isWarmup(r)));
+    if(latestAttempt&&latestAttempt.sets.some(r=>r?.exerciseId===exerciseId&&r.measurementType==='duration'&&!observation.isWarmup(r)&&(!isTimedSet(r)||!observation.isTrustedWorking(r)||observation.number(r.weight)===null||observation.number(r.weight)<0)))return {action:'maintain',targetSeconds};
+    const history = eligible
       .map(session => ({ session, sets: workingTimedSets(session, exerciseId) }))
       .filter(item => item.sets.length)
       .sort((a, b) => Date.parse(b.session.date) - Date.parse(a.session.date));
@@ -78,7 +80,7 @@
     const comparable = validSeconds(recordedTarget) && recordedTarget === targetSeconds &&
       latest.sets.length >= expectedSets && latest.sets.every(set =>
         set.targetDurationSeconds === recordedTarget && set.durationSeconds >= recordedTarget &&
-        Number.isFinite(Number(set.weight)) && Number(set.weight) >= 0 &&
+        observation.number(set.weight)!==null && Number(set.weight) >= 0 &&
         Number(set.weight) === Number(latest.sets[0].weight));
     if (!comparable) return { action: 'maintain', targetSeconds };
     if (targetSeconds >= maxSeconds) return { action: 'at_limit', targetSeconds };
@@ -86,7 +88,7 @@
   }
 
   function detectDurationRecord({exerciseId,weight,durationSeconds,completedSessions=[],activeSets=[],exclude=null,sessionMode='standard',setType='W'}) {
-    if(sessionMode==='recovery'||setType==='R'||!validSeconds(durationSeconds)||!Number.isFinite(weight)||weight<0)return [];
+    if(sessionMode!=='standard'||!observation.isWorking({setType})||!observation.isReliable(exclude??{})||!validSeconds(durationSeconds)||!Number.isFinite(weight)||weight<0)return [];
     const prior=[...completedSessions.filter(s=>s?.sessionMode!=='recovery').flatMap(s=>workingTimedSets(s,exerciseId)),...workingTimedSets({sets:activeSets},exerciseId)]
       .filter(s=>s!==exclude&&s.weight!=null&&s.weight!==''&&Number(s.weight)===weight);
     return prior.length&&durationSeconds>Math.max(...prior.map(s=>s.durationSeconds))?['Czas']: [];

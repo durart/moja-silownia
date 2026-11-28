@@ -21,7 +21,7 @@ async function assertRaw(page,before){assert.equal(await page.evaluate(()=>JSON.
 (async()=>{
  const browser=await chromium.launch();
  try{
-  for(const scenario of ['recovery','readiness-changed','pain-changed','equipment-changed','valid-with-manual-edit']){
+  for(const scenario of ['recovery','readiness-changed','pain-changed','equipment-changed','equipment-same-step','valid-with-manual-edit']){
    const context=await browser.newContext();
    try{
     const page=await context.newPage();
@@ -34,6 +34,7 @@ async function assertRaw(page,before){assert.equal(await page.evaluate(()=>JSON.
      if(scenario==='readiness-changed')await page.evaluate(()=>{state.preWorkout={sleepHours:4};});
      if(scenario==='pain-changed')await page.evaluate(()=>{state.activeExerciseNotes['seed-0']={flag:'pain'};});
      if(scenario==='equipment-changed')await page.evaluate(()=>{state.exercises.find(e=>e.id==='seed-0').equipmentStepKg=20;});
+     if(scenario==='equipment-same-step')await page.evaluate(()=>{Object.assign(state.exercises.find(e=>e.id==='seed-0'),{equipmentType:'machine_stack',equipmentStepKg:2.5});});
      if(scenario==='valid-with-manual-edit'){
       await f.card.locator('#r_0_1_w').fill('65');
       const dialog=page.waitForEvent('dialog').then(async d=>{assert.equal(d.type(),'confirm');await d.accept();});

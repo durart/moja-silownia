@@ -2,9 +2,9 @@
 import './set-observation.js';
 const observation=globalThis.MojaSetObservation;
 export const isWorkingSet=observation.isWorking;
-export function detectRecords({exerciseId,weight,reps,completedSessions=[],activeSets=[],exclude=null,sessionMode='standard'}){
- if(sessionMode==='recovery'||observation.isAssistedLoad(exerciseId)||!observation.isReliable(exclude??{}))return [];
- const prior=[...completedSessions.filter(s=>s?.sessionMode!=='recovery').flatMap(s=>Array.isArray(s?.sets)?s.sets:[]),...activeSets]
+export function detectRecords({exerciseId,exercise,weight,reps,completedSessions=[],activeSets=[],exclude=null,sessionMode='standard'}){
+ if(sessionMode!=='standard'||observation.isAssistedLoad(exercise??exerciseId)||!observation.isReliable(exclude??{}))return [];
+ const prior=[...completedSessions.filter(s=>s?.sessionMode==null||s.sessionMode==='standard').flatMap(s=>Array.isArray(s?.sets)?s.sets:[]),...activeSets]
   .filter(s=>s&&s.exerciseId===exerciseId&&s!==exclude&&observation.isTrustedWorking(s)&&observation.validRepetitions(s)&&!observation.isAssistedLoad(s));
  const w=observation.number(weight),r=observation.number(reps);
  if(!prior.length||w===null||w<0||!Number.isSafeInteger(r)||r<1)return [];

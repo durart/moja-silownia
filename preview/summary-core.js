@@ -1,5 +1,6 @@
 (function (root) {
   'use strict';
+  const observation=typeof module==='object'&&module.exports?require('./modules/set-observation.js'):globalThis.MojaSetObservation;
 
   // Pure adapter from persisted workout data to presentation data.
   // Never writes to session, its sets, or localStorage.
@@ -47,7 +48,7 @@
       timedSeconds+=seconds;
       volume += weight * count;
       reps += count*(set.programSet?.perSide?2:1);
-      const isPR = Array.isArray(set.pr) && set.pr.length > 0;
+      const isPR = (session.sessionMode==null||session.sessionMode==='standard')&&observation.isTrustedWorking(set)&&!observation.isAssistedLoad(set)&&Array.isArray(set.pr)&&set.pr.length>0;
       if (isPR) records++;
       const id = String(set.exerciseId || 'unknown-' + i);
       const slot = Number.isInteger(set.planSlotIndex) ? set.planSlotIndex : null;
@@ -67,7 +68,7 @@
       group.maxWeight = group.maxWeight == null ? weight : Math.max(group.maxWeight, weight);
       if(timed)group.timedSeconds=(group.timedSeconds||0)+seconds;
       group.sets.push({
-        weight, ...(timed?{measurementType:'duration',durationSeconds:seconds}:{reps:count,rir:set.rir==null?null:safeNumber(set.rir)}),
+        weight, ...(timed?{measurementType:'duration',durationSeconds:seconds}:{reps:count,rir:observation.rir(set.rir).value}),
         records: isPR ? set.pr.map(String) : [], ...(set.programSet?{programSet:{...set.programSet}}:{})
       });
     }

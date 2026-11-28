@@ -76,8 +76,11 @@ function makeCard(exerciseId,options={}){
   if(Number.isFinite(result.suggestedWeight)&&!window.MojaTrainerDrafts?.active(state)){
    const apply=document.createElement('button');apply.type='button';apply.className='secondary';apply.textContent='Ustaw '+result.suggestedWeight+' kg w tym treningu';
    const workout=state.startedAt;
+   const equipmentAtRender=safety.equipmentContext(exercise);
    const baseline=new Map([...(options.card?.querySelectorAll('input[id$="_w"]')||[])].map(input=>[input.id,rowSignature(input)]));
    const fresh=()=>{
+    const currentExercise=state.exercises?.find(item=>String(item.id)===String(exerciseId));
+    if(!currentExercise||safety.equipmentContext(currentExercise)!==equipmentAtRender)return false;
     if(!workout||state.startedAt!==workout||!box.isConnected||window.MojaTrainerDrafts?.active(state))return false;
     const current=livePreparation(exerciseId,options);
     return current?.reason==='progression'&&current.advice?.action==='consider_increase'&&current.advice.suggestedWeight===result.suggestedWeight&&current.advice.weight===result.weight;
@@ -107,7 +110,7 @@ function makeCard(exerciseId,options={}){
   const info=document.createElement('small');info.textContent='Dostępny skok jest zbyt duży dla bezpiecznej rekomendacji automatycznej.';box.append(info);
  }
  if(window.MojaAdvisorEquipmentUI?.decorate){
-  window.MojaAdvisorEquipmentUI.decorate(box,exercise,()=>box.replaceWith(makeCard(exerciseId,options)));
+  window.MojaAdvisorEquipmentUI.decorate(box,exercise,()=>{if(window.MojaTrainerDrafts?.active(state)){if(state.activePlan)renderPlanWorkout();else renderWorkout();}else box.replaceWith(makeCard(exerciseId,options));});
  }
  if(Number.isFinite(result.weight)){
   const info=document.createElement('span');info.className='advisor-progression-weight';info.textContent='Ciężar roboczy (ostatni trening): '+result.weight+' kg';box.append(info);

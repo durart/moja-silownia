@@ -8,6 +8,8 @@
   if (root) root.MojaTrainerDrafts = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function(preparation,explanation) {
   'use strict';
+  const safety=typeof module==='object'&&module.exports?require('./recommendation-safety.js'):globalThis.MojaRecommendationSafety;
+  const equipmentChanged=(entry,exercise)=>entry?.equipmentChanged===true||(typeof entry?.equipmentContext==='string'&&entry.equipmentContext!==safety.equipmentContext(exercise));
   const VERSION = 1;
   const MAX_ROWS = 100;
   const validNumber = (value,min,max,integer=false) =>
@@ -65,8 +67,9 @@
     if(compatible&&existing.mode!==(state.activeSessionMode||'standard'))return {entry:existing,changed:refreshMode(state,id,slot,target,completed)};
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return {entry:null,changed:false};
+    const changedEquipment=equipmentChanged(existing,exercise);
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
-      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state),adaptiveRecovery:state.preWorkout?.adaptiveRecovery===true});
+      preWorkout:state.preWorkout,activeFlag:changedEquipment?'equipment':state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state),adaptiveRecovery:state.preWorkout?.adaptiveRecovery===true});
     const prefs=settings(state);
     if(compatible){
       // Re-evaluate untouched suggestions; no history, completed set, or manual edit is rewritten.
@@ -77,7 +80,7 @@
         if(!prefs.reps){if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;delete next.explanation;}
         return next;
       });
-      const updated={...existing,rows,reason:prepared.reason};
+      const updated={...existing,rows,reason:prepared.reason,equipmentContext:safety.equipmentContext(exercise),...(changedEquipment?{equipmentChanged:true}:{})};
       if(prepared.advice)updated.advice=prepared.advice;else delete updated.advice;
       const changed=JSON.stringify(updated)!==JSON.stringify(existing);
       if(changed)state.trainerWorkout.entries[key(id,slot)]=updated;
@@ -96,7 +99,7 @@
       }
       return row;
     });
-    const entry={exerciseId:id,reason:prepared.reason,...(prepared.advice ? {advice:prepared.advice} : {}),mode:state.activeSessionMode||'standard',rows};
+    const entry={exerciseId:id,equipmentContext:safety.equipmentContext(exercise),...(changedEquipment?{equipmentChanged:true}:{}),reason:prepared.reason,...(prepared.advice ? {advice:prepared.advice} : {}),mode:state.activeSessionMode||'standard',rows};
     state.trainerWorkout.entries[key(id,slot)]=entry;
     return {entry,changed:true};
   }
@@ -147,8 +150,9 @@
     if (!entry||entry.mode===(state.activeSessionMode||'standard')) return false;
     const exercise=state.exercises?.find(e=>e.id===id);
     if (!exercise) return false;
+    const changedEquipment=equipmentChanged(entry,exercise);
     const prepared=preparation.prepare({sessions:state.sessions,exercise,target,sessionMode:state.activeSessionMode,
-      preWorkout:state.preWorkout,activeFlag:state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state),adaptiveRecovery:state.preWorkout?.adaptiveRecovery===true});
+      preWorkout:state.preWorkout,activeFlag:changedEquipment?'equipment':state.activeExerciseNotes?.[id]?.flag,planId:state.activePlan,slotIndex:slot,plan:assessmentPlan(state),adaptiveRecovery:state.preWorkout?.adaptiveRecovery===true});
     const prefs=settings(state);
     const adaptiveResize=state.preWorkout?.adaptiveRecovery===true||entry.adaptiveResized===true;
     const desired=prefs.sets&&adaptiveResize&&!entry.manualSetCount?prepared.rows.length:entry.rows.length;
@@ -165,7 +169,7 @@
       if (!prefs.reps) {delete next.explanation;if(next.measurementType==='duration')next.durationSeconds=null;else next.reps=null;}
       return next;
     });
-    entry.mode=state.activeSessionMode||'standard';entry.reason=prepared.reason;if(prepared.advice)entry.advice=prepared.advice;else delete entry.advice;return true;
+    entry.mode=state.activeSessionMode||'standard';entry.reason=prepared.reason;entry.equipmentContext=safety.equipmentContext(exercise);if(changedEquipment)entry.equipmentChanged=true;if(prepared.advice)entry.advice=prepared.advice;else delete entry.advice;return true;
   }
   return Object.freeze({active,initialize,clear,get,settings,ensure,removeExercise,row,change,capture,append,removeRow,refreshMode});
 });

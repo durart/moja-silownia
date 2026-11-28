@@ -12,6 +12,7 @@
   return (sleep!==null&&sleep<6)||(battery!==null&&battery<30)||(score!==null&&score<50)||
    /^(bad|poor|low|slabo|słabo|zle|źle|tired|1|2)$/i.test(String(pre?.feeling??''));
  }
+ const equipmentContext=exercise=>JSON.stringify([exercise?.id??null,exercise?.equipmentType??null,exercise?.equipment??null,exercise?.equipmentStepKg??null,exercise?.resistanceKind??null,exercise?.weightConvention??null]);
  function currentBlock({exercise,sessionMode='standard',preWorkout,activeFlag}={}){
   if(flagNeedsReview(activeFlag))return 'flag';
   if(observation.isAssistedLoad(exercise))return 'assisted';
@@ -73,5 +74,5 @@
   };
   return {...advice,action:reason==='flag'||reason==='assisted'?'review':'maintain',suggestedWeight:null,reason:descriptions[reason]??'Brak podstaw do automatycznej zmiany obciążenia.',safetyReason:reason};
  }
- return Object.freeze({flagNeedsReview,readinessCaution,currentBlock,historyBlock,blockedAdvice});
+ return Object.freeze({flagNeedsReview,readinessCaution,equipmentContext,currentBlock,historyBlock,blockedAdvice});
 });

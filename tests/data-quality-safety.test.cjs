@@ -163,9 +163,26 @@ test('PS-005: changed exercise step invalidates untouched increased draft',()=>{
  assert.equal(drafts.ensure(state,ex.id,0,planTarget).entry.rows[0].weight,72.5);
  state.exercises[0].equipmentStepKg=20;
  const next=drafts.ensure(state,ex.id,0,planTarget).entry;
- assert.equal(next.rows[0].weight,70);
+ assert.equal(next.rows[0].weight,null);
 });
 test('PS-003: invalid latest observation cannot be skipped to escalate from older history',()=>{
  const history=[session([row({rir:4}),row({rir:4})]),{date:'2026-11-24T12:00:00Z',sets:[row({rir:4,reliable:false})]}];
  assert.notEqual(progression.suggest(history,ex.id,{equipmentType:'barbell'}).action,'consider_increase');
+});
+
+test('PS-005: equipment change with same increment is sticky and preserves edited rows',()=>{
+ const state={startedAt:'2026-11-25T12:00:00Z',activePlan:'A',activeSessionMode:'standard',exercises:[{...ex}],sessions:planHistory()};
+ drafts.initialize(state);drafts.ensure(state,ex.id,0,planTarget);drafts.change(state,ex.id,0,0,'weight','65');
+ state.exercises[0].equipmentType='machine_stack';state.exercises[0].equipmentStepKg=2.5;
+ let next=drafts.ensure(state,ex.id,0,planTarget).entry;assert.equal(next.rows[0].weight,65);assert.equal(next.rows[1].weight,null);assert.equal(next.equipmentChanged,true);
+ const restored=JSON.parse(JSON.stringify(state));next=drafts.ensure(restored,ex.id,0,planTarget).entry;assert.equal(next.rows[1].weight,null);
+});
+test('summary excludes untrusted record flags and normalizes RIR without rewriting raw data',()=>{
+ require('../preview/summary-core.js');const summary=globalThis.SportSummaryCore;
+ const input=session([row({reliable:false,pr:['Ciężar'],rir:'invalid'}),row({setType:'R',pr:['Ciężar'],rir:null}),row({pr:['Ciężar'],rir:0})]);const before=JSON.stringify(input);const model=summary.build(input);assert.equal(model.prCount,1);assert.equal(model.groups[0].sets[0].rir,null);assert.equal(model.groups[0].sets[2].rir,0);assert.equal(JSON.stringify(input),before);
+});
+test('timed progression cannot bypass invalid latest observation',()=>{
+ const id='seed-14',r={exerciseId:id,measurementType:'duration',durationSeconds:45,targetDurationSeconds:45,weight:0,setType:'W'};
+ const history=[session([r,r]),{date:'2026-11-24T12:00:00Z',sets:[r,{...r,reliable:false}]}];
+ assert.equal(timed.suggestDuration(history,id,{expectedSets:2,previousTargetSeconds:45,target:{minSeconds:30,maxSeconds:60}}).action,'maintain');
 });
