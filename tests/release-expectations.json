@@ -1,0 +1,22 @@
+{
+  "surfaces": {
+    "production": {
+      "version": "4.1.1",
+      "cache": "moja-silownia-shell-v64-4.1.1",
+      "storageKey": "moja-silownia-v01"
+    },
+    "preview": {
+      "version": "4.1.1",
+      "cache": "moja-silownia-preview-shell-v64-4.1.1",
+      "storageKey": "moja-silownia-preview-v01"
+    }
+  },
+  "differences": {},
+  "integrity": {
+    "productionRef": "a8e191115b1bcbb32e2bfe19376d804974ee51e9",
+    "previewRef": "a8e191115b1bcbb32e2bfe19376d804974ee51e9",
+    "stagingBaseRef": "a8e191115b1bcbb32e2bfe19376d804974ee51e9",
+    "previousReleaseRef": "163a8e3818d2576e85730691c684eb89a8778ca4",
+    "stagingAllowedPaths": []
+  }
+}

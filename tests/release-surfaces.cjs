@@ -2,11 +2,9 @@
 // Independent release expectations; never derive expected values from the page under test.
 const assert=require('node:assert/strict');
 const {createHash}=require('node:crypto');
-const surfaces=Object.freeze({
- production:Object.freeze({version:'4.1.1',cache:'moja-silownia-shell-v64-4.1.1',storageKey:'moja-silownia-v01'}),
- preview:Object.freeze({version:'4.1.1',cache:'moja-silownia-preview-shell-v64-4.1.1',storageKey:'moja-silownia-preview-v01'})
-});
-const differences=Object.freeze({});
+const expectations=require('./release-expectations.json');
+const surfaces=Object.freeze(Object.fromEntries(Object.entries(expectations.surfaces).map(([name,value])=>[name,Object.freeze({...value})])));
+const differences=Object.freeze(expectations.differences);
 const literal=value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 function versionPattern(surface,prefix='v',suffix=''){
  return new RegExp(literal(prefix+surfaces[surface].version+suffix));
