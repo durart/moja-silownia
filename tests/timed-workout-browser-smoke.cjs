@@ -136,7 +136,7 @@ function assertTimedSet(set, seconds) {
         assertTimedSet(await page.evaluate(() => state.sessions[0].sets[0]),measured);
         assert.equal(await page.evaluate(() => state.timedTimer),undefined);
         assert.ok(await page.evaluate(()=>state.sessions[0].fatigueImpulse.Brzuch>0));
-        assert.equal(await page.evaluate(()=>state.sessions[0].fatigueModel),3);
+        assert.equal(await page.evaluate(()=>state.sessions[0].fatigueModel),4);
         assert.match(await page.locator('#summaryContent').textContent(),/CZAS IZOMETRII/);
         assert.match(await page.locator('#summaryContent').textContent(),/45 s/);
         assert.doesNotMatch(await page.locator('#summaryContent').textContent(),/NaN|undefined/);
