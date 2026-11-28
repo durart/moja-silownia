@@ -1,0 +1,34 @@
+name: Independent staging release
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  staging:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch immutable production baseline and tested candidate
+        run: |
+          git fetch --no-tags --depth=1 origin 163a8e3818d2576e85730691c684eb89a8778ca4
+          git fetch --no-tags --depth=1 origin fb760a2dd66e39c085fcd23709e72216ad4d7390
+      - name: Verify preview-only scope and release integrity
+        run: node scripts/verify-staging-release.cjs
+      - run: node --test tests/staging-release.test.cjs tests/calisthenics-programs.test.cjs tests/musclemap-hybrid.test.cjs
+      - run: npm install --no-save --package-lock=false playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - name: Verify preview upgrade and rollback against the previous preview
+        run: |
+          mkdir -p "$RUNNER_TEMP/legacy-preview"
+          git archive 163a8e3818d2576e85730691c684eb89a8778ca4 | tar -x -C "$RUNNER_TEMP/legacy-preview"
+          LEGACY_APP="$RUNNER_TEMP/legacy-preview" node tests/preview-upgrade-browser.cjs
