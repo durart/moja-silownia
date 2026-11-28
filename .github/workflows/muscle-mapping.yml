@@ -1,0 +1,20 @@
+name: Muscle mapping regression
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  mapping:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check muscle-fatigue-core.js && node --check preview/muscle-fatigue-core.js
+      - run: node --test tests/muscle-mapping.test.cjs tests/muscle-atlas.test.cjs tests/musclemap-hybrid.test.cjs tests/exercise-catalog-shared.test.cjs tests/unified-fatigue-e1rm-warmup.test.cjs tests/timed-analytics.test.mjs tests/production-progression-v2.test.cjs tests/storage-regression.test.mjs tests/service-worker.test.mjs
