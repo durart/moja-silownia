@@ -111,6 +111,7 @@
       "tests/calisthenics-programs.test.cjs",
       "tests/data-quality-safety-browser.cjs",
       "tests/data-quality-safety.test.cjs",
+      "tests/generate-docx-compatibility.py",
       "tests/muscle-mapping.test.cjs",
       "tests/preview-upgrade-browser.cjs",
       "tests/progress-blank-regression.test.cjs",

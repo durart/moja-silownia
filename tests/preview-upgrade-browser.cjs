@@ -34,6 +34,9 @@ const server=http.createServer((req,res)=>{
   state.trainerSettings={weights:true,reps:true,sets:true,explanation:false};
   startManualWorkoutNow();
   state.active.push({exerciseId:id,weight:40,reps:8,rir:0,setType:'W',manualSetIndex:0,at:new Date().toISOString()});
+  state.manualExerciseIds=[id];
+  MojaTrainerDrafts.ensure(state,id,null,{sets:3,reps:'8-12',rir:2},[state.active[0]]);
+  if(!MojaTrainerDrafts.change(state,id,null,2,'weight','37.5')||!MojaTrainerDrafts.change(state,id,null,2,'reps','9'))throw Error('Legacy draft setup failed');
   if(!save())throw Error('Legacy save failed');
   localStorage.setItem('moja-silownia-v01','upgrade-sentinel');
   return JSON.parse(JSON.stringify({startedAt:state.startedAt,active:state.active,sessions:state.sessions,plans:state.plans,trainerSettings:state.trainerSettings}));
@@ -49,15 +52,16 @@ const server=http.createServer((req,res)=>{
  await page.waitForFunction(async name=>!(await caches.keys()).some(k=>k.startsWith('moja-silownia-preview-shell-')&&k!==name),target.cache);
  assert.ok(await page.evaluate(async()=> (await caches.keys()).includes('moja-silownia-shell-v64-4.1.1')));
  const snapshot=()=>page.evaluate(()=>JSON.parse(JSON.stringify({startedAt:state.startedAt,active:state.active,sessions:state.sessions,plans:state.plans,trainerSettings:state.trainerSettings})));
- assert.deepEqual(await snapshot(),before);
+ const assertEdited=async()=>{const row=await page.evaluate(()=>MojaTrainerDrafts.row(state,'seed-12',null,2));assert.equal(row.weight,37.5);assert.equal(row.reps,9);assert.equal(row.rir,null);assert.equal(row.edited,true);};
+ assert.deepEqual(await snapshot(),before);await assertEdited();
  const mapped=await page.evaluate(()=>({group:state.exercises.find(ex=>ex.id==='seed-12').group,roles:muscleRoles(state.sessions.find(s=>s.id==='upgrade-history')),scores:sessionImpulse(state.sessions.find(s=>s.id==='upgrade-history'))}));
  assert.equal(mapped.group,'Łydki');assert.deepEqual(mapped.roles,{'Łydki':1});assert.ok(mapped.scores['Łydki']>0);assert.equal(mapped.scores.Nogi,undefined);
- await context.setOffline(true);await page.reload();assert.deepEqual(await snapshot(),before);
+ await context.setOffline(true);await page.reload();assert.deepEqual(await snapshot(),before);await assertEdited();
  assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),'upgrade-sentinel');
  await context.setOffline(false);
  page.on('dialog',d=>d.accept());
  await page.evaluate(async text=>{await importData({target:{files:[new File([text],'legacy.json',{type:'application/json'})],value:''}});},fs.readFileSync(backupPath,'utf8'));
- assert.deepEqual(await snapshot(),before);
+ assert.deepEqual(await snapshot(),before);await assertEdited();
  console.log('Preview '+previous.version+' to '+target.version+' upgrade, backup import, offline and isolation PASS');
  const updated=await page.evaluate(()=>{
   state.active.push({...state.active[0],weight:42.5,reps:7,rir:0,manualSetIndex:1,at:new Date().toISOString()});
@@ -74,8 +78,8 @@ const server=http.createServer((req,res)=>{
  await page.reload();
  await page.waitForFunction(version=>navigator.serviceWorker.controller!==null&&document.title.includes('TEST v'+version),previous.version,{timeout:60000});
  await page.waitForFunction(async ({name,candidate})=>(await caches.keys()).includes(name)&&!(await caches.keys()).includes(candidate),{name:rollbackCache,candidate:target.cache});
- assert.deepEqual(await snapshot(),updated);
- await context.setOffline(true);await page.reload();assert.deepEqual(await snapshot(),updated);
+ assert.deepEqual(await snapshot(),updated);await assertEdited();
+ await context.setOffline(true);await page.reload();assert.deepEqual(await snapshot(),updated);await assertEdited();
  assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),'upgrade-sentinel');
  assert.ok(await page.evaluate(async()=> (await caches.keys()).includes('moja-silownia-shell-v64-4.1.1')));
  console.log('Preview rollback to '+previous.version+' with candidate-created data, offline and isolation PASS');

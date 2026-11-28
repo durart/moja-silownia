@@ -121,11 +121,18 @@ jobs:
           for sha in $(node -e 'const p=require("./tests/release-expectations.json").integrity;console.log([...new Set([p.productionRef,p.previewRef,p.stagingBaseRef,p.previousReleaseRef])].join(" "))'); do git fetch --no-tags --depth=1 origin "$sha"; done
           node scripts/verify-staging-release.cjs
           mkdir "$RUNNER_TEMP/exact-candidate"
-          git archive HEAD | tar -x -C "$RUNNER_TEMP/exact-candidate"
+          git archive --format=tar HEAD > "$RUNNER_TEMP/exact-candidate.tar"
+          tar -xf "$RUNNER_TEMP/exact-candidate.tar" -C "$RUNNER_TEMP/exact-candidate"
           node -e 'const {verifyArchive}=require("./scripts/verify-staging-release.cjs");console.log("Verified archive entries:",verifyArchive(process.cwd(),require("child_process").execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim(),process.env.RUNNER_TEMP+"/exact-candidate"))'
           mkdir "$RUNNER_TEMP/baseline"
           git archive "$(node -p 'require("./tests/release-expectations.json").integrity.previousReleaseRef')" | tar -x -C "$RUNNER_TEMP/baseline"
           (cd "$RUNNER_TEMP/baseline" && node --test tests/characterization-411.cjs)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exact-alpha5-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/exact-candidate.tar
+          retention-days: 7
+          if-no-files-found: error
   compatibility:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -225,6 +232,7 @@ jobs:
               z.writestr('word/document.xml','<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>TRENING 1</w:t></w:r></w:p><w:p><w:r><w:t>Bench press</w:t></w:r></w:p></w:body></w:document>')
           PY
           SECURITY_VENDOR_ROOT="$PWD/dependency-check" node --test tests/security-real-documents.test.mjs
+          python3 tests/generate-docx-compatibility.py dependency-check/fixtures/complex.docx
           cp -a dependency-check/fixtures preview-dependency-check/
           SECURITY_VENDOR_ROOT="$PWD/preview-dependency-check" node --test tests/security-real-documents.test.mjs
       - run: npm install --no-save --package-lock=false playwright@1.56.1

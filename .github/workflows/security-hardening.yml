@@ -102,6 +102,7 @@ jobs:
               z.writestr('word/document.xml','<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>TRENING 1</w:t></w:r></w:p><w:p><w:r><w:t>Bench press</w:t></w:r></w:p></w:body></w:document>')
           PY
           SECURITY_VENDOR_ROOT="$PWD/dependency-check" node --test tests/security-real-documents.test.mjs
+          python3 tests/generate-docx-compatibility.py dependency-check/fixtures/complex.docx
           cp -a dependency-check/fixtures preview-dependency-check/
           SECURITY_VENDOR_ROOT="$PWD/preview-dependency-check" node --test tests/security-real-documents.test.mjs
       - run: npm install --no-save --no-package-lock playwright@1.56.1
