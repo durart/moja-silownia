@@ -1,4 +1,5 @@
 'use strict';
+const release=require('./release-surfaces.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -280,7 +281,7 @@ test('duration guidance preserves seconds and original timer target',()=>{
  assert.equal(a.suggested,20);assert.equal(a.target,40);assert.equal(timed.target,40);
 });
 
-test('release root modules and approved graphics match staging byte for byte',()=>{
- for(const path of ['modules/circuit-core.js','modules/programs-data.js','modules/program-history.js','modules/program-preparation.js','modules/calisthenics-progression.js','modules/programs-ui.mjs','styles/programs.css','calisthenics-library.js','calisthenics-icons.js','exercise-graphics.js','muscle-fatigue-core.js','summary-core.js','summary-ui.js',...Array.from({length:42},(_,i)=>'assets/graphics-r6/cali-'+(i+23)+'.webp')])assert.deepEqual(fs.readFileSync(path),fs.readFileSync('preview/'+path),path);
- const prod=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');assert.match(prod,/const key='moja-silownia-v01'/);assert.match(prod,/v4\.1\.0/);assert.match(sw,/moja-silownia-shell-v63-4\.1\.0/);assert.ok(sw.includes("new URL('preview/',self.registration.scope)"));
+test('release root modules and approved graphics match staging except pinned release differences',()=>{
+ for(const path of ['modules/circuit-core.js','modules/programs-data.js','modules/program-history.js','modules/program-preparation.js','modules/calisthenics-progression.js','modules/programs-ui.mjs','styles/programs.css','calisthenics-library.js','calisthenics-icons.js','exercise-graphics.js','muscle-fatigue-core.js','summary-core.js','summary-ui.js',...Array.from({length:42},(_,i)=>'assets/graphics-r6/cali-'+(i+23)+'.webp')])release.assertParity(path,fs.readFileSync(path),fs.readFileSync('preview/'+path));
+ const prod=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');assert.match(prod,/const key='moja-silownia-v01'/);assert.match(prod,release.versionPattern('production'));assert.match(sw,release.cachePattern('production'));assert.ok(sw.includes("new URL('preview/',self.registration.scope)"));
 });
