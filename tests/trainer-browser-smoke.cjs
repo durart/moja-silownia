@@ -64,7 +64,7 @@ module.exports=async function trainerBrowserSmoke(surface='production'){
     await page.evaluate(()=>{addManualRow('bench');removeManualRow('bench',0);});
     assert.equal(await page.locator('#m_bench_0_w').inputValue(),'65');
     const before=await page.evaluate(key=>localStorage.getItem(key),key);
-    if(surface==='preview'){
+    if(surface==='preview'||release.surfaces.production.version==='4.1.3'){
       assert.equal(await page.evaluate(()=>MojaTrainerPreparation.prepare({sessions:state.sessions,exercise:state.exercises.find(e=>e.id==='bench')}).safetyReason),'different_context');
       assert.equal(await page.evaluate(()=>state.sessions[0].sets[0].weight),65);
       assert.equal(await page.locator('#m_bench_0_w').inputValue(),'65');

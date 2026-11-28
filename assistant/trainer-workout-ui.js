@@ -22,7 +22,7 @@
     if(!drafts.settings(state).explanation)return '';
     const record=drafts.get(state,id,slot);
     if(!record)return '';
-    if(flags.has(state.activeExerciseNotes?.[id]?.flag)||['review','timed_review'].includes(record.reason))return 'Sprawdź bezpieczeństwo przed wykonaniem ćwiczenia.';
+    if(flags.has(state.activeExerciseNotes?.[id]?.flag)||['review','timed_review','context_review'].includes(record.reason))return 'Sprawdź bezpieczeństwo przed wykonaniem ćwiczenia.';
     if(record.mode==='recovery')return 'Tryb regeneracyjny — bez automatycznego zwiększania obciążenia.';
     if(record.reason==='readiness')return 'Ostrożność ze względu na gotowość treningową.';
     const count=record.rows.filter(r=>r&&!r.edited&&window.MojaAdaptiveExplanation?.normalize(r.explanation)).length;

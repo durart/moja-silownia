@@ -135,7 +135,10 @@ test('legacy version-one workout draft survives candidate normalization and mode
  const legacy=JSON.parse(JSON.stringify(state));
  for(const entry of Object.values(legacy.trainerWorkout.entries)){delete entry.adaptiveResized;delete entry.manualSetCount;for(const row of entry.rows)delete row.explanation;}
  const before=JSON.stringify({sessions:legacy.sessions,settings:legacy.trainerSettings});
- assert.equal(legacy.trainerWorkout.version,1);assert.equal(drafts.ensure(legacy,'bench',0,input.target).changed,false);
+ assert.equal(legacy.trainerWorkout.version,1);
+ assert.equal(drafts.ensure(legacy,'bench',0,input.target).changed,true);
+ assert.equal(drafts.row(legacy,'bench',0,1).weight,67.5);
+ assert.equal(drafts.ensure(legacy,'bench',0,input.target).changed,false);
  legacy.activeSessionMode='recovery';drafts.refreshMode(legacy,'bench',0,input.target);
  assert.equal(drafts.row(legacy,'bench',0,1).weight,67.5);assert.equal(JSON.stringify({sessions:legacy.sessions,settings:legacy.trainerSettings}),before);
 });

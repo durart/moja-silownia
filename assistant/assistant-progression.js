@@ -18,27 +18,28 @@ const EQUIPMENT_LABELS = Object.freeze({
   'Maszyna': 'machine_stack', 'Wyciąg': 'machine_stack'
 });
 const numeric = value => (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) && Number.isFinite(Number(value));
-const isWarmup = row => row?.setType === 'R' || row?.type === 'warmup' || row?.type === 'R';
-const flagNeedsReview = flag => ['pain', 'equipment', 'technique'].includes(flag);
+const observation=typeof module==='object'&&module.exports?require('../modules/set-observation.js'):globalThis.MojaSetObservation;
+const safety=typeof module==='object'&&module.exports?require('./recommendation-safety.js'):globalThis.MojaRecommendationSafety;
+const flagNeedsReview=safety.flagNeedsReview;
 const sessionMode = typeof MojaSessionMode !== 'undefined'
   ? MojaSessionMode
   : (typeof module === 'object' && module.exports && typeof require === 'function'
     ? require('./session-mode.js') : globalThis.MojaSessionMode);
 
 function resolveEquipmentType(type, weight) {
-  const mapped = EQUIPMENT_CONFIG[type] ? type : EQUIPMENT_LABELS[type] || 'barbell';
+  const mapped=Object.hasOwn(EQUIPMENT_CONFIG,type)?type:Object.hasOwn(EQUIPMENT_LABELS,type)?EQUIPMENT_LABELS[type]:'unknown';
   return mapped === 'dumbbell' && weight < 12 ? 'dumbbell_light' : mapped;
 }
 
 function calculateNextWeight(weight, equipmentType, equipmentStepKg) {
   if (!Number.isFinite(weight) || weight <= 0) return null;
-  if (equipmentType === 'unknown') return { suggestedWeight: null, needsEquipment: true };
   const resolvedType = resolveEquipmentType(equipmentType, weight);
+  if(resolvedType==='unknown')return {suggestedWeight:null,needsEquipment:true};
   const config = EQUIPMENT_CONFIG[resolvedType];
   const configuredStep = numeric(equipmentStepKg) ? Number(equipmentStepKg) : null;
-  const step = configuredStep > 0 && configuredStep <= 20
-    && Number((configuredStep * 100).toFixed(6)) === configuredStep * 100
-    ? configuredStep : config.step;
+  if(equipmentStepKg!=null&&!(configuredStep>0&&configuredStep<=20&&Math.abs(configuredStep*100-Math.round(configuredStep*100))<1e-8))
+    return {suggestedWeight:null,needsEquipment:true,invalidStep:true};
+  const step=configuredStep??config.step;
   const increment = Math.min(Math.max(config.maxStep, step),
     Math.max(step, Math.round(weight * config.targetPct / step) * step));
   const exceedsSafeIncrease = increment / weight > 0.1;
@@ -52,14 +53,11 @@ function calculateNextWeight(weight, equipmentType, equipmentStepKg) {
 
 function workingSets(session, exerciseId) {
   return (Array.isArray(session?.sets) ? session.sets : [])
-    .filter(row => row && String(row.exerciseId) === String(exerciseId) && !isWarmup(row)
-      && row.reliable !== false && row.unreliable !== true && numeric(row.weight) && Number(row.weight) >= 0
-      && numeric(row.reps) && Number.isInteger(Number(row.reps)) && Number(row.reps) > 0)
+    .filter(row => row && String(row.exerciseId) === String(exerciseId) && observation.isTrustedWorking(row) && observation.validRepetitions(row))
     .map(row => ({
       weight: Number(row.weight),
       reps: Number(row.reps),
-      rir: numeric(row.rir) && Number.isInteger(Number(row.rir)) && Number(row.rir) >= 0 && Number(row.rir) <= 5
-        ? Number(row.rir) : null
+      rir: observation.rir(row.rir).value
     }));
 }
 
@@ -85,13 +83,15 @@ function calcSessionE1RM(rows) {
 }
 
 function suggest(sessions, exerciseId, options = {}) {
+  if(observation.isAssistedLoad(exerciseId)||observation.isAssistedLoad(options.exercise))
+    return {action:'review',suggestedWeight:null,reason:'Ustaw asystę ręcznie — większa pomoc nie oznacza większego obciążenia.'};
   const low = numeric(options.minReps) ? Number(options.minReps) : 8;
   const high = numeric(options.maxReps) ? Number(options.maxReps) : 12;
   if (!Number.isInteger(low) || !Number.isInteger(high) || low < 1 || high < low)
     return { action: 'insufficient_data', reason: 'Nieprawidłowy zakres powtórzeń.' };
 
   const allHistory = (Array.isArray(sessions) ? sessions : [])
-    .filter(session => session && typeof session.date === 'string' && Number.isFinite(Date.parse(session.date)))
+    .filter(session => session && typeof session.date === 'string' && Number.isFinite(Date.parse(session.date)) && Date.parse(session.date)<=Date.now())
     .map(session => ({ session, rows: workingSets(session, exerciseId) }))
     .filter(item => item.rows.length)
     .sort((a, b) => Date.parse(b.session.date) - Date.parse(a.session.date))
@@ -115,14 +115,15 @@ function suggest(sessions, exerciseId, options = {}) {
     skippedRecoveryCount: allHistory.length - history.length, lastDate: latest.session.date
   };
   const result = (action, reason, extra = {}) => ({ action, reason, ...base, ...extra });
+  const historyRestriction=safety.historyBlock({sessions,exerciseId});
+  if(historyRestriction)return safety.blockedAdvice(base,historyRestriction);
   const increase = (path, reason, extra = {}) => {
     const loading = calculateNextWeight(weight, options.equipmentType || options.equipment,
       options.equipmentStepKg);
     const warning = loading?.blockedByStep
       ? ' Dostępny krok sprzętu przekracza 10% ciężaru roboczego — progresuj powtórzeniami lub wybierz mniejszy krok.' : '';
-    return result('consider_increase', reason + warning, {
-      path, ...loading, ...extra
-    });
+    if(!Number.isFinite(loading?.suggestedWeight))return result('maintain',reason+warning+(loading?.needsEquipment?' Sprawdź rodzaj sprzętu i dostępny krok.':''),{...loading,suggestedWeight:null});
+    return result('consider_increase', reason + warning, {path,...loading,...extra});
   };
 
   if (weight === 0)

@@ -1,6 +1,6 @@
 # Moja Siłownia — instrukcja użytkownika
 
-Wersja dokumentacji: 1.8 | Aplikacja: 4.1.1 | Aktualizacja: 28.11.2026
+Wersja dokumentacji: 1.9 | Aplikacja: 4.1.3 | Aktualizacja: 28.11.2026
 
 [Aplikacja](https://durart.github.io/moja-silownia/)
 
@@ -69,6 +69,8 @@ Licznik mierzy czas sesji, a timer odlicza przerwę (domyślnie 90 s według dot
 ## 8. Asystent Progresji
 Analizuje historię, ciężary, powtórzenia, zakres docelowy, RIR i charakter sesji. Przykład: przy zakresie 8–12 wykonanie 60 kg × 12 może uzasadniać propozycję zwiększenia ciężaru, zależnie od pozostałych danych. Trening regeneracyjny nie powinien zastępować standardowego odniesienia. Podpowiedź nie jest obowiązkiem ani oceną techniki.
 
+Od 4.1.3 RIR 0 oznacza brak zapasu, a puste pole brak danych. Rozgrzewki i niewiarygodne serie pozostają w historii, lecz nie kwalifikują się do wiarygodnych rekordów i automatycznego zwiększania ciężaru. Brak porównywalnych serii, zmiana sprzętu, ból, gorsza gotowość lub tryb regeneracyjny mogą wstrzymać progresję. Dla maszyny z asystą dobierz pomoc ręcznie. Przy przejściu między kontekstami treningowymi ostatni wiarygodny wynik może uzupełnić ciężar, ale sam nie uprawnia do zwiększenia obciążenia. Zapisane serie i ręcznie zmienione propozycje pozostają zachowane; sprawdzaj rzeczywiste parametry przed zapisem.
+
 Skrócona rekomendacja pozostaje widoczna; wybierz Pokaż uzasadnienie, aby zobaczyć szczegóły i ustawienia sprzętu.
 
 ## 9. Asystent Trenera
@@ -103,6 +105,7 @@ Zapisuj masę ciała z datą i wzrost. Masa wspiera szacowanie kalorii i analizy
 
 ## 15. Obciążenie mięśni
 Wersja 4.1.1 poprawia przypisanie wspięć na palce do łydek, szrugsów do pleców oraz profile kalisteniki i wybranych ćwiczeń siłowych. Wcześniejsze serie, rekordy i plany nie są przepisywane. Jeżeli komplet zapisanych serii pozwala na odtworzenie poprawionego profilu, wskaźniki historyczne są przeliczane przy odczycie; przy niepełnych danych zachowany jest zapisany wskaźnik. Wygeneruj ponownie PNG z historii, aby uzyskać nową mapę. Wagi profili są przybliżeniem, nie pomiarem aktywacji ani hipertrofii.
+Od 4.1.3 brak lub błędny RIR nie jest traktowany jak upadek mięśniowy. Rozgrzewka ma mniejszy modelowy impuls, a niepewne dane nie powinny sterować progresją. Historyczne wskaźniki mogą się zmienić przy odczycie, bez nadpisania faktycznych serii.
 Panel Start szacuje obciążenie grup na podstawie historii. Ćwiczenia wielostawowe angażują kilka partii (np. wyciskanie: klatka, triceps, przednie barki). Wskaźnik zmienia się z czasem. Zestawiaj go z samopoczuciem i snem; nie jest oceną medyczną.
 
 ## 16. Garmin

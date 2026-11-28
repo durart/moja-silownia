@@ -17,9 +17,9 @@ test('release 2.1 retains progression assets in executable order', () => {
   const scripts = [
     'assistant/session-mode.js?v=200',
     'assistant/assistant-core.js?v=200',
-    'assistant/assistant-progression.js?v=201',
-    'assistant/equipment-settings-ui.js?v=200',
-    'assistant/assistant-progression-ui.js?v=312'
+    'assistant/assistant-progression.js?v=203',
+    'assistant/equipment-settings-ui.js?v=201',
+    'assistant/assistant-progression-ui.js?v=315'
   ];
   for (const script of scripts) {
     assert.equal(index.split('src="./' + script + '"').length - 1, 1, script + ' script tag');
@@ -27,8 +27,8 @@ test('release 2.1 retains progression assets in executable order', () => {
   }
   assert.ok(index.indexOf('assistant/session-mode.js?v=200') < index.indexOf("const key='moja-silownia-v01'"));
   assert.ok(index.indexOf('assistant/assistant-core.js?v=200') < index.indexOf('assistant/assistant-ui.js?v=1'));
-  assert.ok(index.indexOf('assistant/assistant-progression.js?v=201') < index.indexOf('assistant/assistant-progression-ui.js?v=312'));
-  assert.ok(index.indexOf('assistant/equipment-settings-ui.js?v=200') < index.indexOf('assistant/assistant-progression-ui.js?v=312'));
+  assert.ok(index.indexOf('assistant/assistant-progression.js?v=203') < index.indexOf('assistant/assistant-progression-ui.js?v=315'));
+  assert.ok(index.indexOf('assistant/equipment-settings-ui.js?v=201') < index.indexOf('assistant/assistant-progression-ui.js?v=315'));
 });
 
 test('data key and profile 1.9 remain unchanged while 2.0 gets a new PWA shell', () => {

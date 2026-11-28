@@ -1,11 +1,12 @@
 name: 4.1.3 isolated safety candidate
 on:
   push:
-    branches: [feature/data-quality-safety-4.1.3]
+    branches: [feature/data-quality-safety-4.1.3, release/4.1.3]
   pull_request:
     branches: [main]
     paths:
       - 'preview/modules/set-observation.js'
+      - 'modules/set-observation.js'
       - 'tests/data-quality-safety.test.cjs'
       - '.github/workflows/data-quality-safety-413.yml'
 permissions:
@@ -29,6 +30,7 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
           node --test tests/data-quality-safety.test.cjs
+          SAFETY_SURFACE=production node --test tests/data-quality-safety.test.cjs
       - run: npm install --no-save --package-lock=false playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - name: Preview browser safety without publication
@@ -36,7 +38,9 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/quality-server.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/preview/ >/dev/null && break; sleep 1; done
           node tests/data-quality-safety-browser.cjs
+          SAFETY_SURFACE=production node tests/data-quality-safety-browser.cjs
           node -e "require('./tests/trainer-browser-smoke.cjs')('preview').catch(e=>{console.error(e);process.exitCode=1})"
+          node -e "require('./tests/trainer-browser-smoke.cjs')('production').catch(e=>{console.error(e);process.exitCode=1})"
   preview-domain:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -121,6 +125,8 @@ jobs:
           set -euo pipefail
           for sha in $(node -e 'const p=require("./tests/release-expectations.json").integrity;console.log([...new Set([p.productionRef,p.previewRef,p.stagingBaseRef,p.previousReleaseRef])].join(" "))'); do git fetch --no-tags --depth=1 origin "$sha"; done
           node scripts/verify-staging-release.cjs
+          git fetch --no-tags --depth=1 origin dbfe832c4a897c6cd658c34f9d16410d58bd51a4
+          node scripts/verify-promotion-413.cjs
           mkdir "$RUNNER_TEMP/exact-candidate"
           git archive --format=tar HEAD > "$RUNNER_TEMP/exact-candidate.tar"
           tar -xf "$RUNNER_TEMP/exact-candidate.tar" -C "$RUNNER_TEMP/exact-candidate"
@@ -130,7 +136,7 @@ jobs:
           (cd "$RUNNER_TEMP/baseline" && node --test tests/characterization-411.cjs)
       - uses: actions/upload-artifact@v4
         with:
-          name: exact-alpha6-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          name: exact-413-candidate-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/exact-candidate.tar
           retention-days: 7
           if-no-files-found: error
@@ -155,13 +161,14 @@ jobs:
           mkdir "$RUNNER_TEMP/legacy-preview"
           git archive "$sha" | tar -x -C "$RUNNER_TEMP/legacy-preview"
           LEGACY_APP="$RUNNER_TEMP/legacy-preview" node tests/preview-upgrade-browser.cjs
-      - name: Upgrade and rollback accepted alpha.5 preview
+          LEGACY_APP="$RUNNER_TEMP/legacy-preview" node tests/upgrade-browser.cjs
+      - name: Upgrade and rollback accepted alpha.6 preview
         run: |
           set -euo pipefail
-          git fetch --no-tags --depth=1 origin a3efe76b269b2e34bada7f4b65b43a8b0de9f2f0
-          mkdir "$RUNNER_TEMP/alpha5-preview"
-          git archive a3efe76b269b2e34bada7f4b65b43a8b0de9f2f0 | tar -x -C "$RUNNER_TEMP/alpha5-preview"
-          LEGACY_APP="$RUNNER_TEMP/alpha5-preview" PREVIOUS_PREVIEW_VERSION=4.1.3-alpha.5 node tests/preview-upgrade-browser.cjs
+          git fetch --no-tags --depth=1 origin dbfe832c4a897c6cd658c34f9d16410d58bd51a4
+          mkdir "$RUNNER_TEMP/alpha6-preview"
+          git archive dbfe832c4a897c6cd658c34f9d16410d58bd51a4 | tar -x -C "$RUNNER_TEMP/alpha6-preview"
+          LEGACY_APP="$RUNNER_TEMP/alpha6-preview" PREVIOUS_PREVIEW_VERSION=4.1.3-alpha.6 node tests/preview-upgrade-browser.cjs
       - name: Existing adaptive browser and storage recovery
         run: |
           set -euo pipefail
@@ -184,24 +191,27 @@ jobs:
         run: |
           cat > /tmp/expected-vendor.sha256 <<'EOF'
           6663bbd049205d38a496ccacb412a151980b444627d38de218b3b809aef330f1  ./mammoth/LICENSE
-          2a0c24d419b8b6b307b2c59dcad9ac045ef43c29fdb23f3b0f2e82d5b09287fe  ./mammoth/mammoth.browser.min.js
-          37f5fa5aeb39d56b22305537bf45f24665798997bd9272305c8e614cce9efdf7  ./package-lock.json
+          92914a3708cfdf1e62cb553d1856a7fedab21da83d8ee82845de2f897b368cab  ./mammoth/mammoth.browser.min.js
+          3c25f22ba8c536cb6683ef00a680db0b4f57deffdb61d38952e94b2eb58a3c73  ./package-lock.json
           0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594  ./pdfjs/LICENSE
           522ad2c83bc8a0010e7f0cc60d0892b77c8d2bf2c9702dc12288311d94270f42  ./pdfjs/pdf.min.mjs
           b4c8353ded0d88d2e2009574a29eb4e0c3ff7e942ecdf51ef5f71566a9667f31  ./pdfjs/pdf.worker.min.mjs
           EOF
           (cd vendor && sha256sum -c /tmp/expected-vendor.sha256 && sha256sum -c SHA256SUMS)
-          sed -e 's/2a0c24d419b8b6b307b2c59dcad9ac045ef43c29fdb23f3b0f2e82d5b09287fe/92914a3708cfdf1e62cb553d1856a7fedab21da83d8ee82845de2f897b368cab/' -e 's/37f5fa5aeb39d56b22305537bf45f24665798997bd9272305c8e614cce9efdf7/3c25f22ba8c536cb6683ef00a680db0b4f57deffdb61d38952e94b2eb58a3c73/' /tmp/expected-vendor.sha256 >/tmp/expected-preview-vendor.sha256
-          (cd preview/vendor && sha256sum -c /tmp/expected-preview-vendor.sha256 && sha256sum -c SHA256SUMS)
-          diff -qr vendor/pdfjs preview/vendor/pdfjs
-          cmp vendor/mammoth/LICENSE preview/vendor/mammoth/LICENSE
+          (cd preview/vendor && sha256sum -c /tmp/expected-vendor.sha256 && sha256sum -c SHA256SUMS)
+          diff -qr vendor preview/vendor
       - name: Resolve pinned libraries and audit
         run: |
+          set -euo pipefail
           mkdir dependency-check
+          cp vendor/package-lock.json dependency-check/
           cd dependency-check
-          npm init -y
-          npm install --ignore-scripts --save-exact pdfjs-dist@6.5.438 mammoth@1.9.0
-          npm audit --omit=dev --audit-level=high
+          node -e 'const fs=require("fs");const root=require("./package-lock.json").packages[""];fs.writeFileSync("package.json",JSON.stringify({name:root.name,version:root.version,dependencies:root.dependencies}))'
+          npm ci --ignore-scripts
+          npm audit --omit=dev --audit-level=moderate
+          cmp node_modules/mammoth/mammoth.browser.min.js ../vendor/mammoth/mammoth.browser.min.js
+          cmp node_modules/mammoth/LICENSE ../vendor/mammoth/LICENSE
+          cmp package-lock.json ../vendor/package-lock.json
       - name: Verify installed preview package and exact committed lock
         run: |
           set -euo pipefail
