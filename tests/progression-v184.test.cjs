@@ -46,7 +46,7 @@ test('warmup rows and invalid entries never influence the load',()=>{
 
 test('three comparable sessions with RIR at least 2 allow a tentative increase',()=>{
  const history=days.map(date=>session(date,rows([60,60],12,2)));
- const result=advisor.suggest(history,'row-v');
+ const result=advisor.suggest(history,'row-v',{equipmentType:'barbell'});
  assert.equal(result.action,'consider_increase');
  assert.equal(result.suggestedWeight,62.5);
 });
@@ -59,7 +59,8 @@ test('missing RIR does not erase history and prevents weight increase',()=>{
  const history=days.map(date=>session(date,rows([60,60],12,null)));
  const result=advisor.suggest(history,'row-v');
  assert.equal(result.action,'maintain');
- assert.match(result.reason,/RIR/);
+ if(release.surfaces.preview.version==='4.1.1')assert.match(result.reason,/RIR/);
+ else {assert.equal(result.safetyReason,'invalid_observation');assert.match(result.reason,/niepełne lub niewiarygodne/);assert.equal(result.suggestedWeight,null);}
  assert.equal(result.bestWeight,60);
 });
 

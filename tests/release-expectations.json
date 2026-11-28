@@ -108,10 +108,12 @@
       "preview/vendor/package-lock.json",
       "tests/adaptive-adapter.test.cjs",
       "tests/adaptive-integration.test.cjs",
+      "tests/calisthenics-programs.test.cjs",
       "tests/data-quality-safety-browser.cjs",
       "tests/data-quality-safety.test.cjs",
       "tests/muscle-mapping.test.cjs",
       "tests/preview-upgrade-browser.cjs",
+      "tests/progress-blank-regression.test.cjs",
       "tests/progression-v184.test.cjs",
       "tests/progression-v2-staging.test.cjs",
       "tests/progression-v2.test.cjs",
@@ -133,7 +135,8 @@
       "assistant/assistant-progression-ui.js": 312,
       "assistant/equipment-settings-ui.js": 200,
       "assistant/adaptive-adapter.js": 2,
-      "assistant/trainer-preparation.js": 313
+      "assistant/trainer-preparation.js": 313,
+      "progress-core-v2.js": 313
     },
     "preview": {
       "muscle-fatigue-core.js": 8,
@@ -141,7 +144,8 @@
       "assistant/assistant-progression-ui.js": 315,
       "assistant/equipment-settings-ui.js": 201,
       "assistant/adaptive-adapter.js": 4,
-      "assistant/trainer-preparation.js": 315
+      "assistant/trainer-preparation.js": 315,
+      "progress-core-v2.js": 314
     }
   }
 }
