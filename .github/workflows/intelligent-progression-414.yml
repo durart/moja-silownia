@@ -1,0 +1,31 @@
+name: 4.1.4 isolated progression core
+on:
+  push:
+    branches: [feature/intelligent-progression-4.1.4]
+permissions:
+  contents: read
+jobs:
+  policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm exact head and immutable production paths
+        env:
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          git fetch --no-tags --depth=1 origin 3ae304d9d4cd1a4b26ed6043bad3793fae98129a
+          git diff --exit-code 3ae304d9d4cd1a4b26ed6043bad3793fae98129a HEAD -- . ':!preview' ':!docs' ':!tests' ':!.github/workflows/intelligent-progression-414.yml'
+          git diff --exit-code 3ae304d9d4cd1a4b26ed6043bad3793fae98129a HEAD -- preview ':!preview/assistant/intelligent-progression.js'
+      - name: Run isolated policy and existing safety tests
+        run: |
+          node --test tests/intelligent-progression-414.test.cjs tests/data-quality-safety.test.cjs
+          SAFETY_SURFACE=production node --test tests/data-quality-safety.test.cjs
