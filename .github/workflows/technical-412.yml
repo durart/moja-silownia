@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/technical-412.yml'
       - 'tests/characterization-411.cjs'
+      - 'tests/characterization-browser-411.cjs'
 permissions:
   contents: read
 jobs:
@@ -45,7 +46,7 @@ jobs:
           git fetch --no-tags --depth=1 origin "$BASE_SHA"
           node - <<'JS'
           const {verifyTechnical,verifyRelease}=require('./scripts/verify-staging-release.cjs');
-          const allowed=new Set(["tests/release-expectations.json","tests/release-surfaces.cjs","scripts/verify-staging-release.cjs",".github/workflows/staging-release.yml",".github/workflows/security-hardening.yml","tests/progress-browser-smoke.cjs","tests/trainer-browser-smoke.cjs","tests/characterization-411.cjs","tests/release-integrity.test.cjs","docs/personal-training-coach/4.1.2.md","docs/personal-training-coach/discovery.md","docs/personal-training-coach/test-and-release-plan.md",".github/workflows/technical-412.yml"]);
+          const allowed=new Set(["tests/release-expectations.json","tests/release-surfaces.cjs","scripts/verify-staging-release.cjs",".github/workflows/staging-release.yml",".github/workflows/security-hardening.yml","tests/progress-browser-smoke.cjs","tests/trainer-browser-smoke.cjs","tests/characterization-411.cjs","tests/characterization-browser-411.cjs","tests/release-integrity.test.cjs","docs/personal-training-coach/4.1.2.md","docs/personal-training-coach/discovery.md","docs/personal-training-coach/test-and-release-plan.md",".github/workflows/technical-412.yml"]);
           console.log(verifyTechnical(process.cwd(),process.env.BASE_SHA,process.env.HEAD_SHA,allowed));
           console.log(verifyRelease(process.cwd(),process.env.HEAD_SHA));
           JS
@@ -107,6 +108,6 @@ jobs:
             programs-storage) node tests/calisthenics-programs-browser.cjs; TEST_RELEASE_ROOT=1 node tests/calisthenics-programs-browser.cjs; node tests/storage-recovery-browser.cjs ;;
             adaptive) python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/technical-adaptive.log 2>&1 &
               for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/preview/ >/dev/null && break; sleep 1; done
-              node tests/adaptive-browser.cjs ;;
+              node tests/adaptive-browser.cjs; node tests/characterization-browser-411.cjs ;;
             *) exit 1 ;;
           esac
