@@ -1,3 +1,4 @@
+const release=require('./release-surfaces.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -32,13 +33,13 @@ test('v2 staging keeps RIR, pain and real-world load guards',()=>{
 });
 test('preview retains profile and isolated PWA cache; production 2.0 preserves data',()=>{
  const index=read('preview/index.html'),sw=read('preview/sw.js'),prod=read('index.html');
- assert.match(index,/TEST v4\.1\.1/);
+ assert.match(index,release.versionPattern('preview','TEST v'));
  assert.match(index,/moja-silownia-preview-v01/);
  assert.match(index,/profile-core\.js\?v=190/);
  assert.match(index,/equipment-settings-ui\.js\?v=200/);
- assert.match(sw,/moja-silownia-preview-shell-v64-4\.1\.1/);
+ assert.match(sw,release.cachePattern('preview'));
  assert.match(sw,/equipment-settings-ui\.js\?v=200/);
- assert.match(prod,/Moja Siłownia v4\.1\.1/);
+ assert.match(prod,release.versionPattern('production','Moja Siłownia v'));
  assert.match(prod,/equipment-settings-ui\.js\?v=200/);
  assert.equal(read('profile-core.js'),read('preview/profile-core.js'));
 });

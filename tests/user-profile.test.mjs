@@ -1,3 +1,4 @@
+import release from './release-surfaces.cjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
@@ -100,7 +101,7 @@ test('staging remains isolated and production v2 retains profile v1.9', () => {
   assert.match(preview, /profile-ui\.js\?v=310/);
   assert.match(sw, /profile-core\.js\?v=190/);
   assert.match(sw, /profile-ui\.js\?v=310/);
-  assert.match(production, /v4\.1\.1/);
+  assert.match(production, release.versionPattern('production'));
   assert.match(production, /const key='moja-silownia-v01'/);
   assert.match(production, /id="profileContent"/);
   assert.match(production, /profile-core\.js\?v=190/);
@@ -109,7 +110,7 @@ test('staging remains isolated and production v2 retains profile v1.9', () => {
   assert.match(production, /v\.profile=ProfileCore\.normalizeProfile\(v\.profile\)/);
   assert.match(production, /bodyWeightKg:ProfileCore\.resolveWorkoutWeight/);
   assert.match(production, /estimateCalories/);
-  assert.match(read('sw.js'), /moja-silownia-shell-v64-4\.1\.1/);
+  assert.match(read('sw.js'), release.cachePattern('production'));
   assert.match(read('sw.js'), /profile-core\.js\?v=190/);
   assert.match(read('sw.js'), /profile-ui\.js\?v=310/);
   assert.match(read('sw.js'), /profile\.css\?v=190/);
