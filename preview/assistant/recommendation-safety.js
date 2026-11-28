@@ -26,6 +26,31 @@
  }
  const matches=(row,id)=>row&&String(row.exerciseId)===String(id);
  const hasContext=row=>row?.planId!=null||row?.planSlotIndex!=null;
+ function rowContext(row){
+  if(hasContext(row))return row.planId!=null&&Number.isInteger(row.planSlotIndex)&&row.planSlotIndex>=0?'plan':'ambiguous';
+  if(row?.planSetIndex!=null)return 'ambiguous';
+  if(row?.manualSetIndex!=null)return Number.isInteger(row.manualSetIndex)&&row.manualSetIndex>=0?'manual':'ambiguous';
+  return 'legacy';
+ }
+ function contextKey(row){
+  const kind=rowContext(row);
+  return kind==='plan'?JSON.stringify([kind,row.planId,row.planSlotIndex]):kind;
+ }
+ function manualHistory(sessions,id,now=Date.now()){
+  const attempts=standardHistory(sessions,now).map(s=>({...s,sets:s.sets.filter(r=>matches(r,id))})).filter(s=>s.sets.length);
+  if(!attempts.length)return {history:[],reason:null};
+  const latest=attempts[0],kinds=new Set(latest.sets.map(rowContext));
+  const kind=kinds.size===1?[...kinds][0]:'ambiguous';
+  if(kind!=='manual'&&kind!=='legacy')return {history:[],reason:'different_context'};
+  if(kind==='legacy'&&attempts.some(s=>s.sets.some(r=>rowContext(r)!=='legacy')))return {history:[],reason:'different_context'};
+  // Keep the contiguous comparable history, not older observations from before a context switch.
+  const history=[];
+  for(const s of attempts){
+   if(s.sets.some(r=>rowContext(r)!==kind))break;
+   history.push(s);
+  }
+  return {history,reason:null};
+ }
  function historyBlock({sessions,exerciseId,planId,slotIndex,target,strictContext=false,now=Date.now()}={}){
   const history=standardHistory(sessions,now);
   let rows;
@@ -42,11 +67,11 @@
      const actual=working.map(r=>r.planSetIndex).sort((a,b)=>a-b);
      if(actual.length!==expected.length||actual.some((v,i)=>!Number.isInteger(v)||v!==expected[i]))return 'incomplete_slot';
     }
-   }else if(history.some(s=>s.sets.some(r=>matches(r,exerciseId)&&hasContext(r))))return 'different_context';
+   }else if(history.some(s=>s.sets.some(r=>matches(r,exerciseId)&&rowContext(r)!=='legacy')))return 'different_context';
   }else if(strictContext){
-   const latest=history.find(s=>s.sets.some(r=>matches(r,exerciseId)&&!hasContext(r)));
-   if(latest)rows=latest.sets.filter(r=>matches(r,exerciseId)&&!hasContext(r));
-   else if(history.some(s=>s.sets.some(r=>matches(r,exerciseId)&&hasContext(r))))return 'different_context';
+   const manual=manualHistory(sessions,exerciseId,now);
+   if(manual.reason)return manual.reason;
+   if(manual.history.length)rows=manual.history[0].sets;
   }
   if(!rows){
    const latest=history.find(s=>s.sets.some(r=>matches(r,exerciseId)));
@@ -74,5 +99,5 @@
   };
   return {...advice,action:reason==='flag'||reason==='assisted'?'review':'maintain',suggestedWeight:null,reason:descriptions[reason]??'Brak podstaw do automatycznej zmiany obciążenia.',safetyReason:reason};
  }
- return Object.freeze({flagNeedsReview,readinessCaution,equipmentContext,currentBlock,historyBlock,blockedAdvice});
+ return Object.freeze({flagNeedsReview,readinessCaution,equipmentContext,currentBlock,historyBlock,blockedAdvice,rowContext,contextKey,manualHistory});
 });
