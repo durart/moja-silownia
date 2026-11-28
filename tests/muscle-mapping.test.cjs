@@ -1,4 +1,5 @@
 'use strict';
+const release=require('./release-surfaces.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -56,7 +57,7 @@ test('unresolved mixed legacy data preserves stored scores; unrelated sessions a
  assert.deepEqual(core.sessionImpulse({...session,sets:[]},legacy),{Nogi:45});
 });
 test('same canonical source in both candidate surfaces, with isolated keys and cache',()=>{
- assert.equal(read('muscle-fatigue-core.js'),read('preview/muscle-fatigue-core.js'));
- for(const prefix of ['', 'preview/']){const html=read(prefix+'index.html');const sw=read(prefix+'sw.js');assert.ok(html.includes('MuscleFatigueCore.normalizeCatalog(state.exercises)'));assert.ok(html.includes('MuscleFatigueCore.sessionMuscles(s,state.exercises)'));assert.ok(html.includes('muscle-fatigue-core.js?v=6'));assert.ok(sw.includes('muscle-fatigue-core.js?v=6'));assert.ok(sw.includes('v64-4.1.1'));}
+ release.assertParity('muscle-fatigue-core.js',Buffer.from(read('muscle-fatigue-core.js')),Buffer.from(read('preview/muscle-fatigue-core.js')));
+ for(const prefix of ['', 'preview/']){const html=read(prefix+'index.html');const sw=read(prefix+'sw.js');assert.ok(html.includes('MuscleFatigueCore.normalizeCatalog(state.exercises)'));assert.ok(html.includes('MuscleFatigueCore.sessionMuscles(s,state.exercises)'));const surface=prefix?'preview':'production';const url=release.assetUrl(surface,'muscle-fatigue-core.js',6);assert.ok(html.includes(url));assert.ok(sw.includes(url));assert.match(sw,release.cachePattern(surface));}
  assert.match(read('index.html'),/const key='moja-silownia-v01'/);assert.match(read('preview/index.html'),/const key='moja-silownia-preview-v01'/);
 });

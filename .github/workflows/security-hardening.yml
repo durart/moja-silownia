@@ -52,11 +52,11 @@ jobs:
           522ad2c83bc8a0010e7f0cc60d0892b77c8d2bf2c9702dc12288311d94270f42  ./pdfjs/pdf.min.mjs
           b4c8353ded0d88d2e2009574a29eb4e0c3ff7e942ecdf51ef5f71566a9667f31  ./pdfjs/pdf.worker.min.mjs
           EOF
-          for dir in vendor preview/vendor; do
-            (cd "$dir" && sha256sum -c /tmp/expected-vendor.sha256)
-            (cd "$dir" && sha256sum -c SHA256SUMS)
-          done
-          diff -qr vendor preview/vendor
+          (cd vendor && sha256sum -c /tmp/expected-vendor.sha256 && sha256sum -c SHA256SUMS)
+          sed -e 's/2a0c24d419b8b6b307b2c59dcad9ac045ef43c29fdb23f3b0f2e82d5b09287fe/92914a3708cfdf1e62cb553d1856a7fedab21da83d8ee82845de2f897b368cab/' -e 's/37f5fa5aeb39d56b22305537bf45f24665798997bd9272305c8e614cce9efdf7/3c25f22ba8c536cb6683ef00a680db0b4f57deffdb61d38952e94b2eb58a3c73/' /tmp/expected-vendor.sha256 >/tmp/expected-preview-vendor.sha256
+          (cd preview/vendor && sha256sum -c /tmp/expected-preview-vendor.sha256 && sha256sum -c SHA256SUMS)
+          diff -qr vendor/pdfjs preview/vendor/pdfjs
+          cmp vendor/mammoth/LICENSE preview/vendor/mammoth/LICENSE
       - name: Resolve pinned libraries and audit
         run: |
           mkdir dependency-check
@@ -64,6 +64,18 @@ jobs:
           npm init -y
           npm install --ignore-scripts --save-exact pdfjs-dist@6.5.438 mammoth@1.9.0
           npm audit --omit=dev --audit-level=high
+      - name: Verify installed preview package and exact committed lock
+        run: |
+          set -euo pipefail
+          mkdir preview-dependency-check
+          cp preview/vendor/package-lock.json preview-dependency-check/
+          cd preview-dependency-check
+          node -e 'const fs=require("fs");const root=require("./package-lock.json").packages[""];fs.writeFileSync("package.json",JSON.stringify({name:root.name,version:root.version,dependencies:root.dependencies}))'
+          npm ci --ignore-scripts
+          npm audit --omit=dev --audit-level=moderate
+          cmp node_modules/mammoth/mammoth.browser.min.js ../preview/vendor/mammoth/mammoth.browser.min.js
+          cmp node_modules/mammoth/LICENSE ../preview/vendor/mammoth/LICENSE
+          cmp package-lock.json ../preview/vendor/package-lock.json
       - name: Generate real document fixtures and test dependencies
         run: |
           mkdir -p dependency-check/fixtures
@@ -90,6 +102,8 @@ jobs:
               z.writestr('word/document.xml','<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>TRENING 1</w:t></w:r></w:p><w:p><w:r><w:t>Bench press</w:t></w:r></w:p></w:body></w:document>')
           PY
           SECURITY_VENDOR_ROOT="$PWD/dependency-check" node --test tests/security-real-documents.test.mjs
+          cp -a dependency-check/fixtures preview-dependency-check/
+          SECURITY_VENDOR_ROOT="$PWD/preview-dependency-check" node --test tests/security-real-documents.test.mjs
       - run: npm install --no-save --no-package-lock playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - name: Run offline browser security regression

@@ -41,6 +41,8 @@ const log=message=>console.log('[security-browser] '+message);
    const result=await page.evaluate(async fixtures=>{
     console.log('Reading DOCX');
     const text=await impRead(new File([new Uint8Array(fixtures[0])],'plan.docx'));
+    let malformedRejected=false;try{await impRead(new File([new Uint8Array([0,1,2,3])],'invalid.docx'));}catch(e){malformedRejected=/archiwum DOCX/.test(String(e));}
+    if(!malformedRejected)throw Error('Malformed DOCX accepted');
     console.log('Reading PDF');
     await impRead(new File([new Uint8Array(fixtures[1])],'plan.pdf'));
     console.log('Checking XSS and saving plan');
