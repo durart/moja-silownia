@@ -1,25 +1,25 @@
 /* Moja Silownia: read-only progress analytics 2.0. No state mutations. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.ProgressCore=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
-const finite=v=>v!==null&&v!==''&&Number.isFinite(Number(v));
+const observation=typeof module==='object'&&module.exports?require('./modules/set-observation.js'):globalThis.MojaSetObservation;
+const finite=v=>observation.number(v)!==null;
 const number=v=>finite(v)?Number(v):NaN;
 const time=s=>{const d=Date.parse(s?.date||'');return Number.isFinite(d)?d:NaN};
 const validTimedSet=s=>s?.measurementType==='duration'&&typeof s.exerciseId==='string'&&Number.isInteger(s.durationSeconds)&&s.durationSeconds>0&&s.durationSeconds<=86400&&finite(s.weight)&&number(s.weight)>=0;
-const validSet=s=>s&&s.measurementType!=='duration'&&typeof s.exerciseId==='string'&&finite(s.weight)&&finite(s.reps)&&number(s.weight)>=0&&Number.isInteger(number(s.reps))&&number(s.reps)>0;
+const validSet=s=>typeof s?.exerciseId==='string'&&observation.validRepetitions(s);
 const clean=sessions=>(Array.isArray(sessions)?sessions:[]).filter(s=>s&&Array.isArray(s.sets)&&Number.isFinite(time(s))).slice().sort((a,b)=>time(a)-time(b));
 const setsFor=(session,id)=>(session.sets||[]).filter(s=>validSet(s)&&s.exerciseId===id);
-const working=s=>s?.setType!=='R'&&s?.type!=='warmup';
+const working=observation.isWorking;
+const trusted=observation.isTrustedWorking;
+const strengthEligible=s=>trusted(s)&&!observation.isAssistedLoad(s);
 const validAnySet=s=>validSet(s)||validTimedSet(s);
 const timedSeconds=sets=>sets.filter(validTimedSet).reduce((v,s)=>v+s.durationSeconds,0);
 const volume=sets=>sets.filter(validSet).reduce((v,s)=>v+number(s.weight)*number(s.reps),0);
 const sessionMode=typeof globalThis!=='undefined'&&globalThis.MojaSessionMode?globalThis.MojaSessionMode:(typeof module==='object'&&module.exports&&typeof require==='function'?require('./assistant/session-mode.js'):null);
 const isRecovery=session=>sessionMode?sessionMode.isRecovery(session):session?.sessionMode==='recovery';
-const rirStatus=set=>{
-  if(set?.rir===null||set?.rir===undefined||set?.rir==='')return 'missing';
-  return finite(set.rir)&&Number.isInteger(number(set.rir))&&number(set.rir)>=0&&number(set.rir)<=5?'valid':'invalid';
-};
+const rirStatus=set=>observation.rir(set?.rir).status;
 function estimateDetails(set){
-  if(!validSet(set)||!working(set)||number(set.weight)<=0)return {value:null,quality:'unavailable'};
+  if(!validSet(set)||!strengthEligible(set)||number(set.weight)<=0)return {value:null,quality:'unavailable'};
   const status=rirStatus(set);
   if(status==='invalid')return {value:null,quality:'invalid_rir'};
   const effective=number(set.reps)+(status==='valid'?number(set.rir):0);
@@ -27,11 +27,11 @@ function estimateDetails(set){
   return {value:number(set.weight)*(1+effective/30),quality:status==='valid'?'comparable':'indicative'};
 }
 const estimatedRM=set=>estimateDetails(set).value;
-function records(sessions,id){const all=clean(sessions).filter(s=>!isRecovery(s)).flatMap(s=>setsFor(s,id).filter(working).map(x=>({...x,date:s.date})));const result={};for(const reps of [5,8,10,12,15]){const exact=all.filter(s=>number(s.reps)===reps).sort((a,b)=>number(b.weight)-number(a.weight))[0]||null;const atLeast=all.filter(s=>number(s.reps)>=reps).sort((a,b)=>number(b.weight)-number(a.weight))[0]||null;result[reps]={exact,atLeast};}return result;}
-function exerciseSessions(sessions,id){return clean(sessions).map(s=>{const sets=setsFor(s,id);if(!sets.length)return null;const work=sets.filter(working);const details=work.map(estimateDetails);const rms=details.map(x=>x.value).filter(x=>x!==null);const reliable=details.filter(x=>x.quality==='comparable').map(x=>x.value);return {date:s.date,timestamp:time(s),sessionMode:isRecovery(s)?'recovery':'standard',sets:sets.map(x=>({...x})),max:work.length?Math.max(...work.map(x=>number(x.weight))):null,volume:volume(sets),oneRM:rms.length?Math.max(...rms):null,comparableOneRM:!isRecovery(s)&&reliable.length?Math.max(...reliable):null};}).filter(Boolean);}
+function records(sessions,id){const all=clean(sessions).filter(s=>!isRecovery(s)).flatMap(s=>setsFor(s,id).filter(strengthEligible).map(x=>({...x,date:s.date})));const result={};for(const reps of [5,8,10,12,15]){const exact=all.filter(s=>number(s.reps)===reps).sort((a,b)=>number(b.weight)-number(a.weight))[0]||null;const atLeast=all.filter(s=>number(s.reps)>=reps).sort((a,b)=>number(b.weight)-number(a.weight))[0]||null;result[reps]={exact,atLeast};}return result;}
+function exerciseSessions(sessions,id){return clean(sessions).map(s=>{const sets=setsFor(s,id);if(!sets.length)return null;const work=sets.filter(strengthEligible);const details=work.map(estimateDetails);const rms=details.map(x=>x.value).filter(x=>x!==null);const reliable=details.filter(x=>x.quality==='comparable').map(x=>x.value);return {date:s.date,timestamp:time(s),sessionMode:isRecovery(s)?'recovery':'standard',sets:sets.map(x=>({...x})),max:work.length?Math.max(...work.map(x=>number(x.weight))):null,volume:volume(sets),oneRM:rms.length?Math.max(...rms):null,comparableOneRM:!isRecovery(s)&&reliable.length?Math.max(...reliable):null};}).filter(Boolean);}
 function bodyweightSummary(sessions,id){
   const rows=exerciseSessions(sessions,id).map(session=>{
-    const reps=session.sets.filter(working).map(set=>number(set.reps));
+    const reps=session.sets.filter(trusted).map(set=>number(set.reps));
     return {date:session.date,timestamp:session.timestamp,sessionMode:session.sessionMode,
       sets:reps.length,totalReps:reps.reduce((sum,reps)=>sum+reps,0),
       bestReps:reps.length?Math.max(...reps):null};
@@ -42,7 +42,7 @@ function bodyweightSummary(sessions,id){
 }
 function durationSummary(sessions,id){
  const rows=clean(sessions).map(session=>{
-  const sets=session.sets.filter(s=>s.exerciseId===id&&validTimedSet(s)&&working(s));
+  const sets=session.sets.filter(s=>s.exerciseId===id&&validTimedSet(s)&&trusted(s));
   return sets.length?{date:session.date,timestamp:time(session),sessionMode:isRecovery(session)?'recovery':'standard',sets:sets.map(s=>({...s})),bestSeconds:Math.max(...sets.map(s=>s.durationSeconds)),totalSeconds:timedSeconds(sets)}:null;
  }).filter(Boolean);
  const standard=rows.filter(s=>s.sessionMode==='standard');
@@ -99,7 +99,7 @@ function trend(sessions,id){
   return {kind:percent===null?'insufficient':percent>3?'up':percent< -3?'down':'stable',
     count:values.length,percent,afterBreak:segmentStart>0};
 }
-function monthReport(sessions,year,month){const items=clean(sessions).filter(s=>{const d=new Date(time(s));return d.getFullYear()===year&&d.getMonth()+1===month;});const all=items.flatMap(s=>s.sets.filter(validAnySet));const byExercise=[...new Set(all.map(s=>s.exerciseId))];const before=clean(sessions).filter(s=>!isRecovery(s)&&time(s)<new Date(year,month-1,1).getTime());let prs=0;for(const id of byExercise){let highest=Math.max(0,...before.flatMap(s=>setsFor(s,id).filter(working).map(x=>number(x.weight))));for(const s of items.filter(s=>!isRecovery(s))){for(const x of setsFor(s,id).filter(working)){if(number(x.weight)>highest){prs++;highest=number(x.weight);}}}}return {year,month,count:items.length,sets:all.length,volume:volume(all),...(timedSeconds(all)?{timedSeconds:timedSeconds(all)}:{}),durationSeconds:items.reduce((sum,s)=>sum+(finite(s.durationSeconds)?Math.max(0,number(s.durationSeconds)):0),0),prs,exercises:byExercise.length};}
+function monthReport(sessions,year,month){const items=clean(sessions).filter(s=>{const d=new Date(time(s));return d.getFullYear()===year&&d.getMonth()+1===month;});const all=items.flatMap(s=>s.sets.filter(validAnySet));const byExercise=[...new Set(all.map(s=>s.exerciseId))];const before=clean(sessions).filter(s=>!isRecovery(s)&&time(s)<new Date(year,month-1,1).getTime());let prs=0;for(const id of byExercise){let highest=Math.max(0,...before.flatMap(s=>setsFor(s,id).filter(strengthEligible).map(x=>number(x.weight))));for(const s of items.filter(s=>!isRecovery(s))){for(const x of setsFor(s,id).filter(strengthEligible)){if(number(x.weight)>highest){prs++;highest=number(x.weight);}}}}return {year,month,count:items.length,sets:all.length,volume:volume(all),...(timedSeconds(all)?{timedSeconds:timedSeconds(all)}:{}),durationSeconds:items.reduce((sum,s)=>sum+(finite(s.durationSeconds)?Math.max(0,number(s.durationSeconds)):0),0),prs,exercises:byExercise.length};}
 function inPeriod(sessions,days,now=Date.now()){return clean(sessions).filter(s=>!days||time(s)>=now-days*86400000);}
 return Object.freeze({clean,validSet,validTimedSet,validAnySet,timedSeconds,durationSummary,working,volume,rirStatus,estimateDetails,estimatedRM,isRecovery,records,exerciseSessions,bodyweightSummary,trainingBreaks,weightAtDate,relativeStrengthSessions,compare,trend,monthReport,inPeriod});
 });

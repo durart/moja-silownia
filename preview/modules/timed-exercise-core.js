@@ -5,6 +5,7 @@
   if (root) root.MojaTimedExercise = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function() {
   'use strict';
+  const observation=typeof module==='object'&&module.exports?require('./set-observation.js'):globalThis.MojaSetObservation;
   const timedIds = new Set(['seed-14', 'seed-93', 'seed-99', 'cali-17', 'cali-20']);
   const DEFAULT_TARGET = Object.freeze({ minSeconds: 30, maxSeconds: 60 });
   const STEP_SECONDS = 5;
@@ -51,7 +52,7 @@
   function workingTimedSets(session, exerciseId) {
     return (Array.isArray(session?.sets) ? session.sets : []).filter(set =>
       set?.exerciseId === exerciseId && isTimedSet(set) &&
-      set.setType !== 'R' && set.type !== 'R' && set.type !== 'warmup');
+      observation.isTrustedWorking(set));
   }
 
   function suggestDuration(sessions, exerciseId, options = {}) {

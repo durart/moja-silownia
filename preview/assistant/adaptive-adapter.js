@@ -7,6 +7,7 @@
   if(common) module.exports=api; else root.MojaAdaptiveAdapter=api;
 })(globalThis,function(evidence,prescription,trends){
   'use strict';
+  const observation=typeof module==='object'&&module.exports?require('../modules/set-observation.js'):globalThis.MojaSetObservation;
   function collect({sessions,exerciseId,planId,slotIndex,targets,
     caution=false,sessionMode='standard',now=Date.now()}={}){
     if(!evidence||!prescription||planId==null||!Number.isInteger(slotIndex)||slotIndex<0||
@@ -15,12 +16,12 @@
       .map(s=>{
         const rows=s.sets.filter(r=>r&&String(r.exerciseId)===String(exerciseId)&&
           r.planId===planId&&r.planSlotIndex===slotIndex&&
-          r.setType!=='R'&&r.type!=='warmup'&&r.type!=='R');
+          !observation.isWarmup(r));
         if(!rows.length) return s.sets.some(r=>r?.planId===planId) ? {...s,sets:[],invalid:true} : null;
         const indices=rows.map(r=>r.planSetIndex);
         const expected=targets.map((t,i)=>t?.index ?? i);
         const valid=rows.length===targets.length&&indices.every((n,i)=>Number.isInteger(n)&&n===expected[i])&&
-          rows.every(r=>r.reliable!==false&&r.unreliable!==true&&Number.isFinite(r.weight)&&r.weight>0&&Number.isInteger(r.reps)&&r.reps>0&&Number.isInteger(r.rir)&&r.rir>=0&&r.rir<=5);
+          rows.every(r=>observation.isTrustedWorking(r)&&Number.isFinite(r.weight)&&r.weight>0&&Number.isInteger(r.reps)&&r.reps>0&&Number.isInteger(r.rir)&&r.rir>=0&&r.rir<=5);
         return {...s,sets:valid?rows:[],invalid:!valid};
       }).filter(Boolean).filter(s=>typeof s.date==='string'&&Number.isFinite(Date.parse(s.date))&&Date.parse(s.date)<=now)
       .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
@@ -39,7 +40,7 @@
       const target=plan.targets[slotIndex];
       const count=Number(target?.sets);
       if(!Number.isInteger(count)||count<1||count>30) return [];
-      const targets=Array.from({length:count},(_,index)=>({index})).filter(t=>!['R','warmup'].includes(target.setDetails?.[t.index]?.setType)&&target.setDetails?.[t.index]?.type!=='warmup');
+      const targets=Array.from({length:count},(_,index)=>({index})).filter(t=>!observation.isWarmup(target.setDetails?.[t.index]));
       const samples=collect({sessions,exerciseId:id,planId:plan.id,slotIndex,targets,now});
       return samples?[{exerciseId:String(id),samples}]:[];
     });
