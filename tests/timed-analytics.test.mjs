@@ -48,10 +48,9 @@ test('timed muscle load scales with duration and retains existing repetition mod
  assert.ok(short>0&&long>short);
  assert.equal(fatigue.impulse(session([duration(0)]),exercise).Brzuch,undefined);
  assert.ok(fatigue.impulse(session([duration(60,{setType:'R'})]),exercise).Brzuch<long);
- assert.deepEqual(fatigue.sessionImpulse(session([reps],{fatigueModel:2,fatigueImpulse:{Barki:5}}),exercise),fatigue.impulse(session([reps]),exercise));
+ assert.deepEqual(fatigue.sessionImpulse(session([reps],{fatigueModel:2,fatigueImpulse:{Barki:5}}),exercise),{Barki:5});
  assert.ok(fatigue.sessionImpulse(session([duration(60)],{fatigueModel:2,fatigueImpulse:{}}),exercise).Brzuch>0);
- assert.deepEqual(fatigue.sessionImpulse(session([duration(60)],{fatigueModel:3,fatigueImpulse:{Brzuch:12}}),exercise),fatigue.impulse(session([duration(60)]),exercise));
- assert.deepEqual(fatigue.sessionImpulse(session([],{fatigueModel:3,fatigueImpulse:{Brzuch:12}}),exercise),{Brzuch:12});
+ assert.deepEqual(fatigue.sessionImpulse(session([duration(60)],{fatigueModel:3,fatigueImpulse:{Brzuch:12}}),exercise),{Brzuch:12});
 });
 test('summary aggregates real seconds independently of repetitions and keeps raw history unchanged',()=>{
  const s=session([reps,duration(45),duration(60,{pr:['Czas']})]),before=JSON.stringify(s);

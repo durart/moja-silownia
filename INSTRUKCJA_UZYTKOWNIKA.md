@@ -69,7 +69,7 @@ Licznik mierzy czas sesji, a timer odlicza przerwę (domyślnie 90 s według dot
 ## 8. Asystent Progresji
 Analizuje historię, ciężary, powtórzenia, zakres docelowy, RIR i charakter sesji. Przykład: przy zakresie 8–12 wykonanie 60 kg × 12 może uzasadniać propozycję zwiększenia ciężaru, zależnie od pozostałych danych. Trening regeneracyjny nie powinien zastępować standardowego odniesienia. Podpowiedź nie jest obowiązkiem ani oceną techniki.
 
-Od 4.1.3 RIR 0 oznacza brak zapasu, a puste pole brak danych. Rozgrzewki i niewiarygodne serie pozostają w historii, lecz nie kwalifikują się do wiarygodnych rekordów i automatycznego zwiększania ciężaru. Brak porównywalnych serii, zmiana sprzętu, ból, gorsza gotowość lub tryb regeneracyjny mogą wstrzymać progresję. Dla maszyny z asystą dobierz pomoc ręcznie. Zapisane serie i ręcznie zmienione propozycje pozostają zachowane; sprawdzaj rzeczywiste parametry przed zapisem.
+Od 4.1.3 RIR 0 oznacza brak zapasu, a puste pole brak danych. Rozgrzewki i niewiarygodne serie pozostają w historii, lecz nie kwalifikują się do wiarygodnych rekordów i automatycznego zwiększania ciężaru. Brak porównywalnych serii, zmiana sprzętu, ból, gorsza gotowość lub tryb regeneracyjny mogą wstrzymać progresję. Dla maszyny z asystą dobierz pomoc ręcznie. Przy przejściu między kontekstami treningowymi ostatni wiarygodny wynik może uzupełnić ciężar, ale sam nie uprawnia do zwiększenia obciążenia. Zapisane serie i ręcznie zmienione propozycje pozostają zachowane; sprawdzaj rzeczywiste parametry przed zapisem.
 
 Skrócona rekomendacja pozostaje widoczna; wybierz Pokaż uzasadnienie, aby zobaczyć szczegóły i ustawienia sprzętu.
 

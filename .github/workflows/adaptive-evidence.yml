@@ -23,9 +23,9 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/adaptive-server.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/preview/ >/dev/null && break; sleep 1; done
           node tests/adaptive-browser.cjs
-      - name: Check upgrade from production 4.1.1
+      - name: Check upgrade from production 4.1.0
         run: |
-          git fetch --no-tags --depth=1 origin a7bf09b0c197b4266ddaa534f5b2ba6088f57abe
+          git fetch --no-tags --depth=1 origin 163a8e3818d2576e85730691c684eb89a8778ca4
           mkdir -p "$RUNNER_TEMP/legacy-app"
-          git archive a7bf09b0c197b4266ddaa534f5b2ba6088f57abe | tar -x -C "$RUNNER_TEMP/legacy-app"
+          git archive FETCH_HEAD | tar -x -C "$RUNNER_TEMP/legacy-app"
           LEGACY_APP="$RUNNER_TEMP/legacy-app" node tests/upgrade-browser.cjs

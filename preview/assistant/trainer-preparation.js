@@ -42,19 +42,22 @@
       row?.exerciseId === id && observation.isReliable(row) && observation.validRepetitions(row) && ['working','warmup'].includes(observation.setClass(row)));
   }
   function historyFor(sessions, id, context) {
-    const source=Array.isArray(sessions)?sessions:[];
+    const source=(Array.isArray(sessions)?sessions:[]).filter(s=>typeof s?.date==='string'&&Number.isFinite(Date.parse(s.date))&&Date.parse(s.date)<=Date.now()&&(s.sessionMode==null||s.sessionMode==='standard'||s.sessionMode==='recovery'));
     const scoped=context.planId!=null&&Number.isInteger(context.slotIndex);
     const matches=row=>row?.exerciseId===id&&(scoped?row.planId===context.planId&&row.planSlotIndex===context.slotIndex:row.planId==null&&row.planSlotIndex==null);
-    const hasExact=source.some(s=>Array.isArray(s?.sets)&&s.sets.some(matches));
+    const hasExact=scoped&&source.some(s=>Array.isArray(s?.sets)&&s.sets.some(matches));
     return source
       .filter(s => typeof s?.date === 'string' && Number.isFinite(Date.parse(s.date)) && Date.parse(s.date)<=Date.now())
       .map(s => {
         let sets = validRows(s, id);
-        if(hasExact)sets=sets.filter(matches);
+        if(!scoped){
+          const keys=new Set(sets.map(safety.contextKey));
+          if(keys.size>1||keys.has('ambiguous'))sets=[];
+        }else if(hasExact)sets=sets.filter(matches);
         else if (context.planId != null && Number.isInteger(context.slotIndex)) {
           const samePlan = sets.filter(row => row.planId === context.planId);
           if (samePlan.length) sets = samePlan.filter(row => row.planSlotIndex === context.slotIndex);
-          else if (new Set(sets.map(row => JSON.stringify([row.planId ?? null,row.planSlotIndex ?? null]))).size > 1) sets = [];
+          else if (new Set(sets.map(safety.contextKey)).size > 1||sets.some(row=>safety.rowContext(row)==='ambiguous')) sets = [];
         }
         if (sets.length && sets.every(row => Number.isInteger(row.planSetIndex)) && new Set(sets.map(row=>row.planSetIndex)).size===sets.length) sets.sort((a,b)=>a.planSetIndex-b.planSetIndex);
         else if (sets.length && sets.every(row => Number.isInteger(row.manualSetIndex)) && new Set(sets.map(row=>row.manualSetIndex)).size===sets.length) sets.sort((a,b)=>a.manualSetIndex-b.manualSetIndex);
@@ -69,6 +72,10 @@
     if (timedCore?.measurementType(exercise)==='duration') return timed.prepare({sessions,exercise,target,sessionMode,activeFlag,planId,slotIndex,cautionToday:readinessCaution(preWorkout)});
     const history = historyFor(sessions, exercise.id, {planId, slotIndex});
     const standard = history.filter(s => s.sessionMode !== 'recovery');
+    const scoped=planId!=null&&Number.isInteger(slotIndex);
+    // Reference rows may come from another workout; they do not authorize load progression.
+    const comparable=scoped?history:safety.manualHistory(sessions,exercise.id).history;
+    const evidence=scoped?history:comparable.map(s=>({...s,sets:validRows(s,exercise.id)}));
     const recovery = history.filter(s => s.sessionMode === 'recovery');
     const isRecovery = sessionMode === 'recovery';
     const reference = isRecovery ? (recovery[0] ?? standard[0]) : standard[0];
@@ -95,13 +102,14 @@
       return rowRange?.min === overall?.min && rowRange?.max === overall?.max &&
         number(target?.setDetails?.[i]?.rir ?? target?.rir) === plannedRir;
     });
-    let advice = progression.suggest(history, exercise.id, { exercise,minReps: range.min, maxReps: range.max, equipmentType, equipmentStepKg: exercise.equipmentStepKg,
+    let advice = progression.suggest(evidence, exercise.id, { exercise,minReps: range.min, maxReps: range.max, equipmentType, equipmentStepKg: exercise.equipmentStepKg,
       ...(explicitRir ? {targetRir: plannedRir, expectedWorkingSets: overall && uniformTargets ? expectedWorkingSets : 0} : {}) });
     const recentFlag = (Array.isArray(sessions) ? sessions : []).filter(s => typeof s?.date === 'string' && Number.isFinite(Date.parse(s.date)) && (s.exerciseNotes?.[exercise.id] || validRows(s,exercise.id).length)).sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,5).some(s => safety.flagNeedsReview(s.exerciseNotes?.[exercise.id]?.flag));
     const broadDecline = plan?.id === planId && adaptive?.assessPlan({sessions,plan})?.status === 'broad_decline';
     const currentRestriction=safety.currentBlock({exercise,sessionMode,preWorkout,activeFlag});
     const contextRestriction=safety.historyBlock({sessions,exerciseId:exercise.id,planId,slotIndex,target,strictContext:true});
-    const restriction=recentFlag?'flag':currentRestriction??contextRestriction??(broadDecline?'broad_decline':null);
+    const referenceRestriction=!scoped&&standard.length&&comparable.length&&standard[0].date!==comparable[0].date?'different_context':null;
+    const restriction=recentFlag?'flag':currentRestriction??contextRestriction??referenceRestriction??(broadDecline?'broad_decline':null);
     const caution=restriction!==null;
     if(restriction)advice=safety.blockedAdvice(advice,restriction);
     const hasTimedTarget = /\b(?:s|sek\.?|sekund|min\.?|maks\.?)\s*$/i.test(String(target?.reps ?? ''));

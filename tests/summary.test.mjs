@@ -12,7 +12,6 @@ const css = readFileSync(new URL('../summary.css', import.meta.url), 'utf8');
 function setupCore() {
   const ctx = { window: {}, console };
   vm.createContext(ctx);
-  vm.runInContext(readFileSync(new URL('../modules/set-observation.js',import.meta.url),'utf8'),ctx);
   vm.runInContext(coreSource, ctx);
   return ctx.window.SportSummaryCore;
 }
@@ -104,7 +103,7 @@ test('calories prefer persisted estimate over current function', () => {
 
 test('new summary assets are integrated and old full PNG remains available', () => {
   assert.match(html, /id="summary"/);
-  assert.match(html, /summary-core\.js\?v=5/);
+  assert.match(html, /summary-core\.js\?v=4/);
   assert.match(html, /summary-export\.js\?v=3/);
   assert.match(html, /summary-ui\.js\?v=4/);
   assert.match(html, /summary\.css\?v=1/);

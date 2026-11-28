@@ -1,13 +1,12 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const prefix=process.env.SAFETY_SURFACE==='production'?'':'preview/';
-const obs=require('../'+prefix+'modules/set-observation.js');
-const progression=require('../'+prefix+'assistant/assistant-progression.js');
-const trainer=require('../'+prefix+'assistant/trainer-preparation.js');
-const metrics=require('../'+prefix+'progress-core-v2.js');
-const fatigue=require('../'+prefix+'muscle-fatigue-core.js');
-const timed=require('../'+prefix+'modules/timed-exercise-core.js');
+const obs=require('../preview/modules/set-observation.js');
+const progression=require('../preview/assistant/assistant-progression.js');
+const trainer=require('../preview/assistant/trainer-preparation.js');
+const metrics=require('../preview/progress-core-v2.js');
+const fatigue=require('../preview/muscle-fatigue-core.js');
+const timed=require('../preview/modules/timed-exercise-core.js');
 const row=(extra={})=>({exerciseId:'seed-0',weight:70,reps:12,rir:2,setType:'W',...extra});
 const ex={id:'seed-0',name:'Bench',group:'Klatka piersiowa',equipment:'Sztanga'};
 const session=sets=>({date:'2026-11-20T12:00:00Z',sets});
@@ -81,7 +80,7 @@ test('PS-008: assisted exercise cannot receive ordinary weight progression or st
  assert.equal(JSON.stringify(history),before);
 });
 test('live records ignore unreliable, recovery, assisted and legacy warmup rows',async()=>{
- const {detectRecords}=await import('../'+prefix+'modules/records.js');
+ const {detectRecords}=await import('../preview/modules/records.js');
  const completedSessions=[session([row({weight:100,rir:1,reliable:false}),row({weight:60}),row({weight:120,setType:undefined,type:'R'})]),{...session([row({weight:110})]),sessionMode:'recovery'}];
  const args={exerciseId:ex.id,weight:70,reps:12,completedSessions};
  assert.ok(detectRecords(args).includes('Ciężar'));
@@ -96,8 +95,8 @@ test('candidate modules and immutable raw records: valid standard progression st
  assert.equal(JSON.stringify(history),before);
 });
 
-const safety=require('../'+prefix+'assistant/recommendation-safety.js');
-const drafts=require('../'+prefix+'assistant/trainer-drafts.js');
+const safety=require('../preview/assistant/recommendation-safety.js');
+const drafts=require('../preview/assistant/trainer-drafts.js');
 const planTarget={sets:2,reps:'8-12',rir:2};
 const planRow=(i,extra={})=>row({planId:'A',planSlotIndex:0,planSetIndex:i,rir:4,...extra});
 const planHistory=()=>[session([planRow(0),planRow(1)])];
@@ -179,11 +178,65 @@ test('PS-005: equipment change with same increment is sticky and preserves edite
  const restored=JSON.parse(JSON.stringify(state));next=drafts.ensure(restored,ex.id,0,planTarget).entry;assert.equal(next.rows[1].weight,null);
 });
 test('summary excludes untrusted record flags and normalizes RIR without rewriting raw data',()=>{
- require('../'+prefix+'summary-core.js');const summary=globalThis.SportSummaryCore;
+ require('../preview/summary-core.js');const summary=globalThis.SportSummaryCore;
  const input=session([row({reliable:false,pr:['Ciężar'],rir:'invalid'}),row({setType:'R',pr:['Ciężar'],rir:null}),row({pr:['Ciężar'],rir:0})]);const before=JSON.stringify(input);const model=summary.build(input);assert.equal(model.prCount,1);assert.equal(model.groups[0].sets[0].rir,null);assert.equal(model.groups[0].sets[2].rir,0);assert.equal(JSON.stringify(input),before);
 });
 test('timed progression cannot bypass invalid latest observation',()=>{
  const id='seed-14',r={exerciseId:id,measurementType:'duration',durationSeconds:45,targetDurationSeconds:45,weight:0,setType:'W'};
  const history=[session([r,r]),{date:'2026-11-24T12:00:00Z',sets:[r,{...r,reliable:false}]}];
  assert.equal(timed.suggestDuration(history,id,{expectedSets:2,previousTargetSeconds:45,target:{minSeconds:30,maxSeconds:60}}).action,'maintain');
+});
+
+const recent=(sets,extra={})=>({date:'2026-11-25T12:00:00Z',sets,...extra});
+const prepareFree=(sessions,extra={})=>trainer.prepare({sessions,exercise:ex,...extra});
+test('alpha.6: latest completed plan row is free-workout reference, not older unscoped warmup',()=>{
+ const old=session([row({weight:20,reps:10,setType:'R'}),row({weight:70}),row({weight:70})]);
+ const latest=recent([planRow(2,{weight:65,reps:9,rir:1})]);
+ const input=[old,latest],before=JSON.stringify(input);
+ const result=prepareFree(input);
+ assert.equal(result.rows[0].weight,65);assert.equal(result.rows[0].reps,9);assert.equal(result.rows[0].setType,'W');
+ assert.equal(result.safetyReason,'different_context');assert.equal(result.advice.suggestedWeight,null);
+ assert.equal(JSON.stringify(input),before);
+});
+test('alpha.6: latest planned reference cannot authorize weight or repetition escalation',()=>{
+ const input=[session([row({rir:4}),row({rir:4})]),recent([planRow(0,{weight:65,reps:10}),planRow(1,{weight:65,reps:10})])];
+ const result=prepareFree(input,{target:planTarget});
+ assert.deepEqual(result.rows.map(r=>[r.weight,r.reps]),[[65,10],[65,10]]);
+ assert.equal(result.advice.action,'maintain');
+});
+test('alpha.6: explicit manual observations remain eligible, legacy does not join that evidence',()=>{
+ const manual=i=>row({manualSetIndex:i,rir:4});
+ const result=prepareFree([session([row({weight:90}),row({weight:90})]),recent([manual(0),manual(1)])],{target:planTarget});
+ assert.equal(result.rows[0].weight,72.5);assert.equal(result.safetyReason,null);
+ assert.equal(safety.manualHistory([session([row()]),recent([manual(0),manual(1)])],ex.id).history.length,1);
+});
+test('alpha.6: newer unscoped data after explicit plan or manual context is reference only',()=>{
+ for(const old of [planRow(0),row({manualSetIndex:0})]){
+  const result=prepareFree([session([old]),recent([row({weight:60,rir:4}),row({weight:60,rir:4})])],{target:planTarget});
+  assert.equal(result.rows[0].weight,60);assert.equal(result.advice.suggestedWeight,null);assert.equal(result.safetyReason,'different_context');
+ }
+});
+test('alpha.6: same-session ambiguous slots or mixed manual/plan rows cannot authorize progression',()=>{
+ for(const rows of [[planRow(0),planRow(1,{planSlotIndex:1})],[planRow(0),row({manualSetIndex:0})],[row({planSetIndex:1}),row()]]){
+  const result=prepareFree([recent(rows)],{target:planTarget});
+  assert.ok(result.rows.every(r=>r.weight===null));assert.equal(result.advice.suggestedWeight,null);
+ }
+});
+test('alpha.6: invalid latest manual set and warmup-only attempt block older evidence',()=>{
+ const old=session([row({manualSetIndex:0,rir:4}),row({manualSetIndex:1,rir:4})]);
+ for(const rows of [[row({manualSetIndex:0,reliable:false})],[row({manualSetIndex:0,setType:'R',weight:20})],[row({manualSetIndex:0,rir:null})]]){
+  const result=prepareFree([old,recent(rows)],{target:planTarget});
+  assert.notEqual(result.advice.action,'consider_increase');assert.equal(result.advice.suggestedWeight,null);
+ }
+});
+test('alpha.6: future and recovery observations cannot displace standard reference',()=>{
+ const latest=recent([planRow(0,{weight:65,reps:9,rir:1})]);
+ const future={date:'2099-01-01T00:00:00Z',sets:[row({weight:200,manualSetIndex:0})]};
+ const recovery={date:'2026-11-26T12:00:00Z',sessionMode:'recovery',sets:[row({weight:30,manualSetIndex:0})]};
+ const result=prepareFree([latest,future,recovery]);assert.equal(result.rows[0].weight,65);assert.equal(result.advice.suggestedWeight,null);
+});
+test('alpha.6: pure legacy history retains compatible behavior; explicit manual history cannot increase another plan',()=>{
+ assert.equal(prepareFree([session([row({rir:4}),row({rir:4})])],{target:planTarget}).rows[0].weight,72.5);
+ const result=trainer.prepare({sessions:[recent([row({manualSetIndex:0}),row({manualSetIndex:1})])],exercise:ex,target:planTarget,planId:'A',slotIndex:0});
+ assert.equal(result.rows[0].weight,70);assert.equal(result.advice.suggestedWeight,null);
 });

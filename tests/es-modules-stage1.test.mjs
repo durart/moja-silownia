@@ -2,7 +2,7 @@ import '../modules/storage-recovery.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const records=await import('../modules/records.js');
+const records=await import('data:text/javascript;base64,'+Buffer.from(readFileSync(new URL('../modules/records.js',import.meta.url))).toString('base64'));
 const storage=await import('data:text/javascript;base64,'+Buffer.from(readFileSync(new URL('../modules/storage.js',import.meta.url))).toString('base64'));
 const {detectRecords,isWorkingSet}=records;
 const {parseBackup,serializeBackup,isValidBackup,chooseBackup}=storage;
