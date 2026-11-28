@@ -1,4 +1,5 @@
 'use strict';
+const release=require('./release-surfaces.cjs');
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 (async()=>{
@@ -71,7 +72,7 @@ const assert=require('node:assert/strict');
   assert.equal(await page.evaluate(()=>typeof globalThis.MojaAdaptiveRecovery?.prescribe),'function');
   assert.equal(await page.evaluate(()=>globalThis.MojaAdaptiveTrends.classify([20,20,20,20].map(reps=>({reps,reserve:4}))).status),'stagnation');
   assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),'adaptive-browser-sentinel');
-  assert.ok(await page.evaluate(async()=> (await caches.keys()).includes('moja-silownia-preview-shell-v63-4.1.0')));
+  assert.ok(await page.evaluate(async name=> (await caches.keys()).includes(name),release.surfaces.preview.cache));
   console.log('Adaptive browser, manual edit, offline reload and production storage sentinel passed');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

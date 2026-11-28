@@ -1,4 +1,5 @@
 'use strict';
+const release=require('./release-surfaces.cjs');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium}=require('playwright');
@@ -38,7 +39,7 @@ async function verify(card,id){
    },{storageKey,otherKey});
    await page.goto('http://127.0.0.1:'+server.address().port+(production?'/':'/preview/'));
    await page.waitForFunction(()=>!!window.MojaCardioWorkout&&!!document.getElementById('compactWorkoutDock'));
-   assert.match(await page.title(),production?/v4\.1\.0 — Programy treningowe/:/TEST v4\.1\.0 — Katalog ćwiczeń/);
+   assert.match(await page.title(),production?release.versionPattern('production','v',' — Programy treningowe'):release.versionPattern('preview','TEST v',' — Katalog ćwiczeń'));
    assert.equal(await page.evaluate(()=>state.plans[0].exerciseIds[0]),'cardio-elliptical');
    await page.evaluate(()=>{tab('catalog');uiCatalogChoose('__cardio__');});
    const rows=page.locator('#catalogList .catalog-exercise-main');

@@ -1,3 +1,4 @@
+const release=require('./release-surfaces.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -108,9 +109,9 @@ test('Staging has one start toggle and one active session toggle, without per-ex
  assert.match(html,/moja-silownia-preview-v01/);
  assert.match(html,/session-mode\.js\?v=200/);
  assert.match(html,/assistant-core\.js\?v=200/);
- assert.match(sw,/moja-silownia-preview-shell-v63-4\.1\.0/);
+ assert.match(sw,release.cachePattern('preview'));
  assert.match(sw,/session-mode\.js\?v=200/);
  assert.match(sw,/assistant-core\.js\?v=200/);
- assert.match(read('index.html'),/Moja Siłownia v4\.1\.0/);
+ assert.match(read('index.html'),release.versionPattern('production','Moja Siłownia v'));
  assert.match(read('index.html'),/id="preRecoveryMode"/);
 });

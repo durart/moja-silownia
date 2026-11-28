@@ -26,7 +26,7 @@ jobs:
           BASE='https://durart.github.io/moja-silownia/'
           for prefix in '' 'preview/'; do
             # Compare with this commit, not historical release numbers.
-            for asset in index.html sw.js muscle-anatomy-art.js profile-core.js profile-ui.js profile.css assistant/session-mode.js assistant/assistant-core.js assistant/assistant-progression.js assistant/equipment-settings-ui.js assistant/assistant-progression-ui.js; do
+            for asset in index.html sw.js muscle-fatigue-core.js muscle-anatomy-art.js profile-core.js profile-ui.js profile.css assistant/session-mode.js assistant/assistant-core.js assistant/assistant-progression.js assistant/equipment-settings-ui.js assistant/assistant-progression-ui.js; do
               expected="$prefix$asset"
               actual="$(mktemp)"
               matched=false
