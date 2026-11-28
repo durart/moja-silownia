@@ -12,6 +12,7 @@ function fixture({stale=false,missing=false,empty=false}={}){
  const state={sessions:empty?[]:[{date:new Date().toISOString(),sets:[{exerciseId:'bench',weight:65,reps:9,rir:2}]}],exercises:[{id:'bench',name:'Wyciskanie',group:'Klatka piersiowa'}],profile:{weightHistory:[]}};
  const ctx={state,document:{getElementById:()=>target},console:{error(){}},Intl};
  ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
+ vm.runInContext(read('modules/set-observation.js'),ctx);
  if(!missing)vm.runInContext(core,ctx);
  if(stale)ctx.ProgressCore={...ctx.ProgressCore,trainingBreaks:undefined};
  vm.runInContext(report,ctx);vm.runInContext(ui,ctx);

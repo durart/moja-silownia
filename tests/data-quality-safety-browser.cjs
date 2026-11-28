@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
-const base='http://127.0.0.1:8765/preview/';
+const base='http://127.0.0.1:8765/'+(process.env.SAFETY_SURFACE==='production'?'':'preview/');
 async function setup(page,mode){
  await page.goto(base);
  await page.waitForFunction(()=>window.MojaSilowniaModules&&window.MojaRecommendationSafety&&window.MojaTrainerDrafts&&window.__mojaAdvisorProgressionReady);

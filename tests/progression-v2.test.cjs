@@ -67,7 +67,9 @@ test('warmups, other exercises and invalid rows never decide progression', () =>
   ])]);
   assert.equal(result.weight, 60);
   assert.equal(result.lastTopWeight, 60);
-  assert.equal(result.path, 'FAST_TRACK_1_SESSION');
+  assert.equal(result.action,'maintain');
+  assert.equal(result.safetyReason,'invalid_observation');
+  assert.equal(result.suggestedWeight,null);
 });
 
 test('flag from previous five exercise workouts blocks increase', () => {
@@ -166,7 +168,7 @@ test('exercise with unknown equipment does not assume barbell load', () => {
   const result = advisor.suggest([
     session(dates[0], sets(60,12,[4,4,4]))
   ],exerciseId,{minReps:8,maxReps:12,equipmentType:'unknown'});
-  assert.equal(result.action,'consider_increase');
+  assert.equal(result.action,'maintain');
   assert.equal(result.needsEquipment,true);
   assert.equal(result.suggestedWeight,null);
 });
@@ -190,7 +192,7 @@ test('settings are exercise-scoped, with backup-friendly fields and no workout m
   assert.match(staging,/moja-silownia-preview-v01/);
   const prod = fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
   assert.match(prod,release.versionPattern('production'));
-  assert.match(prod,/equipment-settings-ui\.js\?v=200/);
+  assert.ok(prod.includes(release.assetUrl('production','assistant/equipment-settings-ui.js',200)));
 });
 
 test('invalid step inputs are rejected by the equipment UI', () => {
@@ -234,7 +236,8 @@ test('RIR from lower pyramid sets cannot override missing RIR at the peak', () =
   ])]);
   assert.equal(result.weight, 70);
   assert.equal(result.action, 'maintain');
-  assert.equal(result.suggestedWeight, undefined);
+  assert.equal(result.suggestedWeight, null);
+  assert.equal(result.safetyReason,'invalid_observation');
 });
 
 test('recent drop from a heavy standard session is not interpreted as a progression signal', () => {

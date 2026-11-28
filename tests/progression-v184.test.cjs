@@ -111,7 +111,7 @@ test('production v2 retains storage while the staging sandbox remains isolated',
  assert.match(staging,/REPS_TREND_CONFIRMED/);
  assert.match(html,/const key='moja-silownia-v01'/);
  assert.match(html,release.versionPattern('production'));
- assert.match(html,/assistant\/assistant-progression\.js\?v=201/);
+ assert.ok(html.includes(release.assetUrl('production','assistant/assistant-progression.js',201)));
  assert.match(sw,release.cachePattern('production'));
- assert.match(sw,/assistant\/assistant-progression\.js\?v=201/);
+ assert.ok(sw.includes(release.assetUrl('production','assistant/assistant-progression.js',201)));
 });
