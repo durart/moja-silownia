@@ -236,7 +236,8 @@ test('RIR from lower pyramid sets cannot override missing RIR at the peak', () =
   ])]);
   assert.equal(result.weight, 70);
   assert.equal(result.action, 'maintain');
-  assert.equal(result.suggestedWeight, undefined);
+  assert.equal(result.suggestedWeight, null);
+  assert.equal(result.safetyReason,'invalid_observation');
 });
 
 test('recent drop from a heavy standard session is not interpreted as a progression signal', () => {
