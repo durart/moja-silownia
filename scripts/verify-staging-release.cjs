@@ -17,7 +17,12 @@ const allowed=new Set([
 ]);
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8'}).trim();
 if(surfaces.production.version===surfaces.preview.version){
- console.log('Both release surfaces are synchronized; preview-only gate not applicable.');
+ // Promotion must preserve the accepted preview and use the exact tested root runtime.
+ for(const file of ['index.html','sw.js','muscle-fatigue-core.js']){
+  assert.equal(git('diff','--name-only',candidate,'HEAD','--',file),'','Root candidate changed: '+file);
+ }
+ assert.equal(git('diff','--name-only',candidate,'HEAD','--','preview/'),'','Accepted preview changed');
+ console.log('PASS: synchronized release root and complete preview match the verified candidate');
  process.exit(0);
 }
 const changed=git('diff','--name-only','--no-renames',base,'HEAD').split('\n').filter(Boolean);

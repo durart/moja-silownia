@@ -25,9 +25,9 @@ const server=http.createServer((req,res)=>{
  await page.reload();
  await page.waitForFunction(()=>navigator.serviceWorker.controller!==null);
  const before=await page.evaluate(()=>{
-  const id=state.exercises[0].id;
+  const id='seed-12';
   state.plans.push({id:'upgrade-plan',name:'Upgrade test',exerciseIds:[id],targets:[{sets:2,reps:'8-12',rir:2}]});
-  state.sessions.push({id:'upgrade-history',date:new Date().toISOString(),sets:[{exerciseId:id,weight:40,reps:10,rir:2,setType:'W'}]});
+  state.sessions.push({id:'upgrade-history',date:new Date().toISOString(),sets:Array.from({length:4},(_,i)=>({exerciseId:id,name:'Wspięcia na palce',weight:30,reps:12,rir:i===3?0:2,setType:'W'})),fatigueModel:2,fatigueImpulse:{Nogi:45},muscles:{Nogi:4}});
   state.trainerSettings={weights:true,reps:true,sets:true,explanation:false};
   startManualWorkoutNow();
   state.active.push({exerciseId:id,weight:40,reps:8,rir:0,setType:'W',manualSetIndex:0,at:new Date().toISOString()});
@@ -45,6 +45,8 @@ const server=http.createServer((req,res)=>{
  await page.waitForFunction(async()=>!(await caches.keys()).some(k=>k.startsWith('moja-silownia-shell-')&&k!=='moja-silownia-shell-v64-4.1.1'));
  const snapshot=()=>page.evaluate(()=>JSON.parse(JSON.stringify({startedAt:state.startedAt,active:state.active,sessions:state.sessions,plans:state.plans,trainerSettings:state.trainerSettings})));
  assert.deepEqual(await snapshot(),before);
+ const mapped=await page.evaluate(()=>({group:state.exercises.find(ex=>ex.id==='seed-12').group,roles:muscleRoles(state.sessions.find(s=>s.id==='upgrade-history')),scores:sessionImpulse(state.sessions.find(s=>s.id==='upgrade-history')),loads:MuscleFatigueCore.sessionMuscles(state.sessions.find(s=>s.id==='upgrade-history'),state.exercises)}));
+ assert.equal(mapped.group,'Łydki');assert.deepEqual(mapped.roles,{'Łydki':1});assert.deepEqual(mapped.loads,{'Łydki':4});assert.ok(mapped.scores['Łydki']>0);assert.equal(mapped.scores.Nogi,undefined);
  await context.setOffline(true);await page.reload();assert.deepEqual(await snapshot(),before);
  assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-preview-v01')),'upgrade-sentinel');
  await context.setOffline(false);
