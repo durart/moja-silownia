@@ -18,10 +18,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Fetch immutable production baseline and tested candidate
+      - name: Fetch reviewed immutable release references
         run: |
-          git fetch --no-tags --depth=1 origin 163a8e3818d2576e85730691c684eb89a8778ca4
-          git fetch --no-tags --depth=1 origin fb760a2dd66e39c085fcd23709e72216ad4d7390
+          set -euo pipefail
+          mapfile -t refs < <(node -e 'const p=require("./tests/release-expectations.json").integrity; for(const sha of new Set([p.productionRef,p.previewRef,p.stagingBaseRef,p.previousReleaseRef])) { if(!/^[a-f0-9]{40}$/.test(sha)) process.exit(1); console.log(sha); }')
+          test "${#refs[@]}" -gt 0
+          for sha in "${refs[@]}"; do git fetch --no-tags --depth=1 origin "$sha"; done
       - name: Verify independent surfaces and release integrity
         run: node scripts/verify-staging-release.cjs
       - run: node --test tests/staging-release.test.cjs tests/calisthenics-programs.test.cjs tests/musclemap-hybrid.test.cjs
@@ -30,5 +32,5 @@ jobs:
       - name: Verify preview upgrade and rollback against the previous preview
         run: |
           mkdir -p "$RUNNER_TEMP/legacy-preview"
-          git archive 163a8e3818d2576e85730691c684eb89a8778ca4 | tar -x -C "$RUNNER_TEMP/legacy-preview"
+          git archive "$(node -p 'require("./tests/release-expectations.json").integrity.previousReleaseRef')" | tar -x -C "$RUNNER_TEMP/legacy-preview"
           LEGACY_APP="$RUNNER_TEMP/legacy-preview" node tests/preview-upgrade-browser.cjs

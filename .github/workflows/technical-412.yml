@@ -1,0 +1,113 @@
+name: 4.1.2 exact technical regression
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/technical-412.yml'
+      - 'tests/characterization-411.cjs'
+      - 'tests/characterization-browser-411.cjs'
+permissions:
+  contents: read
+jobs:
+  baseline:
+    if: github.head_ref == 'ci/personal-training-coach-4.1.2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'a8e191115b1bcbb32e2bfe19376d804974ee51e9'
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: test "$(git rev-parse HEAD)" = 'a8e191115b1bcbb32e2bfe19376d804974ee51e9'
+      - run: node --test tests/*.test.mjs tests/*.test.js tests/*.test.cjs
+  candidate:
+    if: github.head_ref == 'ci/personal-training-coach-4.1.2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact candidate and unchanged runtime
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          test "$BASE_SHA" = 'a8e191115b1bcbb32e2bfe19376d804974ee51e9'
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          node - <<'JS'
+          const {verifyTechnical,verifyRelease}=require('./scripts/verify-staging-release.cjs');
+          const allowed=new Set(["tests/release-expectations.json","tests/release-surfaces.cjs","scripts/verify-staging-release.cjs",".github/workflows/staging-release.yml",".github/workflows/security-hardening.yml","tests/progress-browser-smoke.cjs","tests/trainer-browser-smoke.cjs","tests/characterization-411.cjs","tests/characterization-browser-411.cjs","tests/release-integrity.test.cjs","docs/personal-training-coach/4.1.2.md","docs/personal-training-coach/discovery.md","docs/personal-training-coach/test-and-release-plan.md",".github/workflows/technical-412.yml"]);
+          console.log(verifyTechnical(process.cwd(),process.env.BASE_SHA,process.env.HEAD_SHA,allowed));
+          console.log(verifyRelease(process.cwd(),process.env.HEAD_SHA));
+          JS
+      - name: All candidate unit tests
+        run: node --test tests/*.test.mjs tests/*.test.js tests/*.test.cjs
+      - name: Baseline-only characterization on verified identical runtime
+        run: node --test tests/characterization-411.cjs
+      - name: Dry-run exact tracked archive and tamper rejection
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/dry-run-artifact"
+          git archive "$HEAD_SHA" | tar -x -C "$RUNNER_TEMP/dry-run-artifact"
+          node - <<'JS'
+          const {verifyArchive}=require('./scripts/verify-staging-release.cjs');
+          const assert=require('node:assert/strict');
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const root=path.join(process.env.RUNNER_TEMP,'dry-run-artifact');
+          console.log('Verified archive entries:',verifyArchive(process.cwd(),process.env.HEAD_SHA,root));
+          const file=path.join(root,'preview','sw.js');
+          fs.appendFileSync(file,'\n// synthetic tamper');
+          assert.throws(()=>verifyArchive(process.cwd(),process.env.HEAD_SHA,root),/Archive files/);
+          console.log('Tampered archive rejected; no deployment');
+          JS
+  browser:
+    if: github.head_ref == 'ci/personal-training-coach-4.1.2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [progress-trainer, compact-atlas, cardio-timed, identity-graphics, programs-storage, adaptive]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm exact head
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - name: Run existing browser regressions
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          set -euo pipefail
+          case "$SUITE" in
+            progress-trainer) node tests/progress-browser-smoke.cjs ;;
+            compact-atlas) node tests/compact-workout-browser-smoke.cjs; node tests/musclemap-browser-smoke.cjs ;;
+            cardio-timed) node tests/cardio-preview-browser-smoke.cjs; CARDIO_SURFACE=production node tests/cardio-preview-browser-smoke.cjs; node tests/timed-workout-browser-smoke.cjs ;;
+            identity-graphics) node tests/exercise-identity-browser.cjs; node tests/exercise-graphics-browser.cjs ;;
+            programs-storage) node tests/calisthenics-programs-browser.cjs; TEST_RELEASE_ROOT=1 node tests/calisthenics-programs-browser.cjs; node tests/storage-recovery-browser.cjs ;;
+            adaptive) python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/technical-adaptive.log 2>&1 &
+              for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8765/preview/ >/dev/null && break; sleep 1; done
+              node tests/adaptive-browser.cjs; node tests/characterization-browser-411.cjs ;;
+            *) exit 1 ;;
+          esac

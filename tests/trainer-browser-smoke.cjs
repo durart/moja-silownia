@@ -1,5 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
+const release=require('./release-surfaces.cjs');
 const fs=require('node:fs');
 const http=require('node:http');
 const path=require('node:path');
@@ -64,7 +65,7 @@ module.exports=async function trainerBrowserSmoke(){
     await page.evaluate(()=>{startManualWorkout();confirmWorkoutStart();});
     assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before,'staging does not touch production state');
     assert.ok(await page.evaluate(()=>localStorage.getItem('moja-silownia-preview-v01')));
-    assert.match(await page.title(),/TEST v3\.4\.0/);
+    assert.match(await page.title(),release.versionPattern('preview','TEST v'));
     assert.deepEqual(errors,[]);
    }finally{await context.close();}
   }
