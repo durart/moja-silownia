@@ -1,6 +1,6 @@
 # Moja Siłownia — instrukcja użytkownika
 
-Wersja dokumentacji: 1.7 | Aplikacja: 4.0.0 | Aktualizacja: 27.11.2026
+Wersja dokumentacji: 1.8 | Aplikacja: 4.1.1 | Aktualizacja: 28.11.2026
 
 [Aplikacja](https://durart.github.io/moja-silownia/)
 
@@ -102,6 +102,7 @@ W Postępach wybierz ćwiczenie czasowe: najdłuższa seria i łączny czas seri
 Zapisuj masę ciała z datą i wzrost. Masa wspiera szacowanie kalorii i analizy siły względnej. Kalorie są szacowane, nie mierzone bezpośrednio.
 
 ## 15. Obciążenie mięśni
+Wersja 4.1.1 poprawia przypisanie wspięć na palce do łydek, szrugsów do pleców oraz profile kalisteniki i wybranych ćwiczeń siłowych. Wcześniejsze serie, rekordy i plany nie są przepisywane. Jeżeli komplet zapisanych serii pozwala na odtworzenie poprawionego profilu, wskaźniki historyczne są przeliczane przy odczycie; przy niepełnych danych zachowany jest zapisany wskaźnik. Wygeneruj ponownie PNG z historii, aby uzyskać nową mapę. Wagi profili są przybliżeniem, nie pomiarem aktywacji ani hipertrofii.
 Panel Start szacuje obciążenie grup na podstawie historii. Ćwiczenia wielostawowe angażują kilka partii (np. wyciskanie: klatka, triceps, przednie barki). Wskaźnik zmienia się z czasem. Zestawiaj go z samopoczuciem i snem; nie jest oceną medyczną.
 
 ## 16. Garmin
