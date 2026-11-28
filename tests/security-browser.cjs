@@ -35,12 +35,33 @@ const log=message=>console.log('[security-browser] '+message);
    await page.reload();
    await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
    const fixtures=await page.evaluate(async()=>Promise.all(['plan.docx','plan.pdf'].map(async name=>Array.from(new Uint8Array(await (await fetch('/dependency-check/fixtures/'+name)).arrayBuffer())))));
+   const complex=Array.from(fs.readFileSync(path.join(root,'dependency-check/fixtures/complex.docx')));
+   const outbound=[];
+   const monitor=request=>{if(request.url().includes('example.invalid/fixture-'))outbound.push(request.url());};
+   context.on('request',monitor);
+   await context.route('https://example.invalid/**',route=>route.abort());
+   const tableResult=await page.evaluate(async data=>{
+    const before=JSON.stringify([state.plans,state.sessions,state.active]);
+    const text=await impRead(new File([new Uint8Array(data)],'complex.docx'));
+    const plans=impParse(text,'complex.docx');
+    return {text,rows:plans.flatMap(p=>p.rows.map(r=>({name:r.name,series:r.series,reps:r.reps}))),unchanged:before===JSON.stringify([state.plans,state.sessions,state.active]),attached:!!document.querySelector('[href*="example.invalid/fixture-"],[src*="example.invalid/fixture-"]')};
+   },complex);
+   assert.match(tableResult.text,/Bench press\s+\|\s+3\s+\|\s+10/);
+   assert.match(tableResult.text,/Documentation link/);
+   assert.ok(tableResult.rows.some(row=>row.name==='Bench press'&&row.series===3&&row.reps==='10'));
+   assert.equal(tableResult.unchanged,true);assert.equal(tableResult.attached,false);
+   assert.deepEqual(outbound,[]);
+   context.off('request',monitor);
+   await context.unroute('https://example.invalid/**');
+   log('DOCX table, parsed plan, external relationships and no live DOM insertion PASS');
    log('Fixtures loaded; switching offline');
    await page.context().setOffline(true);
    await page.reload();
    const result=await page.evaluate(async fixtures=>{
     console.log('Reading DOCX');
     const text=await impRead(new File([new Uint8Array(fixtures[0])],'plan.docx'));
+    let malformedRejected=false;try{await impRead(new File([new Uint8Array([0,1,2,3])],'invalid.docx'));}catch(e){malformedRejected=/archiwum DOCX/.test(String(e));}
+    if(!malformedRejected)throw Error('Malformed DOCX accepted');
     console.log('Reading PDF');
     await impRead(new File([new Uint8Array(fixtures[1])],'plan.pdf'));
     console.log('Checking XSS and saving plan');

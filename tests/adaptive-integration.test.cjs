@@ -1,4 +1,5 @@
 'use strict';
+const release=require('./release-surfaces.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -21,10 +22,10 @@ test('candidate shells register identical adaptive assets and isolated cache nam
  for(const prefix of ['', 'preview/']){
   const html=read(prefix+'index.html'),sw=read(prefix+'sw.js');
   for(const name of ['adaptive-evidence','adaptive-prescription','adaptive-trends','adaptive-recovery','adaptive-explanation','adaptive-adapter']){
-   const url='./assistant/'+name+'.js?v='+(name==='adaptive-adapter'?2:1);
+   const surface=prefix?'preview':'production';const url='./'+release.assetUrl(surface,'assistant/'+name+'.js',name==='adaptive-adapter'?2:1);
    assert.ok(html.includes(url));assert.ok(sw.includes(url));
-   assert.equal(read(prefix+'assistant/'+name+'.js'),read('assistant/'+name+'.js'));
-   assert.ok(html.indexOf(url)<html.indexOf('./assistant/trainer-preparation.js?v=313'));
+   if(prefix)release.assertParity('assistant/'+name+'.js',Buffer.from(read('assistant/'+name+'.js')),Buffer.from(read(prefix+'assistant/'+name+'.js')));
+   assert.ok(html.indexOf(url)<html.indexOf('./'+release.assetUrl(surface,'assistant/trainer-preparation.js',313)));
   }
  }
  assert.notEqual(read('sw.js').match(/const CACHE='([^']+)'/)[1],read('preview/sw.js').match(/const CACHE='([^']+)'/)[1]);

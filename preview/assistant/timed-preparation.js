@@ -13,7 +13,8 @@
   const validWeight = x => (typeof x === 'number' || typeof x === 'string' && x.trim() !== '') &&
     Number.isFinite(Number(x)) && Number(x) >= 0 ? Number(x) : null;
   const countOf = x => Number.isInteger(Number(x)) && Number(x) > 0 ? Math.min(30,Number(x)) : null;
-  const warmup = x => x?.setType === 'R' || x?.type === 'R' || x?.type === 'warmup';
+  const observation=typeof module==='object'&&module.exports?require('../modules/set-observation.js'):globalThis.MojaSetObservation;
+  const warmup=observation.isWarmup;
   const scoped = (row,planId,slot) => Number.isInteger(slot) && planId != null
     ? row.planId === planId && row.planSlotIndex === slot
     : row.planId == null && !Number.isInteger(row.planSlotIndex);
@@ -23,7 +24,7 @@
 
   function prepare({sessions,exercise,target,sessionMode,activeFlag,planId,slotIndex,cautionToday=false}) {
     const history = (Array.isArray(sessions)?sessions:[])
-      .filter(s => Number.isFinite(Date.parse(s?.date)))
+      .filter(s => Number.isFinite(Date.parse(s?.date))&&Date.parse(s.date)<=Date.now())
       .map(s => ({...s,sets:(Array.isArray(s.sets)?s.sets:[]).filter(r =>
         r?.exerciseId === exercise.id && scoped(r,planId,slotIndex))}))
       .filter(s => s.sets.length || s.exerciseNotes?.[exercise.id])
@@ -49,14 +50,14 @@
     });
     const expectedSets = planned.filter(r=>r.setType==='W').length;
     const comparable = expectedSets>0 && working.length>0 &&
-      latest.sets.filter(r=>!warmup(r)).every(core.isTimedSet) &&
+      latest.sets.filter(r=>!warmup(r)).every(r=>core.isTimedSet(r)&&observation.isTrustedWorking(r)) &&
       (Number.isInteger(slotIndex)||recordedCount>0) &&
       (working.every(r=>!Number.isInteger(r.planSetIndex)&&!Number.isInteger(r.manualSetIndex)) ||
         new Set(working.map(r=>Number.isInteger(slotIndex)?r.planSetIndex:r.manualSetIndex)).size===working.length) &&
       planned.filter(r=>r.setType==='W').every(r=>r.range.minSeconds===range.minSeconds &&
         r.range.maxSeconds===range.maxSeconds && r.kg===validWeight(working[0].weight));
     let advice={action:working.length?'maintain':'initial',targetSeconds:priorGoal};
-    if(comparable && !isRecovery && !recentFlag && !cautionToday)
+    if(comparable && (sessionMode==null||sessionMode==='standard') && !recentFlag && !cautionToday)
       advice=core.suggestDuration([latest],exercise.id,{
         target:range,previousTargetSeconds:priorGoal,expectedSets:Math.max(expectedSets,recordedCount)
       });

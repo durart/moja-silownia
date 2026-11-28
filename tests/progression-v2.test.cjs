@@ -123,7 +123,7 @@ test('source history remains immutable and the preview engine matches', () => {
   // A candidate preview may be ahead of production until the release is approved.
   const safePyramidComparator = /sort\(\(a, b\) => b\[0\] - a\[0\]\)/;
   assert.match(preview, safePyramidComparator);
-  if (safePyramidComparator.test(prod)) assert.equal(preview, prod);
+  if (safePyramidComparator.test(prod)) release.assertParity('assistant/assistant-progression.js',Buffer.from(prod),Buffer.from(preview));
 });
 
 test('three sessions 12/11/10 -> 12/12/11 -> 12/12/12 progress with less than 3% e1RM', () => {
@@ -174,7 +174,7 @@ test('exercise with unknown equipment does not assume barbell load', () => {
 test('settings are exercise-scoped, with backup-friendly fields and no workout mutation', () => {
   const settingsFile = fs.readFileSync(path.join(__dirname,'../assistant/equipment-settings-ui.js'),'utf8');
   const stageSettingsFile = fs.readFileSync(path.join(__dirname,'../preview/assistant/equipment-settings-ui.js'),'utf8');
-  assert.equal(settingsFile,stageSettingsFile);
+  release.assertParity('assistant/equipment-settings-ui.js',Buffer.from(settingsFile),Buffer.from(stageSettingsFile));
   assert.match(settingsFile,/equipmentType/);
   assert.match(settingsFile,/equipmentStepKg/);
   assert.match(settingsFile,/state\.exercises = original\.map/);
@@ -184,8 +184,8 @@ test('settings are exercise-scoped, with backup-friendly fields and no workout m
   const staging = fs.readFileSync(path.join(__dirname,'../preview/index.html'),'utf8');
   const sw = fs.readFileSync(path.join(__dirname,'../preview/sw.js'),'utf8');
   assert.match(staging,release.versionPattern('preview','TEST v'));
-  assert.match(staging,/equipment-settings-ui\.js\?v=200/);
-  assert.match(sw,/equipment-settings-ui\.js\?v=200/);
+  assert.ok(staging.includes(release.assetUrl('preview','assistant/equipment-settings-ui.js',200)));
+  assert.ok(sw.includes(release.assetUrl('preview','assistant/equipment-settings-ui.js',200)));
   assert.match(staging,/profile-core\.js\?v=190/);
   assert.match(staging,/moja-silownia-preview-v01/);
   const prod = fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');

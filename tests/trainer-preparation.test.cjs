@@ -108,10 +108,13 @@ test('explicit plan detects stagnation and repeated decline without reducing aft
  assert.equal(suggest([[8,8,7],[5,4,4],[4,3,3]]).suggestedWeight,72.5);
  assert.equal(prepare({exercise,target,sessions:history([[8,8,7],[5,4,4],[4,3,3]])}).rows[0].weight,72.5);
 });
-test('cross-plan history uses a single unambiguous slot',()=>{
+test('cross-plan history respects the surface policy and rejects ambiguous slots',()=>{
  const target={sets:3,reps:'5–8',rir:'2'};
  const rows=[0,1,2].map(i=>({...row(75,8,2),planId:2,planSlotIndex:0,planSetIndex:i}));
- assert.equal(make(rows,{target,planId:1,slotIndex:0}).rows[0].weight,77.5);
+ const result=make(rows,{target,planId:1,slotIndex:0});
+ const candidate=require('node:fs').existsSync(require('node:path').join(__dirname,'../assistant/recommendation-safety.js'));
+ assert.equal(result.rows[0].weight,candidate?75:77.5);
+ if(candidate){assert.equal(result.advice.action,'maintain');assert.equal(result.safetyReason,'different_context');}
  rows[2].planSlotIndex=1;
  assert.equal(make(rows,{target,planId:1,slotIndex:0}).rows[0].weight,null);
 });

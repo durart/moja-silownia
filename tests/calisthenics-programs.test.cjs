@@ -113,7 +113,7 @@ test('existing session linked without duplication; missing historical duration s
  const out=history.reconcile(v,[s],[p],core);assert.equal(out.added.length,0);assert.equal(out.sessions.length,1);assert.equal(out.lastId,11);
 });
 test('summary counts bilateral repetitions and keeps exercise variants distinguishable',()=>{
- const sandbox={};vm.runInNewContext(fs.readFileSync('preview/summary-core.js','utf8'),sandbox);
+ const sandbox=vm.createContext({});if(fs.existsSync('preview/modules/set-observation.js'))vm.runInContext(fs.readFileSync('preview/modules/set-observation.js','utf8'),sandbox);vm.runInContext(fs.readFileSync('preview/summary-core.js','utf8'),sandbox);
  const {p,d}=sampleProgram();const s=history.createSession(p,p.days[0],d,core,3);
  s.sets.push({...s.sets[0],name:'Wariant z pauzą'});
  const result=sandbox.SportSummaryCore.build(s,{estimateCalories:()=>{throw Error('Historical weight unknown');}});

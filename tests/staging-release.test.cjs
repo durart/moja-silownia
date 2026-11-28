@@ -34,7 +34,7 @@ test('preview corrects four historical calf sets without rewriting history or pr
  const exercise={id:'seed-12',name:'Wspięcia na palce',group:'Nogi'};
  const session={id:'sample',date:'2026-11-28T10:00:00Z',sets:Array.from({length:4},(_,i)=>({exerciseId:'seed-12',weight:30,reps:12,rir:i===3?0:2})),fatigueModel:2,fatigueImpulse:{Nogi:45},muscles:{Nogi:4}};
  const before=JSON.stringify(session);
- if(release.surfaces.production.version!==release.surfaces.preview.version)assert.deepEqual(production.profile(exercise),[['Nogi',1]]);
+ if(release.surfaces.production.version==='4.1.0')assert.deepEqual(production.profile(exercise),[['Nogi',1]]);
  else {assert.deepEqual(production.profile(exercise),[['Łydki',1]]);assert.deepEqual(production.sessionMuscles(session,[exercise]),{'Łydki':4});}
  const corrected=preview.normalizeCatalog([exercise]);assert.equal(corrected[0].group,'Łydki');
  assert.equal(exercise.group,'Nogi');assert.deepEqual(preview.sessionMuscles(session,[exercise]),{'Łydki':4});
