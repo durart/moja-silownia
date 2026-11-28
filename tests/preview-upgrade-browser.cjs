@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {chromium}=require('playwright');
 const release=require('./release-surfaces.cjs');
-const previous=require('./release-expectations.json').previousPreview||{version:'4.1.0'};
+const previous=process.env.PREVIOUS_PREVIEW_VERSION?{version:process.env.PREVIOUS_PREVIEW_VERSION}:require('./release-expectations.json').previousPreview||{version:'4.1.0'};
 const target=release.surfaces.preview;
 const legacy=path.resolve(process.env.LEGACY_APP),candidate=path.resolve(__dirname,'..');
 let root=legacy,rollback=false;

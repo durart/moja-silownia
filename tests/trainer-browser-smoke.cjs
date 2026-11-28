@@ -6,7 +6,11 @@ const http=require('node:http');
 const path=require('node:path');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
-module.exports=async function trainerBrowserSmoke(){
+module.exports=async function trainerBrowserSmoke(surface='production'){
+ const key=release.surfaces[surface].storageKey;
+ const other=surface==='production'?'preview':'production';
+ const otherKey=release.surfaces[other].storageKey;
+ const prefix=surface==='preview'?'preview/':'';
  const server=http.createServer((req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
   const file=path.resolve(root,'.'+(pathname.endsWith('/')?pathname+'index.html':pathname));
@@ -24,8 +28,8 @@ module.exports=async function trainerBrowserSmoke(){
     const page=await context.newPage(),url='http://127.0.0.1:'+server.address().port+'/';
     const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',dialog=>dialog.accept());
     const seed={exercises:[{id:'bench',name:'Wyciskanie testowe',equipment:'Sztanga',group:'Klatka piersiowa'},{id:'new-exercise',name:'Nowe ćwiczenie',equipment:'Maszyna',group:'Plecy'}],plans:[{id:17,name:'Plan testowy',exerciseIds:['bench'],targets:[{sets:4,reps:'8–12'}]}],active:[],sessions:[{id:1,date:new Date(Date.now()-86400000).toISOString(),sets:[{exerciseId:'bench',weight:20,reps:10,rir:5,setType:'R'},{exerciseId:'bench',weight:60,reps:12,rir:4},{exerciseId:'bench',weight:70,reps:12,rir:4},{exerciseId:'bench',weight:70,reps:12,rir:4}]}]};
-    await page.addInitScript(seed=>{if(!localStorage.getItem('moja-silownia-v01'))localStorage.setItem('moja-silownia-v01',JSON.stringify(seed));},seed);
-    await page.goto(url);
+    await page.addInitScript(({seed,key})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(seed));},{seed,key});
+    await page.goto(url+prefix);
     await page.waitForFunction(()=>!!window.MojaTrainerWorkoutUI&&!!window.MojaSilowniaModules);
     await page.evaluate(()=>{startPlan(0);confirmWorkoutStart();});
     await page.locator('#r_0_2_w').waitFor();
@@ -59,14 +63,20 @@ module.exports=async function trainerBrowserSmoke(){
     assert.equal(await page.locator('#m_new-exercise_0_w').inputValue(),'');
     await page.evaluate(()=>{addManualRow('bench');removeManualRow('bench',0);});
     assert.equal(await page.locator('#m_bench_0_w').inputValue(),'65');
-    const before=await page.evaluate(()=>localStorage.getItem('moja-silownia-v01'));
-    await page.goto(url+'preview/');
-    await page.waitForFunction(()=>window.MojaSilowniaModules?.stateStorage?.key==='moja-silownia-preview-v01');
+    const before=await page.evaluate(key=>localStorage.getItem(key),key);
+    if(surface==='preview'){
+      assert.equal(await page.evaluate(()=>MojaTrainerPreparation.prepare({sessions:state.sessions,exercise:state.exercises.find(e=>e.id==='bench')}).safetyReason),'different_context');
+      assert.equal(await page.evaluate(()=>state.sessions[0].sets[0].weight),65);
+      assert.equal(await page.locator('#m_bench_0_w').inputValue(),'65');
+    }
+    await page.goto(url+(other==='preview'?'preview/':''));
+    await page.waitForFunction(key=>window.MojaSilowniaModules?.stateStorage?.key===key,otherKey);
     await page.evaluate(()=>{startManualWorkout();confirmWorkoutStart();});
-    assert.equal(await page.evaluate(()=>localStorage.getItem('moja-silownia-v01')),before,'staging does not touch production state');
-    assert.ok(await page.evaluate(()=>localStorage.getItem('moja-silownia-preview-v01')));
-    assert.match(await page.title(),release.versionPattern('preview','TEST v'));
+    assert.equal(await page.evaluate(key=>localStorage.getItem(key),key),before,'other surface does not touch original state');
+    assert.ok(await page.evaluate(key=>localStorage.getItem(key),otherKey));
+    assert.match(await page.title(),release.versionPattern(other,other==='preview'?'TEST v':'v'));
     assert.deepEqual(errors,[]);
+    console.log('PASS trainer plan-to-manual reference, edits, reload and isolation:',surface,width);
    }finally{await context.close();}
   }
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
