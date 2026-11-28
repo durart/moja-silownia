@@ -1,0 +1,22 @@
+'use strict';
+// A separate immutable accepted staging reference constrains every promoted runtime path.
+const assert=require('node:assert/strict');
+const {execFileSync}=require('node:child_process');
+const {treeEntries,surfaceTree,changedPaths}=require('./verify-staging-release.cjs');
+const accepted='a3efe76b269b2e34bada7f4b65b43a8b0de9f2f0';
+const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:32*1024*1024});
+const head=git('rev-parse','HEAD').trim();
+const before=treeEntries(process.cwd(),accepted),after=treeEntries(process.cwd(),head);
+const old=new Map(before.map(([p,m,h])=>[p,[m,h]])),current=new Map(after.map(([p,m,h])=>[p,[m,h]]));
+const promoted=new Set(['assistant/adaptive-adapter.js','assistant/assistant-progression-ui.js','assistant/assistant-progression.js','assistant/equipment-settings-ui.js','assistant/recommendation-safety.js','assistant/timed-preparation.js','assistant/trainer-drafts.js','assistant/trainer-preparation.js','assistant/trainer-workout-ui.js','modules/records.js','modules/set-observation.js','modules/timed-exercise-core.js','muscle-fatigue-core.js','progress-core-v2.js','summary-core.js','vendor/SHA256SUMS','vendor/mammoth/mammoth.browser.min.js','vendor/package-lock.json']);
+const allowed=new Set([...promoted,'index.html','sw.js','INSTRUKCJA_UZYTKOWNIKA.md','preview/index.html','preview/sw.js']);
+for(const [p] of surfaceTree(before,'production').concat(surfaceTree(after,'production'),surfaceTree(before,'preview'),surfaceTree(after,'preview')))if(!allowed.has(p))assert.deepEqual(current.get(p),old.get(p),p+' unrelated runtime change');
+for(const p of promoted)assert.deepEqual(current.get(p),old.get('preview/'+p),p+' must match accepted alpha.5');
+const read=(sha,p)=>git('show',sha+':'+p);
+const preview=read(accepted,'preview/index.html').replaceAll('4.1.3-alpha.5','4.1.3');
+assert.equal(read(head,'preview/index.html'),preview);
+assert.equal(read(head,'index.html'),preview.replace('Moja Siłownia TEST v4.1.3 — Katalog ćwiczeń | Kalistenika','Moja Siłownia v4.1.3 — Programy treningowe').replace('TEST v4.1.3</span>','v4.1.3</span>').replace('Prywatny dziennik treningowy · Kalistenika','Prywatny dziennik treningowy').replace("const key='moja-silownia-preview-v01'","const key='moja-silownia-v01'"));
+const sw=read(accepted,'preview/sw.js').replace('v69-4.1.3-alpha.5','v70-4.1.3');
+assert.equal(read(head,'preview/sw.js'),sw);
+assert.equal(read(head,'sw.js'),sw.replaceAll('moja-silownia-preview-shell-','moja-silownia-shell-').replace(" if(!url.pathname.startsWith(new URL(self.registration.scope).pathname))return;"," if(!url.pathname.startsWith(new URL(self.registration.scope).pathname))return;\n if(url.pathname.startsWith(new URL('preview/',self.registration.scope).pathname))return;"));
+console.log('PASS: all 18 promoted blobs match accepted staging; shell changes limited to version and environment; unrelated runtime unchanged');

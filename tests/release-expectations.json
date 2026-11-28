@@ -1,129 +1,23 @@
 {
   "surfaces": {
     "production": {
-      "version": "4.1.1",
-      "cache": "moja-silownia-shell-v64-4.1.1",
+      "version": "4.1.3",
+      "cache": "moja-silownia-shell-v70-4.1.3",
       "storageKey": "moja-silownia-v01"
     },
     "preview": {
-      "version": "4.1.3-alpha.5",
-      "cache": "moja-silownia-preview-shell-v69-4.1.3-alpha.5",
+      "version": "4.1.3",
+      "cache": "moja-silownia-preview-shell-v70-4.1.3",
       "storageKey": "moja-silownia-preview-v01"
     }
   },
-  "differences": {
-    "assistant/adaptive-adapter.js": {
-      "production": "f57dc97d8fedab7511192cfd4c132cb4da96811b",
-      "preview": "77eb6b1b882917ff994333581af894ee4d2e7de9"
-    },
-    "assistant/assistant-progression-ui.js": {
-      "production": "3300b6c85722ceec04f888c68b28d8e730cea287",
-      "preview": "8b2e476c80ca786cee37f06e0e140e577fd7bad8"
-    },
-    "assistant/assistant-progression.js": {
-      "production": "481fb679e7022668a08cfbae178a8dd4f7a401bc",
-      "preview": "3e4453ce03aee91cf38d60d8f77f1cc62b248545"
-    },
-    "assistant/equipment-settings-ui.js": {
-      "production": "825bfdac96298a2019f018dcd921a2ecce0ee965",
-      "preview": "2ea4c81fd3b64ede7d2a840beab5f82419ce1ff5"
-    },
-    "assistant/timed-preparation.js": {
-      "production": "bc46d7ca58eaad56a12de7734758e2ca7514490a",
-      "preview": "7e92b4182ccba0fae131ba051c808ae60df0ad05"
-    },
-    "assistant/trainer-drafts.js": {
-      "production": "ba216f1e32ee9d6f983bdf90fe9330f100cf3c97",
-      "preview": "c286e8d0940a1f727c030f73cfb5c88d4aebea89"
-    },
-    "assistant/trainer-preparation.js": {
-      "production": "670edf30ce4d99f0369d42d8873d7152324a0ae7",
-      "preview": "b428d4744bc5daf4ec107dd0b72110f349cb08bd"
-    },
-    "assistant/trainer-workout-ui.js": {
-      "production": "5529e39d64da42993fcbfbb2a4d66fea63bde094",
-      "preview": "d4b883135f0b6835962e3c9b6ced4ee996823d57"
-    },
-    "modules/records.js": {
-      "production": "38d85d3f63ea1ded16810ef7446f8c06fa7b7fe0",
-      "preview": "1f891d89111dee6774f1a4fed45dcef8f22ef452"
-    },
-    "modules/timed-exercise-core.js": {
-      "production": "260f8a616b95e723d38cd3262601501b6f0c8521",
-      "preview": "24c266d00cd4c3dbf79e7ab21b8f2e25a6f2266d"
-    },
-    "muscle-fatigue-core.js": {
-      "production": "7b1277692edfa6c029bb7f43246ef64fd9b8ba30",
-      "preview": "649a93ad0b035946584242625a712e3ffa6a349b"
-    },
-    "progress-core-v2.js": {
-      "production": "997ca3d93c71fb9e4b4d551abf016ecb1ccbd4e6",
-      "preview": "f1872a1d477d9517cc8cc1894a41f20f5a51a3bb"
-    },
-    "summary-core.js": {
-      "production": "2375143d1690f0f1f2c94e4138fe60d87a81fec7",
-      "preview": "800d7b08a2d8589e0b4f18f6e370c2eecda63aed"
-    },
-    "vendor/SHA256SUMS": {
-      "production": "4bc0d899e33626722287ae14cf4b989e98bf79dc",
-      "preview": "5e095cea795c699cbcc0693c7b4a78c03aee095a"
-    },
-    "vendor/mammoth/mammoth.browser.min.js": {
-      "production": "f67c7dc6eee01201cfced96bbbc263965d2b4989",
-      "preview": "650e8a68cf239dfbbbd9620e5c4d56baafeb0552"
-    },
-    "vendor/package-lock.json": {
-      "production": "8a8db663ed1429f3f1ca4522430e21c6da097cc9",
-      "preview": "a31793e87801cb89a7f9ebe7eceade9f378e3773"
-    }
-  },
+  "differences": {},
   "integrity": {
-    "productionRef": "a7bf09b0c197b4266ddaa534f5b2ba6088f57abe",
-    "previewRef": "ca5d432b63082ac1ea298f2d77a1f469a54d2662",
-    "stagingBaseRef": "a7bf09b0c197b4266ddaa534f5b2ba6088f57abe",
+    "productionRef": "01788f001c43e6f21d1eb66a856c78dc0b032167",
+    "previewRef": "01788f001c43e6f21d1eb66a856c78dc0b032167",
+    "stagingBaseRef": "a3efe76b269b2e34bada7f4b65b43a8b0de9f2f0",
     "previousReleaseRef": "a7bf09b0c197b4266ddaa534f5b2ba6088f57abe",
-    "stagingAllowedPaths": [
-      ".github/workflows/data-quality-safety-413.yml",
-      ".github/workflows/security-hardening.yml",
-      "docs/personal-training-coach/4.1.3.md",
-      "preview/assistant/adaptive-adapter.js",
-      "preview/assistant/assistant-progression-ui.js",
-      "preview/assistant/assistant-progression.js",
-      "preview/assistant/equipment-settings-ui.js",
-      "preview/assistant/recommendation-safety.js",
-      "preview/assistant/timed-preparation.js",
-      "preview/assistant/trainer-drafts.js",
-      "preview/assistant/trainer-preparation.js",
-      "preview/assistant/trainer-workout-ui.js",
-      "preview/index.html",
-      "preview/modules/records.js",
-      "preview/modules/set-observation.js",
-      "preview/modules/timed-exercise-core.js",
-      "preview/muscle-fatigue-core.js",
-      "preview/progress-core-v2.js",
-      "preview/summary-core.js",
-      "preview/sw.js",
-      "preview/vendor/SHA256SUMS",
-      "preview/vendor/mammoth/mammoth.browser.min.js",
-      "preview/vendor/package-lock.json",
-      "tests/adaptive-adapter.test.cjs",
-      "tests/adaptive-integration.test.cjs",
-      "tests/calisthenics-programs.test.cjs",
-      "tests/data-quality-safety-browser.cjs",
-      "tests/data-quality-safety.test.cjs",
-      "tests/generate-docx-compatibility.py",
-      "tests/muscle-mapping.test.cjs",
-      "tests/preview-upgrade-browser.cjs",
-      "tests/progress-blank-regression.test.cjs",
-      "tests/progression-v184.test.cjs",
-      "tests/progression-v2-staging.test.cjs",
-      "tests/progression-v2.test.cjs",
-      "tests/release-expectations.json",
-      "tests/release-surfaces.cjs",
-      "tests/security-browser.cjs",
-      "tests/staging-release.test.cjs",
-      "tests/trainer-preparation.test.cjs"
-    ]
+    "stagingAllowedPaths": []
   },
   "previousPreview": {
     "version": "4.1.1",
@@ -131,13 +25,14 @@
   },
   "assetVersions": {
     "production": {
-      "muscle-fatigue-core.js": 6,
-      "assistant/assistant-progression.js": 201,
-      "assistant/assistant-progression-ui.js": 312,
-      "assistant/equipment-settings-ui.js": 200,
-      "assistant/adaptive-adapter.js": 2,
-      "assistant/trainer-preparation.js": 313,
-      "progress-core-v2.js": 313
+      "muscle-fatigue-core.js": 8,
+      "assistant/assistant-progression.js": 203,
+      "assistant/assistant-progression-ui.js": 315,
+      "assistant/equipment-settings-ui.js": 201,
+      "assistant/adaptive-adapter.js": 4,
+      "assistant/trainer-preparation.js": 315,
+      "progress-core-v2.js": 314,
+      "summary-core.js": 5
     },
     "preview": {
       "muscle-fatigue-core.js": 8,
@@ -146,7 +41,8 @@
       "assistant/equipment-settings-ui.js": 201,
       "assistant/adaptive-adapter.js": 4,
       "assistant/trainer-preparation.js": 315,
-      "progress-core-v2.js": 314
+      "progress-core-v2.js": 314,
+      "summary-core.js": 5
     }
   }
 }

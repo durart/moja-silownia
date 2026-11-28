@@ -46,24 +46,27 @@ jobs:
         run: |
           cat > /tmp/expected-vendor.sha256 <<'EOF'
           6663bbd049205d38a496ccacb412a151980b444627d38de218b3b809aef330f1  ./mammoth/LICENSE
-          2a0c24d419b8b6b307b2c59dcad9ac045ef43c29fdb23f3b0f2e82d5b09287fe  ./mammoth/mammoth.browser.min.js
-          37f5fa5aeb39d56b22305537bf45f24665798997bd9272305c8e614cce9efdf7  ./package-lock.json
+          92914a3708cfdf1e62cb553d1856a7fedab21da83d8ee82845de2f897b368cab  ./mammoth/mammoth.browser.min.js
+          3c25f22ba8c536cb6683ef00a680db0b4f57deffdb61d38952e94b2eb58a3c73  ./package-lock.json
           0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594  ./pdfjs/LICENSE
           522ad2c83bc8a0010e7f0cc60d0892b77c8d2bf2c9702dc12288311d94270f42  ./pdfjs/pdf.min.mjs
           b4c8353ded0d88d2e2009574a29eb4e0c3ff7e942ecdf51ef5f71566a9667f31  ./pdfjs/pdf.worker.min.mjs
           EOF
           (cd vendor && sha256sum -c /tmp/expected-vendor.sha256 && sha256sum -c SHA256SUMS)
-          sed -e 's/2a0c24d419b8b6b307b2c59dcad9ac045ef43c29fdb23f3b0f2e82d5b09287fe/92914a3708cfdf1e62cb553d1856a7fedab21da83d8ee82845de2f897b368cab/' -e 's/37f5fa5aeb39d56b22305537bf45f24665798997bd9272305c8e614cce9efdf7/3c25f22ba8c536cb6683ef00a680db0b4f57deffdb61d38952e94b2eb58a3c73/' /tmp/expected-vendor.sha256 >/tmp/expected-preview-vendor.sha256
-          (cd preview/vendor && sha256sum -c /tmp/expected-preview-vendor.sha256 && sha256sum -c SHA256SUMS)
-          diff -qr vendor/pdfjs preview/vendor/pdfjs
-          cmp vendor/mammoth/LICENSE preview/vendor/mammoth/LICENSE
+          (cd preview/vendor && sha256sum -c /tmp/expected-vendor.sha256 && sha256sum -c SHA256SUMS)
+          diff -qr vendor preview/vendor
       - name: Resolve pinned libraries and audit
         run: |
+          set -euo pipefail
           mkdir dependency-check
+          cp vendor/package-lock.json dependency-check/
           cd dependency-check
-          npm init -y
-          npm install --ignore-scripts --save-exact pdfjs-dist@6.5.438 mammoth@1.9.0
-          npm audit --omit=dev --audit-level=high
+          node -e 'const fs=require("fs");const root=require("./package-lock.json").packages[""];fs.writeFileSync("package.json",JSON.stringify({name:root.name,version:root.version,dependencies:root.dependencies}))'
+          npm ci --ignore-scripts
+          npm audit --omit=dev --audit-level=moderate
+          cmp node_modules/mammoth/mammoth.browser.min.js ../vendor/mammoth/mammoth.browser.min.js
+          cmp node_modules/mammoth/LICENSE ../vendor/mammoth/LICENSE
+          cmp package-lock.json ../vendor/package-lock.json
       - name: Verify installed preview package and exact committed lock
         run: |
           set -euo pipefail
